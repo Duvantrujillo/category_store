@@ -1,0 +1,212 @@
+import * as React from "react";
+import { Dialog as DialogPrimitive } from "radix-ui";
+
+import { XIcon } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+/* ===================================================== */
+
+function Dialog(props) {
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      {...props}
+    />
+  );
+}
+
+function DialogTrigger(props) {
+  return (
+    <DialogPrimitive.Trigger
+      data-slot="dialog-trigger"
+      {...props}
+    />
+  );
+}
+
+function DialogPortal(props) {
+  return (
+    <DialogPrimitive.Portal
+      data-slot="dialog-portal"
+      {...props}
+    />
+  );
+}
+
+function DialogClose(props) {
+  return (
+    <DialogPrimitive.Close
+      data-slot="dialog-close"
+      {...props}
+    />
+  );
+}
+
+/* ===================================================== */
+/* OVERLAY */
+/* ===================================================== */
+
+const DialogOverlay = React.forwardRef(
+  ({ className, ...props }, ref) => (
+    <DialogPrimitive.Overlay
+      ref={ref}
+      data-slot="dialog-overlay"
+      className={cn(
+        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs",
+        className
+      )}
+      {...props}
+    />
+  )
+);
+
+DialogOverlay.displayName =
+  "DialogOverlay";
+
+/* ===================================================== */
+/* CONTENT */
+/* ===================================================== */
+
+const DialogContent = React.forwardRef(
+  (
+    {
+      className,
+      children,
+      showCloseButton = true,
+      ...props
+    },
+    ref
+  ) => (
+    <DialogPortal>
+      <DialogOverlay />
+
+      <DialogPrimitive.Content
+        ref={ref}
+        data-slot="dialog-content"
+        className={cn(
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm",
+          className
+        )}
+        {...props}
+      >
+        {children}
+
+        {showCloseButton && (
+          <DialogPrimitive.Close asChild>
+            <Button
+              variant="ghost"
+              className="absolute top-2 right-2"
+              size="icon-sm"
+            >
+              <XIcon />
+
+              <span className="sr-only">
+                Close
+              </span>
+            </Button>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  )
+);
+
+DialogContent.displayName =
+  "DialogContent";
+
+/* ===================================================== */
+
+const DialogHeader = ({
+  className,
+  ...props
+}) => (
+  <div
+    data-slot="dialog-header"
+    className={cn(
+      "flex flex-col gap-2",
+      className
+    )}
+    {...props}
+  />
+);
+
+const DialogFooter = ({
+  className,
+  showCloseButton = false,
+  children,
+  ...props
+}) => (
+  <div
+    data-slot="dialog-footer"
+    className={cn(
+      "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+      className
+    )}
+    {...props}
+  >
+    {children}
+
+    {showCloseButton && (
+      <DialogPrimitive.Close asChild>
+        <Button variant="outline">
+          Close
+        </Button>
+      </DialogPrimitive.Close>
+    )}
+  </div>
+);
+
+/* ===================================================== */
+
+const DialogTitle = React.forwardRef(
+  ({ className, ...props }, ref) => (
+    <DialogPrimitive.Title
+      ref={ref}
+      data-slot="dialog-title"
+      className={cn(
+        "font-heading text-base font-medium",
+        className
+      )}
+      {...props}
+    />
+  )
+);
+
+DialogTitle.displayName = "DialogTitle";
+
+/* ===================================================== */
+
+const DialogDescription =
+  React.forwardRef(
+    ({ className, ...props }, ref) => (
+      <DialogPrimitive.Description
+        ref={ref}
+        data-slot="dialog-description"
+        className={cn(
+          "text-sm text-muted-foreground",
+          className
+        )}
+        {...props}
+      />
+    )
+  );
+
+DialogDescription.displayName =
+  "DialogDescription";
+
+/* ===================================================== */
+
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+};
