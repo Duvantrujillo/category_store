@@ -42,4 +42,74 @@ model FormResponse{
   municipality String
   address String
   additionalDetails String?
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+}
+
+model Category{
+  id Int @id @default(autoincrement())
+  parentId Int?
+  parent Category? @relation("CategoryHierarcy",fields: [parentId], references: [id],onDelete: SetNull)
+ name String
+ slug String @unique
+ description String? @db.Text
+ isActive Boolean @default(true)
+ sortOrder Int
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ children Category[] @relation("CategoryHierarcy")
+ @@index([parentId])
+ @@index([isActive,sortOrder])
+}
+
+
+model Attribute {
+  id Int @id @default(autoincrement())
+
+  name String
+  slug String @unique
+
+  type AttributeType
+
+  isFilterable Boolean @default(false)
+  isVariant Boolean @default(false)
+  isRequired Boolean @default(false)
+
+  sortOrder Int @default(0)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  values AttributeValue[]
+}
+
+
+enum AttributeType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+  MULTISELECT
+  COLOR
+  DATE
+}
+
+
+model AttributeValue {
+  id Int @id @default(autoincrement())
+
+  value String
+  slug String?
+
+  attributeId Int
+  attribute Attribute @relation(fields: [attributeId], references: [id])
+
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([attributeId, value])
+  @@index([attributeId])
 }

@@ -1,24 +1,25 @@
 import { useEffect, useState } from "react";
-import { getFormResponses } from "../api/shippingApi";
-import {postFormResponses} from "../api/shippingApi";
+import { getFormResponses, postFormResponses, updateFormResponse } from "../api/shippingApi";
 import toast from "react-hot-toast";
 
 
-//esta funcion lo que hace es traer todos los datos
+// ======================================================
+// 🔹 HOOK: TRAER TODOS LOS REGISTROS (READ)
+// ======================================================
 export const useShipping = () => {
-  const [shipping, setShipping] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [shipping, setShipping] = useState([]); // lista de registros
+  const [loading, setLoading] = useState(true);  // estado de carga
+  const [error, setError] = useState(null);      // manejo de errores
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await getFormResponses();
-        setShipping(data);
+        const data = await getFormResponses(); // petición al backend
+        setShipping(data); // guardamos datos
       } catch (err) {
-        setError(err);
+        setError(err); // guardamos error
       } finally {
-        setLoading(false);
+        setLoading(false); // terminamos loading
       }
     };
 
@@ -33,7 +34,9 @@ export const useShipping = () => {
 };
 
 
-//esta lo que hace es crear
+// ======================================================
+// 🔹 HOOK: CREAR REGISTRO (CREATE)
+// ======================================================
 export const useCreateShipping = () => {
   const [form, setForm] = useState({
     firstName: "",
@@ -44,33 +47,31 @@ export const useCreateShipping = () => {
     additionalDetails: ""
   });
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [response, setResponse] = useState(null);
+  const [loading, setLoading] = useState(false); // loading request
+  const [error, setError] = useState(null);      // errores del backend
+  const [response, setResponse] = useState(null); // respuesta exitosa
 
-  // Actualiza los campos del formulario dinámicamente
+  // 🔹 actualizar campos del formulario dinámicamente
   const handleChange = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
-  // Envía el formulario al backend
+  // 🔹 enviar formulario al backend
   const submitForm = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await postFormResponses(form); // Enviamos los datos al backend
+      const res = await postFormResponses(form);
       setResponse(res);
 
-      // Notificación de éxito
-      toast.success(res.message || "Registro procesado correctamente");
+      toast.success(res.message || "Registro creado correctamente");
 
       return res;
     } catch (err) {
       const msg = err.response?.data?.message || "Error de conexión";
       setError(msg);
 
-      // Notificación de error
       toast.error(msg);
 
       throw err;
@@ -88,3 +89,67 @@ export const useCreateShipping = () => {
     response
   };
 };
+
+
+// ======================================================
+// 🔹 HOOK: ACTUALIZAR REGISTRO (UPDATE)
+// ======================================================
+const useUpdateShipping = () => {
+
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    documentNumber: "",
+    phoneNumber: "",
+    address: "",
+    additionalDetails: ""
+  });
+
+  const [loading, setLoading] = useState(false); // estado loading
+  const [error, setError] = useState(null);      // errores
+  const [response, setResponse] = useState(null); // respuesta API
+
+  // 🔹 actualiza campos dinámicamente
+  const handleChange = (field, value) => {
+    setForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // 🔹 actualizar en backend
+  const submitUpdate = async (id) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await updateFormResponse(id, form);
+
+      setResponse(res);
+      toast.success(res.message || "Registro actualizado correctamente");
+
+      return res;
+    } catch (err) {
+      const msg = err.response?.data?.message || "Error de conexión";
+      setError(msg);
+
+      toast.error(msg);
+
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    form,
+    handleChange,
+    submitUpdate,
+    loading,
+    error,
+    response,
+    setForm
+  };
+};
+
+export default useUpdateShipping;

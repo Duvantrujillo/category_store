@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-
 import {
   Dialog,
   DialogContent,
@@ -15,11 +14,14 @@ import {
   CardContent,
 } from "@/components/ui/card";
 
+import ShippingEditDialog from "../shipping-update/ShippingEditDialog";
+
 import {
   Phone,
   MapPin,
   FileText,
   User,
+  Trash,
 } from "lucide-react";
 
 function ShippingDetailsDialog({ item }) {
@@ -33,6 +35,16 @@ function ShippingDetailsDialog({ item }) {
         </Button>
 
       </DialogTrigger>
+
+      <ShippingEditDialog item={item} />
+
+      <Button variant="destructive" size="icon">
+        <Trash className="w-4 h-4" />
+      </Button>
+
+
+
+
 
       <DialogContent className="sm:max-w-2xl rounded-2xl">
 

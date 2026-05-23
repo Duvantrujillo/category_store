@@ -1,8 +1,16 @@
 const express = require('express')
 const app = express()
 const cors = require("cors");
+
+
+//rutas de los enpoints
 const userRouter = require('./routes/users.routes.js')
 const formRouter = require('./routes/form.routes.js')
+const categoryRouter = require ('./routes/category.routes.js')
+const attributeRouter = require('./routes/attribute.routes.js')
+
+
+
 require('dotenv').config();
 const Jwt = require('jsonwebtoken')
 app.use(cors());
@@ -13,8 +21,16 @@ app.use('/user', userRouter);
 
 //rutas de form information
 app.use('/form',formRouter);
+app.use('/category',categoryRouter);
+app.use('/attribute',attributeRouter)
+
+
+
+
+
 
 //comprobar si el servidor esta levandado
 app.listen(process.env.PORT, () => {
   console.log(`Servidor corriendo`);
 });
+
