@@ -9,7 +9,7 @@ const formRouter = require('./routes/form.routes.js')
 const categoryRouter = require ('./routes/category.routes.js')
 const attributeRouter = require('./routes/attribute.routes.js')
 const attributeValuesRouter = require('./routes/attribute-values.routes.js')
-
+const branchRouter = require('./routes/brand.routes.js')
 
 require('dotenv').config();
 const Jwt = require('jsonwebtoken')
@@ -22,9 +22,9 @@ app.use('/user', userRouter);
 //rutas de form information
 app.use('/form',formRouter);
 app.use('/category',categoryRouter);
-app.use('/attribute',attributeRouter)
-app.use('/attribute-values',attributeValuesRouter)
-
+app.use('/attribute',attributeRouter);
+app.use('/attribute-values',attributeValuesRouter);
+app.use('/brand',branchRouter)
 
 
 
