@@ -8,7 +8,7 @@ const userRouter = require('./routes/users.routes.js')
 const formRouter = require('./routes/form.routes.js')
 const categoryRouter = require ('./routes/category.routes.js')
 const attributeRouter = require('./routes/attribute.routes.js')
-
+const attributeValuesRouter = require('./routes/attribute-values.routes.js')
 
 
 require('dotenv').config();
@@ -23,6 +23,7 @@ app.use('/user', userRouter);
 app.use('/form',formRouter);
 app.use('/category',categoryRouter);
 app.use('/attribute',attributeRouter)
+app.use('/attribute-values',attributeValuesRouter)
 
 
 
