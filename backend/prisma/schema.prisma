@@ -17,9 +17,10 @@ model User {
   name     String
   email    String @unique
   password String
-
   roleId   Int
   role     Role   @relation(fields: [roleId], references: [id])
+  createdAt DateTime @default(now())
+  uptatedAt DateTime @updatedAt
 }
 
 model Role {
@@ -27,7 +28,8 @@ model Role {
   name        String
   description String
   status      Boolean @default(true)
-
+  createdAt DateTime @default(now())
+  uptatedAt DateTime @updatedAt
   users       User[]
 }
 
@@ -42,8 +44,8 @@ model FormResponse{
   municipality String
   address String
   additionalDetails String?
-  createAt DateTime @default(now())
-  updateAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updateAdt DateTime @updatedAt
 }
 
 model Category{

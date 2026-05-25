@@ -16,10 +16,10 @@ const Jwt = require('jsonwebtoken')
 app.use(cors());
 app.use(express.json());
 
-//ruta de usuarios
-app.use('/user', userRouter);
 
 //rutas de form information
+//ruta de usuarios
+app.use('/user', userRouter);
 app.use('/form',formRouter);
 app.use('/category',categoryRouter);
 app.use('/attribute',attributeRouter);
