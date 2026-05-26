@@ -2,8 +2,6 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient()
 
 
-
-
 const createCategory = async (req,res)=>{
       try {
         const { parentId, name, slug, description, isActive, sortOrder } = req.body

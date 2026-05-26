@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -60,6 +55,7 @@ model Category{
  createdAt DateTime @default(now())
  updatedAt DateTime @updatedAt
  children Category[] @relation("CategoryHierarcy")
+ products Product[] 
  @@index([parentId])
  @@index([isActive,sortOrder])
 }
@@ -100,18 +96,14 @@ enum AttributeType {
 
 model AttributeValue {
   id Int @id @default(autoincrement())
-
   value String
   slug String?
-
   attributeId Int
   attribute Attribute @relation(fields: [attributeId], references: [id])
-
   sortOrder Int @default(0)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+ productVariants ProductVariantAttribute[]
   @@unique([attributeId, value])
   @@index([attributeId])
 }
@@ -123,8 +115,64 @@ model Brand {
   description String?  @db.Text
   logoUrl     String?
   isActive    Boolean  @default(true)
+  products Product[] 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+}
+model Product {
+  id Int @id @default(autoincrement())
+  categoryId Int
+  brandId Int?
+  category Category @relation(fields: [categoryId], references: [id])
+  brand Brand? @relation(fields: [brandId], references: [id])
+  name String
+  slug String @unique
+  shortDescription String?
+  description String? @db.Text
+  status ProductStatus @default(DRAFT)
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  variants  ProductVariant[]
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([status])
+}
+
+
+model ProductVariant {
+  id Int @id @default(autoincrement())
+  productId Int
+  product Product @relation(fields: [productId], references: [id])
+  sku String @unique
+  barcode String?
+  price Decimal @db.Decimal(10,2)
+  cost Decimal? @db.Decimal(10,2)
+  stock Int @default(0)
+  weight Decimal? @db.Decimal(10,2)
+  isDefault Boolean @default(false)
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  attributes ProductVariantAttribute[]
+  @@index([productId])
+  @@index([sku])
+}
+
+model ProductVariantAttribute {
+  id Int @id @default(autoincrement())
+  productVariantId Int
+  attributeValueId Int
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+  attributeValue AttributeValue @relation(fields: [attributeValueId], references: [id])
+  @@unique([productVariantId, attributeValueId])
+  @@index([productVariantId])
+  @@index([attributeValueId])
+}
 
