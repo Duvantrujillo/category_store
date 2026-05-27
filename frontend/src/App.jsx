@@ -7,7 +7,7 @@ import Home from "./pages/public/Home/Home"
 import Admin from "./pages/dashboard/admin/Admin"
 import Customer from "./pages/dashboard/customer/Customer"
 import CreateShipping from './pages/dashboard/admin/form_response/pages/CreateShipping'
-
+import  ShippingList from './pages/dashboard/admin/form_response/pages/Shipping'
 function App() {
 
 
@@ -20,6 +20,7 @@ function App() {
       <Route path='/dashboard/admin' element={<Admin />} />
       <Route path='/dashboard/customer' element={<Customer />} />
       <Route path='/create/shipping' element={<CreateShipping />} />
+      <Route path='/list/shipping' element ={<ShippingList/>}/>
     </Routes>
 
 

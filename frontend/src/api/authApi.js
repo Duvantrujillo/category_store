@@ -9,6 +9,13 @@ export const loginUser = async (data) => {
 
 // REGISTER
 export const registerUser = async (data) => {
-  const res = await axios.post(`${API}/user/registerUser`, data);
+  const res = await axios.post(`${API}/user/create`, data);
+  return res.data;
+};
+
+
+export const getUsers = async () => {
+  const res = await axios.get(`${API}/user/all`);
+
   return res.data;
 };

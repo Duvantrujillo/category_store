@@ -1,9 +1,13 @@
-import ShippingDetailsDialog from "./ShippingDetailsDialog";
+import { useState } from "react";
+
+import DeleteShippingDialog from "../shipping-delete/DeleteShippingDialog";
+import ShippingRow from "./ShippingRow";
+
+
 
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -16,118 +20,119 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-function ShippingTable({ shipping }) {
+function ShippingTable({ shipping, onRefresh }) {
+  const [isOpen, setIsOpen] =
+    useState(false);
+
+  const [selectedId, setSelectedId] =
+    useState(null);
+
+  const openConfirmModal = (id) => {
+
+    setSelectedId(id);
+    setIsOpen(true);
+
+  };
+
+  const closeConfirmModal = () => {
+
+    setSelectedId(null);
+    setIsOpen(false);
+
+  };
+
+
   return (
-    <Card className="rounded-2xl shadow-sm border">
+    <>
+      <Card className="rounded-2xl shadow-sm border">
 
-      <CardHeader className="pb-3">
+        <CardHeader className="pb-3">
 
-        <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
 
-          <div>
+            <div>
 
-            <CardTitle>
-              Usuarios registrados
-            </CardTitle>
+              <CardTitle>
+                Usuarios registrados
+              </CardTitle>
 
-            <p className="text-sm text-muted-foreground mt-1">
-              Lista completa de envíos registrados.
-            </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Lista completa de envíos registrados.
+              </p>
+
+            </div>
 
           </div>
 
-        </div>
+        </CardHeader>
 
-      </CardHeader>
+        <CardContent>
 
-      <CardContent>
+          <div className="rounded-xl border overflow-hidden">
 
-        <div className="rounded-xl border overflow-hidden">
+            <Table>
 
-          <Table>
+              <TableHeader>
 
-            <TableHeader>
+                <TableRow>
 
-              <TableRow>
+                  <TableHead className="text-center">
+                    Cliente
+                  </TableHead>
 
-                <TableHead className="text-center">
-                  Nombre
-                </TableHead>
+                  <TableHead className="text-center">
+                    Documento
+                  </TableHead>
 
-                <TableHead className="text-center">
-                  Documento
-                </TableHead>
+                  <TableHead className="text-center">
+                    Teléfono
+                  </TableHead>
 
-                <TableHead className="text-center">
-                  Teléfono
-                </TableHead>
+                  <TableHead className="text-center">
+                    Departamento
+                  </TableHead>
 
-                <TableHead className="text-center">
-                  Departamento
-                </TableHead>
-
-                <TableHead className="text-center">
-                  Acciones
-                </TableHead>
-
-              </TableRow>
-
-            </TableHeader>
-
-            <TableBody>
-
-              {shipping.map((item) => (
-                <TableRow
-                  key={item.id}
-                  className="hover:bg-muted/40 transition-colors"
-                >
-
-                  <TableCell>
-
-                    <div className="flex flex-col">
-
-                      <span className="font-medium">
-                        {item.firstName} {item.lastName}
-                      </span>
-
-                      <span className="text-xs text-muted-foreground">
-                        Cliente registrado
-                      </span>
-
-                    </div>
-
-                  </TableCell>
-
-                  <TableCell>
-                    {item.documentNumber}
-                  </TableCell>
-
-                  <TableCell>
-                    {item.phoneNumber}
-                  </TableCell>
-
-                  <TableCell>
-                    {item.departament}
-                  </TableCell>
-
-                  <TableCell className="text-center">
-
-                    <ShippingDetailsDialog item={item} />
-
-                  </TableCell>
+                  <TableHead className="text-center">
+                    Acciones
+                  </TableHead>
 
                 </TableRow>
-              ))}
 
-            </TableBody>
+              </TableHeader>
 
-          </Table>
+              <TableBody>
 
-        </div>
+                
 
-      </CardContent>
+                  {
+                    shipping.map((item) => (
 
-    </Card>
+                      <ShippingRow
+                        key={item.id}
+                        item={item}
+                        onDelete={openConfirmModal}
+                      />
+
+                    ))
+                  }
+
+
+              </TableBody>
+
+            </Table>
+
+          </div>
+
+        </CardContent>
+
+      </Card>
+      <DeleteShippingDialog
+        open={isOpen}
+        onClose={closeConfirmModal}
+        shippingId={selectedId}
+        onDeleted={onRefresh}
+      />
+    </>
   );
 }
 

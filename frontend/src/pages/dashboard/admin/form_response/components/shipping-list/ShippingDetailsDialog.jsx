@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Eye } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -14,38 +16,27 @@ import {
   CardContent,
 } from "@/components/ui/card";
 
-import ShippingEditDialog from "../shipping-update/ShippingEditDialog";
 
 import {
   Phone,
   MapPin,
   FileText,
   User,
-  Trash,
 } from "lucide-react";
 
 function ShippingDetailsDialog({ item }) {
   return (
     <Dialog>
 
-      <DialogTrigger asChild>
-
-        <Button variant="outline">
-          Ver detalles
-        </Button>
-
-      </DialogTrigger>
-
-      <ShippingEditDialog item={item} />
-
-      <Button variant="destructive" size="icon">
-        <Trash className="w-4 h-4" />
-      </Button>
-
-
-
-
-
+   <DialogTrigger asChild>
+  <Button
+    variant="outline"
+    className="text-green-600 border-green-600 hover:bg-green-600 hover:text-white"
+  >
+    <Eye className="w-4 h-4 mr-0" />
+    
+  </Button>
+</DialogTrigger>
       <DialogContent className="sm:max-w-2xl rounded-2xl">
 
         <DialogHeader>
@@ -205,7 +196,10 @@ function ShippingDetailsDialog({ item }) {
       </DialogContent>
 
     </Dialog>
+
+
   );
+
 }
 
 export default ShippingDetailsDialog;

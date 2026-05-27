@@ -1,4 +1,4 @@
-import ShippingEditDialog from "../components/shipping-update/ShippingEditDialog";
+
 import { useShipping } from "@/hooks/useShipping";
 
 function ShippingList() {
@@ -22,7 +22,7 @@ function ShippingList() {
           </div>
 
           {/* Botón de editar para este item */}
-          <ShippingEditDialog item={item} />
+          
         </div>
       ))}
     </div>

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { getFormResponses, postFormResponses, updateFormResponse } from "../api/shippingApi";
+import { useEffect, useState, useCallback } from "react";
+import { getFormResponses, postFormResponses, updateFormResponse, deleteFormResponse } from "../api/shippingApi";
 import toast from "react-hot-toast";
 
 
@@ -7,31 +7,37 @@ import toast from "react-hot-toast";
 // 🔹 HOOK: TRAER TODOS LOS REGISTROS (READ)
 // ======================================================
 export const useShipping = () => {
-  const [shipping, setShipping] = useState([]); // lista de registros
-  const [loading, setLoading] = useState(true);  // estado de carga
-  const [error, setError] = useState(null);      // manejo de errores
+  const [shipping, setShipping] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await getFormResponses(); // petición al backend
-        setShipping(data); // guardamos datos
-      } catch (err) {
-        setError(err); // guardamos error
-      } finally {
-        setLoading(false); // terminamos loading
-      }
-    };
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
 
-    loadData();
+      const data = await getFormResponses();
+      setShipping(data);
+
+      setError(null);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {// eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData();
+  }, [loadData]);
 
   return {
     shipping,
     loading,
     error,
-  };
-};
+    loadData,
+  }}
+
+
 
 
 // ======================================================
@@ -149,6 +155,39 @@ const useUpdateShipping = () => {
     error,
     response,
     setForm
+  };
+};
+
+
+// ======================================================
+// 🔹 HOOK: ELIMINAR REGISTRO (DELETE)
+// ======================================================
+export const useDeleteShipping = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const submitDelete = async (id) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await deleteFormResponse(id);
+      toast.success(res.message || "Registro eliminado correctamente");
+      return res; // Retorna la respuesta por si el componente la necesita
+    } catch (err) {
+      const msg = err.response?.data?.message || "Error al eliminar el registro";
+      setError(msg);
+      toast.error(msg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    submitDelete,
+    loading,
+    error
   };
 };
 

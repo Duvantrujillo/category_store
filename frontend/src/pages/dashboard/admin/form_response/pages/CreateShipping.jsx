@@ -1,9 +1,11 @@
 import { useCreateShipping } from "../hooks/useShipping";
-import useDepartments from "../hooks/useDepartament";
+
+import useCreateShippingLocations from "../hooks/useCreateShippingLocations";
 
 import ShippingForm from "../components/shipping-form/ShippingForm";
 
 export default function CreateShipping() {
+
   const {
     form,
     handleChange,
@@ -17,15 +19,22 @@ export default function CreateShipping() {
     selectedDepartment,
     setSelectedDepartment,
     loading: loadingCol,
-  } = useDepartments();
+  } = useCreateShippingLocations();
 
   const handleSubmit = async (e) => {
+
     e.preventDefault();
 
     try {
+
       await submitForm();
+
     } catch (error) {
-      console.error("Error al enviar:", error);
+
+      console.error(
+        "Error al enviar:",
+        error
+      );
     }
   };
 

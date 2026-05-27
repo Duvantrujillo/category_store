@@ -2,7 +2,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-
 import DepartmentSelect from "../shipping-form/DepartmentSelect";
 import MunicipalitySelect from "../shipping-form/MunicipalitySelect";
 
@@ -18,9 +17,7 @@ export default function ShippingEditForm({
   setSelectedDepartment,
 }) {
   // Filtramos los municipios según el departamento seleccionado
-  const filteredMunicipalities = municipalities.filter(
-    (m) => m.department === selectedDepartment
-  );
+  
 
   return (
     <div className="grid gap-4">
@@ -61,28 +58,22 @@ export default function ShippingEditForm({
         />
       </div>
 
-      {/* Departamento */}
-      {departments.length > 0 && (
-        <DepartmentSelect
-          departments={departments}
-          selectedDepartment={selectedDepartment}
-          setSelectedDepartment={(dep) => {
-            setSelectedDepartment(dep);
-            handleChange("municipality", ""); // Limpiamos municipio al cambiar departamento
-          }}
-          handleChange={handleChange}
-        />
-      )}
+      <DepartmentSelect
+        departments={departments}
+        selectedDepartment={selectedDepartment}
+        setSelectedDepartment={(dep) => {
+          setSelectedDepartment(dep);
+          handleChange("municipality", "");
+        }}
+        handleChange={handleChange}
+      />
 
-      {/* Municipio */}
-      {filteredMunicipalities.length > 0 && (
-        <MunicipalitySelect
-          municipalities={filteredMunicipalities}
-          selectedDepartment={selectedDepartment}
-          value={form.municipality || ""} // Inicialmente vacío
-          handleChange={handleChange}
-        />
-      )}
+      <MunicipalitySelect
+        municipalities={municipalities}
+        selectedDepartment={selectedDepartment}
+        value={form.municipality || ""}
+        handleChange={handleChange}
+      />
 
       {/* Dirección */}
       <div>

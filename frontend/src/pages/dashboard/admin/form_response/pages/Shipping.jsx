@@ -9,28 +9,38 @@ import ShippingStats from "../components/shipping-list/ShippingStats";
 import ShippingTable from "../components/shipping-list/ShippingTable";
 
 function ShippingList() {
+
   const {
     shipping = [],
     loading,
     error,
+    loadData,
   } = useShipping();
 
   const stats = useMemo(() => {
+
     return {
       total: shipping.length,
     };
+
   }, [shipping]);
 
   if (loading) {
+
     return <ShippingLoading />;
+
   }
 
   if (error) {
+
     return <ShippingError />;
+
   }
 
   if (!shipping.length) {
+
     return <ShippingEmpty />;
+
   }
 
   return (
@@ -57,7 +67,10 @@ function ShippingList() {
       <ShippingStats total={stats.total} />
 
       {/* Table */}
-      <ShippingTable shipping={shipping} />
+      <ShippingTable
+        shipping={shipping}
+        onRefresh={loadData}
+      />
 
     </div>
   );

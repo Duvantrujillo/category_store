@@ -1,7 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient()
 
-
 const createForm = async (req, res) => {
 
     try {
@@ -15,9 +14,26 @@ const createForm = async (req, res) => {
             address,
             additionalDetails
         } = req.body;
+
+
+
         if (!firstName || !lastName || !documentNumber || !phoneNumber || !address || !departament || !municipality) {
             return res.status(400).json({ message: 'Todos los campos son obligatorios' });
         }
+
+        const documentNumberNumb = Number(documentNumber)
+        if (isNaN(documentNumberNumb) || documentNumber.length > 10 || documentNumber.length < 4) {
+            return res.status(400).json({ message: "Tu Documento debe ser numérico y tener entre 4 y 10 dígitos" })
+        }
+
+        const phoneNumberNumb = Number(phoneNumber)
+
+        if (isNaN(phoneNumberNumb) || phoneNumber.length > 10 || phoneNumber.length < 7) {
+            // Actualizamos el mensaje para reflejar el rango de 7 a 10 dígitos
+            return res.status(400).json({ message: "Tu teléfono debe ser numérico y tener entre 7 y 10 dígitos" })
+        }
+
+
 
         const documentNumberExist = await prisma.formResponse.findFirst({
             where: { documentNumber }
@@ -63,13 +79,14 @@ const createForm = async (req, res) => {
         return res.status(500).json({ message: 'Error interno del servidor' });
     }
 }
+
 const updateForm = async (req, res) => {
     try {
 
         // ======================
         // 1. ID validation
         // ======================
-        const formId = Number(req.params.id);
+        const formId = String(req.params.id);
 
 
 
@@ -86,7 +103,6 @@ const updateForm = async (req, res) => {
             address,
             additionalDetails
         } = req.body;
-
         // ======================
         // 3. Validación de campos vacíos
         // ======================
@@ -139,28 +155,21 @@ const updateForm = async (req, res) => {
                 additionalDetails
             }
         });
-
         return res.status(200).json({
             message: 'Registro actualizado correctamente',
             data: updatedResponse
         });
 
     } catch (error) {
-
-        console.error(error);
-
         return res.status(500).json({
             message: 'Error al actualizar el registro'
         });
     }
 }
+
 const deleteForm = async (req, res) => {
     try {
-        const formId = Number(req.params.id)
-
-        if (isNaN(formId)) {
-            return res.status(400).json({ message: "el id proporcionado no funciona" })
-        }
+        const formId = String(req.params.id)
 
         const formIdExist = await prisma.formResponse.findUnique({
             where: {
@@ -178,16 +187,16 @@ const deleteForm = async (req, res) => {
             }
         })
 
-        return res.status(200).json({ message: "registro eliminado satifactoriamente" })
+        return res.status(200).json({ message: "registro eliminado" })
 
     } catch (error) {
         return res.status(500).json({ message: "error interno del servidor" })
     }
 
 }
+
 const AllForm = async (req, res) => {
     try {
-
 
 
         const all = await prisma.formResponse.findMany()

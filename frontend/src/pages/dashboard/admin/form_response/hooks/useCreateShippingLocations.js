@@ -9,7 +9,7 @@ import {
 let departmentsCache = null;
 let municipalitiesCache = {};
 
-export default function useDepartments(enabled = false) {
+export default function useCreateShippingLocations() {
 
   const [departments, setDepartments] = useState([]);
   const [municipalities, setMunicipalities] = useState([]);
@@ -20,13 +20,9 @@ export default function useDepartments(enabled = false) {
   const [loading, setLoading] = useState(false);
 
   // ======================================================
-  // 🔵 CARGAR DEPARTAMENTOS
-  // SOLO CUANDO enabled === true
+  // 🔵 CARGAR DEPARTAMENTOS AUTOMÁTICAMENTE
   // ======================================================
   useEffect(() => {
-
-    // 🔥 NO HACER NADA SI EL MODAL ESTÁ CERRADO
-    if (!enabled) return;
 
     const loadDepartments = async () => {
 
@@ -65,21 +61,17 @@ export default function useDepartments(enabled = false) {
 
     loadDepartments();
 
-  }, [enabled]);
+  }, []);
 
   // ======================================================
   // 🔵 CARGAR MUNICIPIOS
-  // SOLO CUANDO:
-  // 1. MODAL ESTÁ ABIERTO
-  // 2. EXISTE selectedDepartment
+  // CUANDO CAMBIA selectedDepartment
   // ======================================================
   useEffect(() => {
 
-    // 🔥 NO HACER NADA SI EL MODAL ESTÁ CERRADO
-    if (!enabled) return;
-
     const loadMunicipalities = async () => {
 
+      // 🔥 SI NO HAY DEPARTAMENTO
       if (!selectedDepartment) {
 
         setMunicipalities([]);
@@ -129,7 +121,7 @@ export default function useDepartments(enabled = false) {
 
     loadMunicipalities();
 
-  }, [selectedDepartment, enabled]);
+  }, [selectedDepartment]);
 
   return {
     departments,
