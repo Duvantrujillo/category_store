@@ -1,7 +1,11 @@
-import ShippingList from "./form_response/pages/Shipping";
+import ShippingList from "./form_response/pages/ListShipping";
+import CategoryList from "./category/pages/ListCategory";
 export default function Admin() {
-return(
-<ShippingList/>
+  return (
+    <div>
+      <ShippingList />
+      <CategoryList />
+    </div>
 
-)
+  )
 }

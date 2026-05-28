@@ -9,11 +9,6 @@ export const getDepartments = async () => {
       `${API}/Department`
     );
 
-    console.log(
-      "Departamentos:",
-      res.data
-    );
-
     return Array.isArray(res.data)
       ? res.data
       : [];
@@ -42,10 +37,7 @@ export const getMunicipalities = async (
       `${API}/Department/${departmentId}/cities`
     );
 
-    console.log(
-      "Municipios:",
-      res.data
-    );
+
 
     return Array.isArray(res.data)
       ? res.data

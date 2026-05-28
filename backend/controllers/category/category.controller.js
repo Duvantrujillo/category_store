@@ -1,13 +1,19 @@
 const { PrismaClient } = require("@prisma/client");
+const slugify = require('slugify')
 const prisma = new PrismaClient()
 
 
-const createCategory = async (req,res)=>{
-      try {
-        const { parentId, name, slug, description, isActive, sortOrder } = req.body
+const createCategory = async (req, res) => {
+    try {
 
+        const { parentId, name, description, isActive, sortOrder } = req.body
+        
+        const customerSlug = slugify(name, {
+            lower: true,
+            strict: true
+        })
         // 1. Validar campos de texto obligatorios
-        if (!name || !slug) {
+        if (!name || !customerSlug) {
             return res.status(400).json({ error: "El nombre y el slug son obligatorios" });
         }
 
@@ -19,7 +25,7 @@ const createCategory = async (req,res)=>{
         // 3. Verificar si el slug ya existe (Corrección: prisma.category.findUnique)
         const slugExist = await prisma.category.findUnique({
             where: {
-                slug: slug
+                slug: customerSlug
             }
         })
 
@@ -27,12 +33,12 @@ const createCategory = async (req,res)=>{
             return res.status(400).json({ message: "La categoría ya existe" }); // Corrección: Status 400
         }
 
-        // 4. Guardar el registro (Corrección: prisma.category.create)
+
         const result = await prisma.category.create({
             data: {
                 parentId: parentId ? parseInt(parentId) : null, // Asegura que sea Entero o Null
                 name,
-                slug,
+                slug: customerSlug,
                 description,
                 isActive,
                 sortOrder: parseInt(sortOrder) // Asegura que sea un número Entero
@@ -43,27 +49,49 @@ const createCategory = async (req,res)=>{
         return res.status(201).json({ message: "Registro Exitoso", data: result });
 
     } catch (error) {
-        console.error(error); // Es bueno imprimirlo en consola para poder debugear
+    
         return res.status(500).json({ error: "Error inesperado del servidor" }); // Corrección: .status(500)
     }
 }
-const updateCategory = async (req,res)=>{
-   try {
+
+
+
+
+
+const updateCategory = async (req, res) => {
+    try {
         const formId = req.params.id;
         const {
             parentId,
             name,
-            slug,
             description,
             isActive,
             sortOrder
         } = req.body;
+
+        const customerSlug = slugify(name, {
+            lower: true,
+            strict: true
+        })
 
         // Validar ID
         if (!formId) {
             return res.status(400).json({
                 message: "El ID es obligatorio para actualizar"
             });
+        }
+
+        const slugExist = await prisma.category.findUnique({
+            where: {
+                slug: customerSlug,
+                NOT: {
+                    id: parseInt(formId)
+                }
+            }
+        })
+
+        if (slugExist) {
+            return res.status(400).json({ message: "nombre de la categoria Existente" })
         }
 
         // Buscar categoría
@@ -83,7 +111,7 @@ const updateCategory = async (req,res)=>{
         const updateResponse = await prisma.category.update({
 
             where: {
-                id: parseInt(formId)
+                id: parseInt(formId),
             },
 
             data: {
@@ -92,13 +120,10 @@ const updateCategory = async (req,res)=>{
                         ? parseInt(parentId)
                         : null,
                 name,
-                slug,
+                slug: customerSlug,
                 description,
                 isActive,
-                sortOrder:
-                    sortOrder !== undefined
-                        ? parseInt(sortOrder)
-                        : undefined
+                sortOrder: Number(sortOrder) || 0
             }
         });
 
@@ -122,44 +147,84 @@ const updateCategory = async (req,res)=>{
         });
     }
 }
-const deleteCategory = async (req,res)=>{
-try {
-    const formId = req.params.id
-   
-    const existenResponse = await prisma.category.findUnique({
-        where: {
-            id: parseInt(formId)
-        }
-    })
 
-    if (!existenResponse){
-        return res.status(404).json({message: "el registro no existe"}) // Tip: 404 queda mejor para "no existe"
+
+
+
+
+const deleteCategory = async (req, res) => {
+    try {
+        const formId = Number(req.params.id)
+
+        const existenResponse = await prisma.category.findUnique({
+            where: {
+                id: formId
+            }
+        })
+
+        if (!existenResponse) {
+            return res.status(404).json({ message: "el registro no existe" }) // Tip: 404 queda mejor para "no existe"
+        }
+
+        const hasRelatedProducts = await prisma.product.findFirst({
+            where:
+                { id: formId }
+        })
+
+        if (hasRelatedProducts) {
+            return res.status(400).json({
+                message: "No se puede eliminar la categoría porque tiene productos asociados."
+            });
+        }
+
+        const registerDelete = await prisma.category.delete({
+            where: {
+                id: formId // ¡Corrección aquí! Cambiado parentId por parseInt
+            }
+        })
+
+        return res.status(200).json({ message: "Registro Eliminiado exitosamente", data: registerDelete })
+
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ error: "error interno del servidor" })
     }
+}
+const allCategory = async (req, res) => {
+    try {
+        const all = await prisma.category.findMany({
+            include: { parent: true }
+        });
 
-    const registerDelete = await prisma.category.delete({
-        where:{
-            id: parseInt(formId) // ¡Corrección aquí! Cambiado parentId por parseInt
+        if (!all || all.length === 0) {
+            return res.status(404).json({ message: "No hay registros aún" });
         }
-    })
 
-    return res.status(200).json({message: "eliminacion exitoso", data: registerDelete})
+        return res.status(200).json({ data: all });
 
-} catch (error) {
-    return res.status(500).json({error: "error interno del servidor"})
-}
-}
-const activeCategory = async (req,res)=>{
- try {
+    } catch (error) {
+        console.error(error); // 🔥 IMPORTANTE para ver el error real
+
+        return res.status(500).json({
+            message: "error interno del servidor"
+        });
+    }
+};
+
+const activeCategory = async (req, res) => {
+    try {
         const activeCategory = await prisma.category.findMany({
+            include: { parent: true },
+
             where: {
                 isActive: true
             },
-            orderBy:{
+            orderBy: {
                 sortOrder: 'asc'
             }
         })
 
-        return res.status (200).json({message: 'categoria activas obtenidas correctamente', data: activeCategory})
+        return res.status(200).json({data: activeCategory })
     } catch (error) {
         return res.status(500).json({ error: "Error interno del servidor" });
     }
@@ -169,5 +234,6 @@ module.exports = {
     createCategory,
     updateCategory,
     deleteCategory,
-    activeCategory
+    activeCategory,
+    allCategory
 }
