@@ -1,26 +1,37 @@
 const { PrismaClient } = require("@prisma/client");
-
+const slugify = require('slugify')
 const prisma = new PrismaClient()
 
 
 
 const createAttribute = async (req, res) => {
   try {
-    const { name, slug, type, sortOrder, isActive } = req.body
-    console.log(req.body)
-    if (!name || !slug || !type) {
+    const {
+      name,
+      type,
+      isActive,
+    } = req.body
+
+
+
+    if (!name || !type) {
       return res.status(400).json({
-        message: "name, slug y type son obligatorios"
+        message: "nombre y tipo son obligatorios"
       })
     }
+    const customerSlug = slugify(name, {
+      lower: true,
+      strict: true
+    })
 
     const newAttribute = await prisma.attribute.create({
       data: {
         name: name.trim(),
-        slug: slug.trim().toLowerCase(),
+        slug: customerSlug,
         type,
-        sortOrder: Number(sortOrder) || 0,
-        isActive: isActive === true || isActive === "true"
+
+        isActive: isActive === true || isActive === "true",
+
       }
     })
 
@@ -41,15 +52,24 @@ const createAttribute = async (req, res) => {
     })
   }
 }
+
+
+
 const updateAttribute = async (req, res) => {
- try {
+  try {
     // 1️⃣ Convertir ID a número y validar
     const formId = Number(req.params.id);
     if (isNaN(formId)) {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const { name, slug, type, sortOrder, isActive } = req.body;
+    const {
+      name,
+      slug,
+      type,
+      isActive
+
+    } = req.body;
 
     // 2️⃣ Verificar que el registro exista
     const idExist = await prisma.attribute.findUnique({
@@ -60,11 +80,16 @@ const updateAttribute = async (req, res) => {
       return res.status(404).json({ message: "El registro no existe" });
     }
 
+    const customerSlug = slugify(name, {
+      lower: true,
+      strict: true
+    })
+
     // 3️⃣ Verificar que el slug no exista en otro registro
-    if (slug) {
+    if (customerSlug) {
       const slugExist = await prisma.attribute.findFirst({
         where: {
-          slug,
+          slug: customerSlug,
           NOT: { id: formId } // excluye el registro actual
         }
       });
@@ -79,10 +104,9 @@ const updateAttribute = async (req, res) => {
       where: { id: formId },
       data: {
         name,
-        slug,
+        slug: customerSlug,
         type,
-        sortOrder: sortOrder !== undefined ? Number(sortOrder) : undefined,
-        isActive: isActive !== undefined ? (isActive === 'true' || isActive === true) : undefined
+        isActive: isActive !== undefined ? (isActive === 'true' || isActive === true) : undefined,
       }
     });
 
@@ -97,9 +121,12 @@ const updateAttribute = async (req, res) => {
     return res.status(500).json({ message: "error interno del servidor" });
   }
 }
+
+
+
+
 const deleteAttribute = async (req, res) => {
- try {
-    // 1️⃣ Convertir ID y validar
+  try {
     const formId = Number(req.params.id);
     if (isNaN(formId)) {
       return res.status(400).json({ message: "ID inválido" });
@@ -112,6 +139,18 @@ const deleteAttribute = async (req, res) => {
 
     if (!idExist) {
       return res.status(404).json({ message: "El registro no existe" });
+    }
+
+    const ExistAttributeValue = await prisma.attributeValue.findFirst({
+      where: {
+        attributeId: formId
+      }
+    })
+
+    if (ExistAttributeValue) {
+      return res.status(400).json({
+        message: "No se puede eliminar el atributo porque tiene valores asociados."
+      })
     }
 
     // 3️⃣ Eliminar el registro
@@ -132,22 +171,22 @@ const deleteAttribute = async (req, res) => {
   }
 }
 const allAttribute = async (req, res) => {
-try{
+  try {
 
-  const all = await prisma.attribute.findMany()
-  if(all.length === 0){
-    return res.status(200).json({message: "No Existen Registros Aun"})
+    const all = await prisma.attribute.findMany()
+    if (all.length === 0) {
+      return res.status(200).json({ message: "No Existen Registros Aun" })
+    }
+    return res.status(200).json({ data: all })
+
+  } catch (error) {
+    return res.status(500).json({ message: "error interno del servidor" })
   }
-  return res.status(200).json({ data: all })
-
-}catch(error){
-  return res.status(500).json({message: "error interno del servidor"})
-}
 }
 
 module.exports = {
-    createAttribute,
-    updateAttribute,
-    deleteAttribute,
-    allAttribute
+  createAttribute,
+  updateAttribute,
+  deleteAttribute,
+  allAttribute
 }

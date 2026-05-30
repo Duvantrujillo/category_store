@@ -1,6 +1,7 @@
 import { useState } from "react";
-import DeleteCategoryDialog from "../category-delete/CategoryDeleteDialog";
-import CategoryRow from "./CategoryRow";
+
+import BrandRow from "./BrandRow";
+import DeleteBrandDialog from "../brand-delete/BrandDeleteDialog";
 
 import {
   Table,
@@ -17,33 +18,46 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-function CategoryTable({ categories, onRefresh }) {
+function BrandTable({
+  brands,
+  onRefresh,
+}) {
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
+  const [isOpen, setIsOpen] =
+    useState(false);
+
+  const [selectedId, setSelectedId] =
+    useState(null);
 
   const openConfirmModal = (id) => {
+
     setSelectedId(id);
+
     setIsOpen(true);
+
   };
 
   const closeConfirmModal = () => {
+
     setSelectedId(null);
+
     setIsOpen(false);
+
   };
 
   return (
     <>
+
       <Card className="rounded-2xl shadow-sm border">
 
         <CardHeader className="pb-3">
 
           <CardTitle>
-            Categorías registradas
+            Marcas registradas
           </CardTitle>
 
           <p className="text-sm text-muted-foreground mt-1">
-            Lista completa de categorías.
+            Lista completa de marcas.
           </p>
 
         </CardHeader>
@@ -55,28 +69,46 @@ function CategoryTable({ categories, onRefresh }) {
             <Table>
 
               <TableHeader>
+
                 <TableRow>
-                  <TableHead className="text-center">Nombre</TableHead>
-                  <TableHead className="text-center">Descripción</TableHead>
-                  <TableHead className="text-center">Estado</TableHead>
-                  <TableHead className="text-center">Orden</TableHead>
-                  <TableHead className="text-center">Padre</TableHead>
-                  <TableHead className="text-center">Acciones</TableHead>
+
+                  <TableHead className="text-center">
+                    Logo
+                  </TableHead>
+                  <TableHead className="text-center">
+                    Marca
+                  </TableHead>
+
+                  <TableHead className="text-center">
+                    Descripción
+                  </TableHead>
+
+                  <TableHead className="text-center">
+                    Estado
+                  </TableHead>
+
+                  <TableHead className="text-center">
+                    Acciones
+                  </TableHead>
+
                 </TableRow>
+
               </TableHeader>
 
               <TableBody>
-                {Array.isArray(categories) &&
-                  categories.map((item) => (
-                    <CategoryRow
+
+                {Array.isArray(brands) &&
+                  brands.map((item) => (
+
+                    <BrandRow
                       key={item.id}
                       item={item}
-                      categories={categories}
                       onDelete={openConfirmModal}
                       onRefresh={onRefresh}
                     />
-                  ))
-                }
+
+                  ))}
+
               </TableBody>
 
             </Table>
@@ -87,14 +119,15 @@ function CategoryTable({ categories, onRefresh }) {
 
       </Card>
 
-      <DeleteCategoryDialog
+      <DeleteBrandDialog
         open={isOpen}
         onClose={closeConfirmModal}
-        categoryId={selectedId}
+        brandId={selectedId}
         onDeleted={onRefresh}
       />
+
     </>
   );
 }
 
-export default CategoryTable;
+export default BrandTable;

@@ -40,17 +40,6 @@ function CategoryRow({ item, onDelete, categories, onRefresh }) {
 
       {/* Acciones */}
       <TableCell className="text-center space-x-2">
-
-        {/* Botón eliminar */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={() => onDelete(item.id)}
-        >
-          <Trash className="h-4 w-4" />
-        </Button>
-
         {/* Editar */}
         <CategoryEditDialog
         
@@ -63,7 +52,15 @@ function CategoryRow({ item, onDelete, categories, onRefresh }) {
           
           onRefresh={onRefresh}
         />
-
+        {/* Botón eliminar */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={() => onDelete(item.id)}
+        >
+          <Trash className="h-4 w-4" />
+        </Button>
       </TableCell>
 
     </TableRow>

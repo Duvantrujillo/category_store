@@ -9,6 +9,10 @@ import Customer from "./pages/dashboard/customer/Customer"
 import CreateShipping from './pages/dashboard/admin/form_response/pages/CreateShipping'
 import ShippingList from './pages/dashboard/admin/form_response/pages/ListShipping'
 import CategoryList from './pages/dashboard/admin/category/pages/ListCategory'
+import AttributeList from './pages/dashboard/admin/attribute/pages/ListAttribute'
+import AttributeValueList from './pages/dashboard/admin/attribute-value/pages/ListAttributeValue'
+import BrandList from './pages/dashboard/admin/brand/page/ListBrand'
+
 function App() {
 
 
@@ -21,6 +25,10 @@ function App() {
       <Route path='/dashboard/admin' element={<Admin />} />
       <Route path='/dashboard/admin/list/category' element={<CategoryList />} />
       <Route path='/dashboard/admin/list/shipping' element={<ShippingList />} />
+      <Route path='/dashboard/admin/list/attibute' element={<AttributeList />} />
+      <Route path='/dashboard/admin/list/attibute-value' element={<AttributeValueList />} />
+      <Route path='/dashboard/admin/list/brand' element={<BrandList />} />
+
 
 
       <Route path='/dashboard/customer' element={<Customer />} />

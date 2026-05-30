@@ -23,7 +23,7 @@ function CategoryList() {
           </p>
 
         </div>
-   <CategoryCreateDialog
+        <CategoryCreateDialog
           categories={categories}
           onRefresh={refetch}
         />
@@ -32,7 +32,7 @@ function CategoryList() {
       <CategoryTable
         categories={categories}
         onRefresh={refetch}
-        
+
       />
 
     </div>

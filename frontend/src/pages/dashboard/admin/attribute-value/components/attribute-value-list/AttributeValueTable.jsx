@@ -1,6 +1,8 @@
 import { useState } from "react";
-import DeleteCategoryDialog from "../category-delete/CategoryDeleteDialog";
-import CategoryRow from "./CategoryRow";
+
+import AttributeValueRow from "./AttributeValueRow";
+
+import DeleteAttributeValueDialog from "../attribute-value-delete/AttributeValueDeleteDialog";
 
 import {
   Table,
@@ -17,19 +19,32 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-function CategoryTable({ categories, onRefresh }) {
+function AttributeValueTable({
+  attributeValues,
+  attributes,
+  onRefresh,
+}) {
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
+  const [isOpen, setIsOpen] =
+    useState(false);
+
+  const [selectedId, setSelectedId] =
+    useState(null);
 
   const openConfirmModal = (id) => {
+
     setSelectedId(id);
+
     setIsOpen(true);
+
   };
 
   const closeConfirmModal = () => {
+
     setSelectedId(null);
+
     setIsOpen(false);
+
   };
 
   return (
@@ -39,11 +54,11 @@ function CategoryTable({ categories, onRefresh }) {
         <CardHeader className="pb-3">
 
           <CardTitle>
-            Categorías registradas
+            Valores de atributos registrados
           </CardTitle>
 
           <p className="text-sm text-muted-foreground mt-1">
-            Lista completa de categorías.
+            Lista completa de valores de atributos.
           </p>
 
         </CardHeader>
@@ -55,28 +70,41 @@ function CategoryTable({ categories, onRefresh }) {
             <Table>
 
               <TableHeader>
+
                 <TableRow>
-                  <TableHead className="text-center">Nombre</TableHead>
-                  <TableHead className="text-center">Descripción</TableHead>
-                  <TableHead className="text-center">Estado</TableHead>
-                  <TableHead className="text-center">Orden</TableHead>
-                  <TableHead className="text-center">Padre</TableHead>
-                  <TableHead className="text-center">Acciones</TableHead>
+
+                  <TableHead className="text-center">
+                    Atributo
+                  </TableHead>
+                  
+                  <TableHead className="text-center">
+                    Valor
+                  </TableHead>
+
+
+                  <TableHead className="text-center">
+                    Acciones
+                  </TableHead>
+
                 </TableRow>
+
               </TableHeader>
 
               <TableBody>
-                {Array.isArray(categories) &&
-                  categories.map((item) => (
-                    <CategoryRow
+
+                {Array.isArray(attributeValues) &&
+                  attributeValues.map((item) => (
+
+                    <AttributeValueRow
                       key={item.id}
                       item={item}
-                      categories={categories}
+                      attributes={attributes}
                       onDelete={openConfirmModal}
                       onRefresh={onRefresh}
                     />
-                  ))
-                }
+
+                  ))}
+
               </TableBody>
 
             </Table>
@@ -87,14 +115,14 @@ function CategoryTable({ categories, onRefresh }) {
 
       </Card>
 
-      <DeleteCategoryDialog
+      <DeleteAttributeValueDialog
         open={isOpen}
         onClose={closeConfirmModal}
-        categoryId={selectedId}
+        attributeValueId={selectedId}
         onDeleted={onRefresh}
       />
     </>
   );
 }
 
-export default CategoryTable;
+export default AttributeValueTable;
