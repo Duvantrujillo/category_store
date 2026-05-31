@@ -1,7 +1,13 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 export default function AttributeSharedForm({
   mode = "create",
   form,
@@ -59,53 +65,36 @@ export default function AttributeSharedForm({
 
       </div>
 {/* IS ACTIVE */}
-<div className="flex items-center justify-between border rounded-lg p-3">
+<div className="flex items-center justify-between rounded-lg border bg-muted/20 px-4 py-3">
 
-  <div className="space-y-1">
-
-    <Label>Estado</Label>
-
-    <p className="text-sm text-muted-foreground">
+  {/* TEXTO */}
+  <div className="space-y-0.5">
+    <Label className="text-sm font-medium">Estado</Label>
+    <p className="text-xs text-muted-foreground">
       Activar o desactivar atributo
     </p>
-
   </div>
 
-  <select
-    className={`
-      border rounded-md h-10 px-3 font-medium transition-colors
-
-      ${form.isActive
-        ? "bg-green-100 text-green-700 border-green-300"
-        : "bg-red-100 text-red-700 border-red-300"
-      }
-    `}
+  {/* SELECT MÁS COMPACTO */}
+  <Select
     value={form.isActive ? "true" : "false"}
-    onChange={(e) =>
-      handleChange(
-        "isActive",
-        e.target.value === "true"
-      )
+    onValueChange={(val) =>
+      handleChange("isActive", val === "true")
     }
   >
+    <SelectTrigger className="h-9 w-32 text-sm">
+      <SelectValue placeholder="Selecciona estado" />
+    </SelectTrigger>
 
-    {/* 🔥 OPCIÓN ACTIVO */}
-    <option
-      value="true"
-      className="bg-green-100 text-green-700"
-    >
-      Activo
-    </option>
-
-    {/* 🔥 OPCIÓN INACTIVO */}
-    <option
-      value="false"
-      className="bg-red-100 text-red-700"
-    >
-      Inactivo
-    </option>
-
-  </select>
+    <SelectContent>
+      <SelectItem value="true">
+        <span className="text-green-600 font-medium">Activo</span>
+      </SelectItem>
+      <SelectItem value="false">
+        <span className="text-red-600 font-medium">Inactivo</span>
+      </SelectItem>
+    </SelectContent>
+  </Select>
 
 </div>
 

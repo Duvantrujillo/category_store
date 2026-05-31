@@ -20,7 +20,7 @@ function BrandRow({
     <TableRow className="hover:bg-muted/40 transition-colors">
 
   {/* Logo */}
-  <TableCell>
+  <TableCell className="flex justify-center">
 
     {item.logoUrl && (
 

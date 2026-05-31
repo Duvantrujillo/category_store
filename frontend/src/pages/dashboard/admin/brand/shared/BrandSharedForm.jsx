@@ -1,7 +1,13 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 export default function BrandSharedForm({
     mode = "create",
     form,
@@ -59,106 +65,83 @@ export default function BrandSharedForm({
 
             </div>
 
-          <div>
+            <div>
 
-  <Label>Logo</Label>
+                {/* LOGO */}
+                <div className="flex flex-col gap-2">
+                    <Label>Logo</Label>
 
-  <Input
-    type="file"
-    accept="image/*"
-    onChange={(e) => {
+                    <div className="flex items-center gap-3">
+                        {/* BOTÓN AZUL PARA SUBIR ARCHIVO */}
+                        <div className="relative">
+                            <Button
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                                Subir Logo
+                            </Button>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
 
-      const file =
-        e.target.files?.[0];
+                                    handleChange("logo", file);
+                                    handleChange("preview", URL.createObjectURL(file));
+                                }}
+                            />
+                        </div>
 
-      if (!file) return;
+                        {/* PREVIEW DEL LOGO */}
+                        {form.preview && (
+                            <img
+                                src={
+                                    form.preview.startsWith("/uploads")
+                                        ? `${import.meta.env.VITE_API_URL}${form.preview}`
+                                        : form.preview
+                                }
+                                alt="Preview"
+                                className="h-10 w-10 rounded-md object-cover border"
+                            />
+                        )}
+                    </div>
+                </div>
+            </div>
+            <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/20 px-3 py-3">
 
-      handleChange("logo", file);
-
-      handleChange(
-        "preview",
-        URL.createObjectURL(file)
-      );
-
-    }}
-  />
-
-  {form.preview && (
-
-    <img
-      src={
-        form.preview.startsWith("/uploads")
-          ? `${import.meta.env.VITE_API_URL}${form.preview}`
-          : form.preview
-      }
-      alt="Preview"
-      className="
-        mt-3
-        h-24
-        w-24
-        rounded-lg
-        object-cover
-        border
-      "
-    />
-
-  )}
-
-</div>
-
-            {/* IS ACTIVE */}
-            <div className="flex items-center justify-between border rounded-lg p-3">
-
-                <div className="space-y-1">
-
-                    <Label>Estado</Label>
-
-                    <p className="text-sm text-muted-foreground">
-                        Activar o desactivar marca
+                {/* TEXTO */}
+                <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Estado</Label>
+                    <p className="text-xs text-muted-foreground">
+                        Activo / inactivo
                     </p>
-
                 </div>
 
-                <select
-                    className={`
-            border rounded-md h-10 px-3 font-medium transition-colors
-
-            ${form.isActive
-                            ? "bg-green-100 text-green-700 border-green-300"
-                            : "bg-red-100 text-red-700 border-red-300"
-                        }
-          `}
-                    value={
-                        form.isActive
-                            ? "true"
-                            : "false"
-                    }
-                    onChange={(e) =>
-                        handleChange(
-                            "isActive",
-                            e.target.value === "true"
-                        )
+                {/* SELECT MÁS CERCANO */}
+                <Select
+                    value={form.isActive ? "true" : "false"}
+                    onValueChange={(val) =>
+                        handleChange("isActive", val === "true")
                     }
                 >
+                    <SelectTrigger className="h-9 w-30 text-sm">
+                        <SelectValue />
+                    </SelectTrigger>
 
-                    <option
-                        value="true"
-                        className="bg-green-100 text-green-700"
-                    >
-                        Activo
-                    </option>
+                    <SelectContent>
+                        <SelectItem value="true">
+                            <span className="text-green-600 font-medium">Activo</span>
+                        </SelectItem>
 
-                    <option
-                        value="false"
-                        className="bg-red-100 text-red-700"
-                    >
-                        Inactivo
-                    </option>
-
-                </select>
+                        <SelectItem value="false">
+                            <span className="text-red-600 font-medium">Inactivo</span>
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
 
             </div>
-
             {/* BOTONES */}
             <div className="flex justify-end gap-2 mt-4">
 

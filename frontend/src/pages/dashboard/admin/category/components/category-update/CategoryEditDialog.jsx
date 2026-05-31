@@ -13,7 +13,7 @@ import {
 
 import { UserPen } from "lucide-react";
 
-import CategorySharedForm from "../shared/CategorySharedForm";
+import CategorySharedForm from "../../shared/CategorySharedForm";
 
 import { useUpdateCategory } from "../../hooks/useCategory";
 

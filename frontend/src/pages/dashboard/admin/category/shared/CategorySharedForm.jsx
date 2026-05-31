@@ -2,7 +2,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 export default function CategorySharedForm({
   mode = "create",
   form,
@@ -48,52 +54,46 @@ export default function CategorySharedForm({
 
       </div>
 
-{/* Estado */}
-<div className="flex items-center justify-between border rounded-lg p-3">
+      <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/20 px-3 py-3">
 
-  <div className="space-y-1">
+        {/* TEXTO */}
+        <div className="space-y-0.5">
+          <Label className="text-sm font-medium">
+            Estado
+          </Label>
 
-    <Label>Estado</Label>
+          <p className="text-xs text-muted-foreground">
+            Activar o desactivar categoría
+          </p>
+        </div>
 
-    <p className="text-sm text-muted-foreground">
-      Activar o desactivar categoría
-    </p>
+        {/* SELECT MODERNO */}
+        <Select
+          value={form.isActive ? "true" : "false"}
+          onValueChange={(val) =>
+            handleChange("isActive", val === "true")
+          }
+        >
+          <SelectTrigger className="h-9 w-30 text-sm">
+            <SelectValue />
+          </SelectTrigger>
 
-  </div>
+          <SelectContent>
+            <SelectItem value="true">
+              <span className="text-green-600 font-medium">
+                Activo
+              </span>
+            </SelectItem>
 
-  <select
-    className={`
-      border rounded-md h-10 px-3 font-medium transition-colors
-      ${form.isActive
-        ? "bg-green-100 text-green-700 border-green-300"
-        : "bg-red-100 text-red-700 border-red-300"
-      }
-    `}
-    value={form.isActive ? "true" : "false"}
-    onChange={(e) =>
-      handleChange(
-        "isActive",
-        e.target.value === "true"
-      )
-    }
-  >
-    <option
-      value="true"
-      className="bg-green-100 text-green-700"
-    >
-      Activo
-    </option>
+            <SelectItem value="false">
+              <span className="text-red-600 font-medium">
+                Inactivo
+              </span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
 
-    <option
-      value="false"
-      className="bg-red-100 text-red-700"
-    >
-      Inactivo
-    </option>
-
-  </select>
-
-</div>
+      </div>
 
       {/* Orden */}
       <div>

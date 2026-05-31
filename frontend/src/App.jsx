@@ -22,12 +22,15 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path='/register' element={<RegisterForm />} />
       <Route path='/login' element={<LoginForm />} />
-      <Route path='/dashboard/admin' element={<Admin />} />
-      <Route path='/dashboard/admin/list/category' element={<CategoryList />} />
-      <Route path='/dashboard/admin/list/shipping' element={<ShippingList />} />
-      <Route path='/dashboard/admin/list/attibute' element={<AttributeList />} />
-      <Route path='/dashboard/admin/list/attibute-value' element={<AttributeValueList />} />
-      <Route path='/dashboard/admin/list/brand' element={<BrandList />} />
+
+      
+      <Route path="/dashboard/admin" element={<Admin />}>
+        <Route path="list/category" element={<CategoryList />} />
+        <Route path="list/shipping" element={<ShippingList />} />
+        <Route path="list/attibute" element={<AttributeList />} />
+        <Route path="list/attibute-value" element={<AttributeValueList />} />
+        <Route path="list/brand" element={<BrandList />} />
+      </Route>
 
 
 

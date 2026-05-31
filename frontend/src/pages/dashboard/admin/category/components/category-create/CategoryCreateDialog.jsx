@@ -13,7 +13,7 @@ import {
 
 import { Plus } from "lucide-react";
 
-import CategorySharedForm from "../shared/CategorySharedForm";
+import CategorySharedForm from "../../shared/CategorySharedForm";
 
 import { useCreateCategory } from "../../hooks/useCategory";
 
@@ -136,7 +136,7 @@ export default function CategoryCreateDialog({
             ) : (
 
               <CategorySharedForm
-               mode="create"
+                mode="create"
                 form={form}
                 handleChange={handleChange}
                 loading={loading}

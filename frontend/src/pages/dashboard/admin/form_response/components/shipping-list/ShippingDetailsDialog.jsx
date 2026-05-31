@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Eye } from "lucide-react";
 
@@ -28,15 +27,13 @@ function ShippingDetailsDialog({ item }) {
   return (
     <Dialog>
 
-   <DialogTrigger asChild>
-  <Button
-    variant="outline"
-    className="text-green-600 border-green-600 hover:bg-green-600 hover:text-white"
-  >
-    <Eye className="w-4 h-4 mr-0" />
-    
-  </Button>
-</DialogTrigger>
+      <DialogTrigger asChild>
+        <button
+          className="inline-flex items-center justify-center rounded-md border border-green-600 px-3 py-2 text-green-600 hover:bg-green-600 hover:text-white transition"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-2xl rounded-2xl">
 
         <DialogHeader>
