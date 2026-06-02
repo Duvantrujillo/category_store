@@ -77,7 +77,6 @@ export const useCreateAttribute = () => {
 
   const [form, setForm] = useState({
     name: "",
-    type: "",
     isActive: true,
   });
 
@@ -95,7 +94,6 @@ export const useCreateAttribute = () => {
   const resetForm = () => {
     setForm({
       name: "",
-      type: "",
       isActive: true,
     });
   };
@@ -110,7 +108,6 @@ export const useCreateAttribute = () => {
       // 🔥 NO se envía slug, lo genera el backend
       const payload = {
         name: form.name,
-        type: form.type,
         isActive: form.isActive,
       };
 
@@ -157,7 +154,6 @@ export const useUpdateAttribute = () => {
 
   const [form, setForm] = useState({
     name: "",
-    type: "",
     isActive: true,
   });
 
@@ -175,7 +171,6 @@ export const useUpdateAttribute = () => {
   const setInitialData = (attribute) => {
     setForm({
       name: attribute.name || "",
-      type: attribute.type || "",
       isActive: attribute.isActive ?? true,
     });
   };
@@ -189,7 +184,6 @@ export const useUpdateAttribute = () => {
 
       const payload = {
         name: form.name,
-        type: form.type,
         isActive: form.isActive,
       };
 

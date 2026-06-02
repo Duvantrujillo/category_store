@@ -38,32 +38,6 @@ export default function AttributeSharedForm({
       </div>
 
     
-      {/* TYPE */}
-      <div>
-
-        <Label>Tipo</Label>
-
-        <select
-          className="w-full border rounded-md h-10 px-3 bg-background"
-          value={form.type || ""}
-          onChange={(e) =>
-            handleChange("type", e.target.value)
-          }
-        >
-
-          <option value="">
-            Selecciona un tipo
-          </option>
-
-          <option value="TEXT">Texto</option>
-          <option value="NUMBER">Número</option>
-          <option value="BOOLEAN">Booleano</option>
-          <option value="SELECT">Selección</option>
-          <option value="COLOR">Color</option>
-
-        </select>
-
-      </div>
 {/* IS ACTIVE */}
 <div className="flex items-center justify-between rounded-lg border bg-muted/20 px-4 py-3">
 

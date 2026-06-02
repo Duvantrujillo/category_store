@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import AttributeRow from "./AttributeRow";
-import DeleteAttributeDialog from "../attribute-delete/AttributeDeleteDialog";
+import ProductRow from "./ProductRow";
+import DeleteProductDialog from "../product-delete/ProductDeleteDialog";
 
 import {
   Table,
@@ -18,40 +18,40 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-function AttributeTable({ attributes, onRefresh }) {
+function ProductTable({
+  products,
+  onRefresh,
+}) {
+  const [isOpen, setIsOpen] =
+    useState(false);
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] =
+    useState(null);
 
   const openConfirmModal = (id) => {
-
     setSelectedId(id);
 
     setIsOpen(true);
-
   };
 
   const closeConfirmModal = () => {
-
     setSelectedId(null);
 
     setIsOpen(false);
-
   };
 
   return (
     <>
-
       <Card className="rounded-2xl shadow-sm border">
 
         <CardHeader className="pb-3">
 
           <CardTitle>
-            Atributos registrados
+            Productos registrados
           </CardTitle>
 
           <p className="text-sm text-muted-foreground mt-1">
-            Lista completa de atributos.
+            Lista completa de productos.
           </p>
 
         </CardHeader>
@@ -67,12 +67,25 @@ function AttributeTable({ attributes, onRefresh }) {
                 <TableRow>
 
                   <TableHead className="text-center">
-                    Nombre
+                    Imagen
                   </TableHead>
 
                   <TableHead className="text-center">
-                    Estado
+                    Producto
                   </TableHead>
+
+                  <TableHead className="text-center">
+                    Categoría
+                  </TableHead>
+
+                  <TableHead className="text-center">
+                    Marca
+                  </TableHead>
+
+                  <TableHead className="text-center">
+                    Publicación
+                  </TableHead>
+
 
                   <TableHead className="text-center">
                     Acciones
@@ -84,18 +97,17 @@ function AttributeTable({ attributes, onRefresh }) {
 
               <TableBody>
 
-                {Array.isArray(attributes) &&
-                  attributes.map((item) => (
+                {Array.isArray(products) &&
+                  products.map((item) => (
 
-                    <AttributeRow
+                    <ProductRow
                       key={item.id}
                       item={item}
                       onDelete={openConfirmModal}
                       onRefresh={onRefresh}
                     />
 
-                  ))
-                }
+                  ))}
 
               </TableBody>
 
@@ -107,10 +119,10 @@ function AttributeTable({ attributes, onRefresh }) {
 
       </Card>
 
-      <DeleteAttributeDialog
+      <DeleteProductDialog
         open={isOpen}
         onClose={closeConfirmModal}
-        attributeId={selectedId}
+        productId={selectedId}
         onDeleted={onRefresh}
       />
 
@@ -118,4 +130,4 @@ function AttributeTable({ attributes, onRefresh }) {
   );
 }
 
-export default AttributeTable;
+export default ProductTable;

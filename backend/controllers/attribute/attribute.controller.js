@@ -8,15 +8,14 @@ const createAttribute = async (req, res) => {
   try {
     const {
       name,
-      type,
       isActive,
     } = req.body
 
 
 
-    if (!name || !type) {
+    if (!name) {
       return res.status(400).json({
-        message: "nombre y tipo son obligatorios"
+        message: "nombre es obligatorio"
       })
     }
     const customerSlug = slugify(name, {
@@ -28,7 +27,6 @@ const createAttribute = async (req, res) => {
       data: {
         name: name.trim(),
         slug: customerSlug,
-        type,
 
         isActive: isActive === true || isActive === "true",
 
@@ -66,7 +64,6 @@ const updateAttribute = async (req, res) => {
     const {
       name,
       slug,
-      type,
       isActive
 
     } = req.body;
@@ -105,7 +102,6 @@ const updateAttribute = async (req, res) => {
       data: {
         name,
         slug: customerSlug,
-        type,
         isActive: isActive !== undefined ? (isActive === 'true' || isActive === true) : undefined,
       }
     });
@@ -117,7 +113,6 @@ const updateAttribute = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
     return res.status(500).json({ message: "error interno del servidor" });
   }
 }
@@ -164,7 +159,6 @@ const deleteAttribute = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
     return res.status(500).json({
       message: "Error interno del servidor"
     });

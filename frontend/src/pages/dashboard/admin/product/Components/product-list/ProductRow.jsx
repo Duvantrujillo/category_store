@@ -1,4 +1,5 @@
 import { Trash } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 
 import {
@@ -6,16 +7,40 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import AttributeEditDialog from "@/pages/dashboard/admin/attribute/components/atribute-update/AttributeEditDialog";
+import ProductEditDialog from "@/pages/dashboard/admin/product/components/product-update/ProductEditDialog";
 
-function AttributeRow({ item, onDelete, onRefresh }) {
-
+function ProductRow({
+  item,
+  onDelete,
+  onRefresh,
+}) {
   return (
-
     <TableRow className="hover:bg-muted/40 transition-colors">
 
-      {/* Nombre */}
+      {/* Imagen */}
+      <TableCell className="flex justify-center">
+
+        {item.mainImage && (
+
+          <img
+            src={`${import.meta.env.VITE_API_URL}${item.mainImage}`}
+            alt={item.name}
+            className="
+              h-10
+              w-10
+              rounded-md
+              object-cover
+              border
+            "
+          />
+
+        )}
+
+      </TableCell>
+
+      {/* Producto */}
       <TableCell>
+
         <div className="flex flex-col">
 
           <span className="font-medium">
@@ -27,22 +52,37 @@ function AttributeRow({ item, onDelete, onRefresh }) {
           </small>
 
         </div>
+
       </TableCell>
 
+      {/* Categoría */}
+      <TableCell>
 
-      {/* Estado */}
+        {item.category?.name || "-"}
+
+      </TableCell>
+
+      {/* Marca */}
+      <TableCell>
+
+        {item.brand?.name || "-"}
+
+      </TableCell>
+
+      {/* Estado publicación */}
       <TableCell>
 
         <span
           className={`
             px-2 py-1 rounded-full text-sm font-medium
-            ${item.isActive
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
+            ${
+              item.status === "PUBLISHED"
+                ? "bg-green-100 text-green-700"
+                : "bg-yellow-100 text-yellow-700"
             }
           `}
         >
-          {item.isActive ? "Activo" : "Inactivo"}
+          {item.status}
         </span>
 
       </TableCell>
@@ -50,13 +90,11 @@ function AttributeRow({ item, onDelete, onRefresh }) {
       {/* Acciones */}
       <TableCell className="text-center space-x-2">
 
-        {/* Editar */}
-        <AttributeEditDialog
+        <ProductEditDialog
           item={item}
           onRefresh={onRefresh}
         />
 
-        {/* Eliminar */}
         <Button
           variant="ghost"
           size="icon"
@@ -65,18 +103,17 @@ function AttributeRow({ item, onDelete, onRefresh }) {
             hover:text-destructive
             hover:bg-destructive/10
           "
-          onClick={() => onDelete(item.id)}
+          onClick={() =>
+            onDelete(item.id)
+          }
         >
-
           <Trash className="h-4 w-4" />
-
         </Button>
 
       </TableCell>
 
     </TableRow>
-
   );
 }
 
-export default AttributeRow;
+export default ProductRow;

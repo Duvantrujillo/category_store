@@ -203,7 +203,6 @@ const allCategory = async (req, res) => {
         return res.status(200).json({ data: all });
 
     } catch (error) {
-        console.error(error); // 🔥 IMPORTANTE para ver el error real
 
         return res.status(500).json({
             message: "error interno del servidor"

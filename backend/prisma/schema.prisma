@@ -66,9 +66,6 @@ model Attribute {
 
   name String
   slug String @unique
-
-  type AttributeType
-
   isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
@@ -76,18 +73,6 @@ model Attribute {
 
   values AttributeValue[]
 }
-
-
-enum AttributeType {
-  TEXT
-  NUMBER
-  BOOLEAN
-  SELECT
-  MULTISELECT
-  COLOR
-  DATE
-}
-
 
 model AttributeValue {
   id Int @id @default(autoincrement())
@@ -129,8 +114,8 @@ model Product {
   slug String @unique
   shortDescription String?
   description String? @db.Text
+   mainImage String?
   status ProductStatus @default(DRAFT)
-  isActive Boolean @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   variants  ProductVariant[]

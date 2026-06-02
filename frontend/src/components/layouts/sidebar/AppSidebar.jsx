@@ -16,6 +16,7 @@ import {
   List,
   Package,
   Truck,
+  PackageSearch 
 } from "lucide-react";
 
 export default function AppSidebar() {
@@ -27,6 +28,7 @@ export default function AppSidebar() {
     { title: "Atributos", url: "/dashboard/admin/list/attibute", icon: List },
     { title: "Valores de Atributo", url: "/dashboard/admin/list/attibute-value", icon: Package },
     { title: "Envíos", url: "/dashboard/admin/list/shipping", icon: Truck },
+    { title: "Productos", url: "/dashboard/admin/list/product", icon: PackageSearch  },
   ];
 
   return (
