@@ -8,24 +8,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import BrandEditDialog from "@/pages/dashboard/admin/brand/components/brand-update/BrandEditDialog";
+import ProductVariantEditDialog from "@/pages/dashboard/admin/product-variant/components/product-variant-update/ProductVariantEditDialog";
 
-function BrandRow({
+function ProductVariantRow({
   item,
   onDelete,
   onRefresh,
+  products = [],
+  attributes = [],
 }) {
 
   return (
 
     <TableRow className="hover:bg-muted/40 transition-colors">
 
-      {/* Logo */}
+      {/* IMAGEN */}
       <TableCell className="flex justify-center">
 
         <img
-          src={item.logoUrl ? `${import.meta.env.VITE_API_URL}${item.logoUrl}` : noPhotos}
-          alt={item.name || "Sin imagen"}
+          src={item.images?.[0]?.imageUrl
+            ? `${import.meta.env.VITE_API_URL}${item.images[0].imageUrl}`
+            : noPhotos
+          }
+          alt={item.sku || "Sin imagen"}
           className="
             h-10
             w-10
@@ -37,72 +42,102 @@ function BrandRow({
 
       </TableCell>
 
-      {/* Marca */}
+      {/* SKU */}
       <TableCell>
 
         <div className="flex flex-col">
 
           <span className="font-medium">
-            {item.name}
+            {item.sku}
           </span>
 
           <small className="text-muted-foreground">
-            {item.slug}
+            {item.barcode || "Sin código"}
           </small>
 
         </div>
 
       </TableCell>
 
-      {/* Descripción */}
+      {/* PRECIO */}
       <TableCell>
 
-        <p className="line-clamp-2 max-w-xs">
-
-          {item.description || "Sin descripción"}
-
-        </p>
+        ${Number(item.price).toLocaleString()}
 
       </TableCell>
 
-      {/* Estado */}
+      {/* STOCK */}
+      <TableCell>
+
+        {item.stock}
+
+      </TableCell>
+
+      {/* PRINCIPAL */}
       <TableCell>
 
         <span
           className={`
-        px-2 py-1 rounded-full text-sm font-medium
-        ${item.isActive
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
+            px-2 py-1 rounded-full text-sm font-medium
+            ${item.isDefault
+              ? "bg-blue-100 text-blue-700"
+              : "bg-slate-100 text-slate-700"
             }
-      `}
+          `}
         >
-          {item.isActive
-            ? "Activo"
-            : "Inactivo"}
+
+          {item.isDefault
+            ? "Principal"
+            : "Secundaria"}
+
         </span>
 
       </TableCell>
 
-      {/* Acciones */}
+      {/* ESTADO */}
+      <TableCell>
+
+        <span
+          className={`
+            px-2 py-1 rounded-full text-sm font-medium
+            ${item.isActive
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+            }
+          `}
+        >
+
+          {item.isActive
+            ? "Activo"
+            : "Inactivo"}
+
+        </span>
+
+      </TableCell>
+
+      {/* ACCIONES */}
       <TableCell className="text-center space-x-2">
 
-        <BrandEditDialog
+        <ProductVariantEditDialog
           item={item}
           onRefresh={onRefresh}
+          products={products}
+          attributes={attributes}
         />
 
         <Button
           variant="ghost"
           size="icon"
           className="
-        text-destructive
-        hover:text-destructive
-        hover:bg-destructive/10
-      "
+            text-destructive
+            hover:text-destructive
+            hover:bg-destructive/10
+          "
           onClick={() => onDelete(item.id)}
         >
+
           <Trash className="h-4 w-4" />
+
         </Button>
 
       </TableCell>
@@ -113,4 +148,4 @@ function BrandRow({
 
 }
 
-export default BrandRow;
+export default ProductVariantRow;

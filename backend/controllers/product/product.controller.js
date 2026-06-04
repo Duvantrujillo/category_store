@@ -1,7 +1,8 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const slugify = require('slugify')
-
+const fs = require('fs');
+const path = require('path');
 
 const createProduct = async (req, res) => {
   try {
@@ -212,6 +213,7 @@ const deleteProduct = async (req, res) => {
     });
 
   } catch (error) {
+    console.log(error)
     return res.status(500).json({
       message: "Error interno del servidor"
     });

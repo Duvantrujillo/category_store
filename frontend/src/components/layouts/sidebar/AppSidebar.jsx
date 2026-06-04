@@ -29,6 +29,7 @@ export default function AppSidebar() {
     { title: "Valores de Atributo", url: "/dashboard/admin/list/attibute-value", icon: Package },
     { title: "Envíos", url: "/dashboard/admin/list/shipping", icon: Truck },
     { title: "Productos", url: "/dashboard/admin/list/product", icon: PackageSearch  },
+    { title: "Productos Variantes", url: "/dashboard/admin/list/product-variant", icon: PackageSearch  },
   ];
 
   return (

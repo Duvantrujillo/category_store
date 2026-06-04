@@ -19,7 +19,7 @@ import ProductSharedForm from "../../shared/ProductSharedForm";
 
 import { useCreateProduct } from "../../hooks/useProduct";
 
-import { activeCategory } from "@/pages/dashboard/admin/category/api/category.Api";
+import { activeCategory } from "@/pages/dashboard/admin/category/api/categoryApi";
 import { AllBrands } from "@/pages/dashboard/admin/brand/api/brandApi";
 
 export default function ProductCreateDialog({

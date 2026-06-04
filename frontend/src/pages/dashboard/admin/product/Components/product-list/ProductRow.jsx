@@ -1,5 +1,6 @@
 import { Trash } from "lucide-react";
 
+import noPhotos from "@/assets/icons/no-fotos.png";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -20,21 +21,20 @@ function ProductRow({
       {/* Imagen */}
       <TableCell className="flex justify-center">
 
-        {item.mainImage && (
-
-          <img
-            src={`${import.meta.env.VITE_API_URL}${item.mainImage}`}
-            alt={item.name}
-            className="
-              h-10
-              w-10
-              rounded-md
-              object-cover
-              border
-            "
-          />
-
-        )}
+        <img
+          src={item.mainImage
+            ? `${import.meta.env.VITE_API_URL}${item.mainImage}`
+            : noPhotos
+          }
+          alt={item.name || "Sin imagen"}
+          className="
+            h-10
+            w-10
+            rounded-md
+            object-cover
+            border
+          "
+        />
 
       </TableCell>
 
@@ -75,10 +75,9 @@ function ProductRow({
         <span
           className={`
             px-2 py-1 rounded-full text-sm font-medium
-            ${
-              item.status === "PUBLISHED"
-                ? "bg-green-100 text-green-700"
-                : "bg-yellow-100 text-yellow-700"
+            ${item.status === "PUBLISHED"
+              ? "bg-green-100 text-green-700"
+              : "bg-yellow-100 text-yellow-700"
             }
           `}
         >

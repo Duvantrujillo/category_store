@@ -13,7 +13,7 @@ import AttributeList from './pages/dashboard/admin/attribute/pages/ListAttribute
 import AttributeValueList from './pages/dashboard/admin/attribute-value/pages/ListAttributeValue'
 import BrandList from './pages/dashboard/admin/brand/page/ListBrand'
 import ProductList from './pages/dashboard/admin/product/pages/ListProduct'
-
+import ProductVariantList from './pages/dashboard/admin/product-variant/pages/ListProductVariant'
 function App() {
 
 
@@ -32,6 +32,7 @@ function App() {
         <Route path="list/attibute-value" element={<AttributeValueList />} />
         <Route path="list/brand" element={<BrandList />} />
         <Route path="list/product" element={<ProductList />} />
+        <Route path="list/product-variant" element={<ProductVariantList />} />
 
       </Route>
 

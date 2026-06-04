@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { activeCategory, allCategory, deleteCategory,updateCategory,createCategory } from "../api/category.Api";
+import { activeCategory, allCategory, deleteCategory, updateCategory, createCategory } from "../api/categoryApi";
 import toast from "react-hot-toast";
 
 
