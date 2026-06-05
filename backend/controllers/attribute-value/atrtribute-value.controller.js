@@ -163,7 +163,11 @@ const allAtribute_Value = async (req, res) => {
         const all = await prisma.attributeValue.findMany({
             include: {
                 attribute: true
-            }
+            },
+            orderBy: [
+                { updatedAt: 'desc' },
+                { createdAt: 'desc' }
+            ]
         })
 
         if (all.length === 0) {

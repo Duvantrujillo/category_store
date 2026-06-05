@@ -1,14 +1,29 @@
+import { useEffect, useState } from "react";
+
 import { useAllProduct } from "@/pages/dashboard/admin/product/hooks/useProduct";
 
 import ProductTable from "../components/product-list/ProductTable";
+import TablePagination from "@/components/ui/TablePagination";
 
 import ProductCreateDialog from "../components/product-create/ProductCreateDialog";
+
+const PAGE_SIZE = 10;
 
 function ProductList() {
   const {
     products = [],
     refetch,
   } = useAllProduct();
+
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(products.length / PAGE_SIZE));
+  const paginatedProducts = products.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   return (
     <div className="space-y-6 p-6">
@@ -40,8 +55,16 @@ function ProductList() {
       </div>
 
       <ProductTable
-        products={products}
+        products={paginatedProducts}
         onRefresh={refetch}
+      />
+
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        totalItems={products.length}
+        onPageChange={setPage}
+        className="pt-4"
       />
 
     </div>

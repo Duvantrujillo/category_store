@@ -7,6 +7,7 @@ import DeleteProductVariantDialog from "../product-variant-delete/ProductVariant
 import {
   Table,
   TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -109,9 +110,8 @@ function ProductVariantTable({
 
               <TableBody>
 
-                {Array.isArray(variants) &&
+                {Array.isArray(variants) && variants.length > 0 ? (
                   variants.map((item) => (
-
                     <ProductVariantRow
                       key={item.id}
                       item={item}
@@ -120,8 +120,14 @@ function ProductVariantTable({
                       products={products}
                       attributes={attributes}
                     />
-
-                  ))}
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-sm text-muted-foreground">
+                      No hay registros.
+                    </TableCell>
+                  </TableRow>
+                )}
 
               </TableBody>
 

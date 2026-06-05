@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useShipping } from "../hooks/useShipping";
 
@@ -7,6 +7,9 @@ import ShippingError from "../components/shipping-list/ShippingError";
 import ShippingEmpty from "../components/shipping-list/ShippingEmpty";
 import ShippingStats from "../components/shipping-list/ShippingStats";
 import ShippingTable from "../components/shipping-list/ShippingTable";
+import TablePagination from "@/components/ui/TablePagination";
+
+const PAGE_SIZE = 10;
 
 function ShippingList() {
 
@@ -16,6 +19,16 @@ function ShippingList() {
     error,
     loadData,
   } = useShipping();
+
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(shipping.length / PAGE_SIZE));
+  const paginatedShipping = shipping.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const stats = useMemo(() => {
 
@@ -68,8 +81,16 @@ function ShippingList() {
 
       {/* Table */}
       <ShippingTable
-        shipping={shipping}
+        shipping={paginatedShipping}
         onRefresh={loadData}
+      />
+
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        totalItems={shipping.length}
+        onPageChange={setPage}
+        className="pt-4"
       />
 
     </div>

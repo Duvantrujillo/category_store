@@ -199,7 +199,12 @@ const AllForm = async (req, res) => {
     try {
 
 
-        const all = await prisma.formResponse.findMany()
+        const all = await prisma.formResponse.findMany({
+            orderBy: [
+                { updatedAt: 'desc' },
+                { createdAt: 'desc' }
+            ]
+        })
 
         if (all.length === 0) {
             return res.status(200).json({ message: "no existen registros Aun" })

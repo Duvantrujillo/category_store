@@ -131,7 +131,11 @@ const allUser = async (req, res) => {
         id: true,
         name: true,
         email: true
-      }
+      },
+      orderBy: [
+        { updatedAt: 'desc' },
+        { createdAt: 'desc' }
+      ]
     });
 
     return res.json(users);

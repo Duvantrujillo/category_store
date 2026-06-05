@@ -7,7 +7,7 @@ const createCategory = async (req, res) => {
     try {
 
         const { parentId, name, description, isActive, sortOrder } = req.body
-        
+
         const customerSlug = slugify(name, {
             lower: true,
             strict: true
@@ -49,7 +49,7 @@ const createCategory = async (req, res) => {
         return res.status(201).json({ message: "Registro Exitoso", data: result });
 
     } catch (error) {
-    
+
         return res.status(500).json({ error: "Error inesperado del servidor" }); // Corrección: .status(500)
     }
 }
@@ -193,7 +193,11 @@ const deleteCategory = async (req, res) => {
 const allCategory = async (req, res) => {
     try {
         const all = await prisma.category.findMany({
-            include: { parent: true }
+            include: { parent: true },
+            orderBy: [
+                { updatedAt: 'desc' },
+                { createdAt: 'desc' }
+            ]
         });
 
         if (!all || all.length === 0) {
@@ -214,16 +218,16 @@ const activeCategory = async (req, res) => {
     try {
         const activeCategory = await prisma.category.findMany({
             include: { parent: true },
-
             where: {
                 isActive: true
             },
-            orderBy: {
-                sortOrder: 'asc'
-            }
+            orderBy: [
+                { updatedAt: 'desc' },
+                { createdAt: 'desc' }
+            ]
         })
 
-        return res.status(200).json({data: activeCategory })
+        return res.status(200).json({ data: activeCategory })
     } catch (error) {
         return res.status(500).json({ error: "Error interno del servidor" });
     }

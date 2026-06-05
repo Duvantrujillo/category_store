@@ -234,7 +234,12 @@ const deleteBrand = async (req, res) => {
 const allBrand = async (req, res) => {
     try {
 
-        const all = await prisma.brand.findMany()
+        const all = await prisma.brand.findMany({
+            orderBy: [
+                { updatedAt: 'desc' },
+                { createdAt: 'desc' }
+            ]
+        })
 
         if (all.length === 0) {
             return res.status(200).json({ message: 'no existen registros aun' })

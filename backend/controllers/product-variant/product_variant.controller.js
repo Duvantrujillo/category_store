@@ -54,7 +54,23 @@ const createProductVariant = async (req, res) => {
       }
     }
 
-    // 3️⃣ Crear variante primero
+    // 3️⃣ Validar que por producto sólo exista una variante principal
+    if (isDefault) {
+      const existingDefault = await prisma.productVariant.findFirst({
+        where: {
+          productId,
+          isDefault: true
+        }
+      });
+
+      if (existingDefault) {
+        return res.status(409).json({
+          message: "Ya existe una variante principal para este producto"
+        });
+      }
+    }
+
+    // 4️⃣ Crear variante primero
     const newVariant = await prisma.productVariant.create({
       data: {
         productId,
@@ -228,7 +244,24 @@ const updateProductVariant = async (req, res) => {
       return res.status(404).json({ message: "El producto no existe" });
     }
 
-    // 3. validar duplicado SKU
+    // 4. validar que por producto sólo exista una variante principal
+    if (isDefault) {
+      const existingDefault = await prisma.productVariant.findFirst({
+        where: {
+          productId,
+          isDefault: true,
+          NOT: { id: formId }
+        }
+      });
+
+      if (existingDefault) {
+        return res.status(409).json({
+          message: "Ya existe una variante principal para este producto"
+        });
+      }
+    }
+
+    // 5. validar duplicado SKU
     if (sku) {
       const skuExist = await prisma.productVariant.findFirst({
         where: {
@@ -336,48 +369,51 @@ const deleteProductVariant = async (req, res) => {
     const formId = Number(req.params.id);
 
     if (isNaN(formId)) {
-      return res.status(400).json({
-        message: "el ID debe ser numérico"
-      });
+      return res.status(400).json({ message: "ID inválido" });
     }
 
     const variantExist = await prisma.productVariant.findUnique({
-      where: {
-        id: formId
-      },
+      where: { id: formId },
       include: {
         images: true,
+        attributes: true,
       }
     });
 
     if (!variantExist) {
-      return res.status(404).json({
-        message: "el registro no existe"
-      });
+      return res.status(404).json({ message: "No existe" });
     }
 
-    const folder = getVariantFolder(formId);
+    // 1. borrar relaciones DB
+    await prisma.productVariantAttribute.deleteMany({
+      where: { productVariantId: formId }
+    });
 
+    await prisma.productVariantImage.deleteMany({
+      where: { productVariantId: formId }
+    });
+
+    // 2. borrar archivos físicos
+    const folder = getVariantFolder(formId);
     if (fs.existsSync(folder)) {
       fs.rmSync(folder, { recursive: true, force: true });
     }
 
-    const deletedProductVariant = await prisma.productVariant.delete({
-      where: {
-        id: formId
-      }
+    // 3. borrar variante
+    const deleted = await prisma.productVariant.delete({
+      where: { id: formId }
     });
 
     return res.status(200).json({
-      message: "el registro fue eliminado exitosamente",
-      data: deletedProductVariant
+      message: "Eliminado correctamente",
+      data: deleted
     });
 
   } catch (error) {
     console.error(error);
 
     return res.status(500).json({
-      message: "error interno del servidor"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -388,6 +424,10 @@ const allProductVariant = async (req, res) => {
       images: true,
       attributes: true,
     },
+    orderBy: [
+      { updatedAt: 'desc' },
+      { createdAt: 'desc' }
+    ]
   })
 
   if (all.length === 0) {

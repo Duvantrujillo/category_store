@@ -75,13 +75,20 @@ function ProductRow({
         <span
           className={`
             px-2 py-1 rounded-full text-sm font-medium
-            ${item.status === "PUBLISHED"
+            ${item.status === "ACTIVE"
               ? "bg-green-100 text-green-700"
-              : "bg-yellow-100 text-yellow-700"
+              : item.status === "INACTIVE"
+                ? "bg-red-100 text-red-700"
+                : "bg-yellow-100 text-yellow-700"
             }
           `}
         >
-          {item.status}
+          {item.status === "ACTIVE"
+            ? "Activo"
+            : item.status === "INACTIVE"
+              ? "Inactivo"
+              : "Borrador"
+          }
         </span>
 
       </TableCell>

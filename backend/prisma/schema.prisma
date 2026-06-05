@@ -15,7 +15,7 @@ model User {
   roleId   Int
   role     Role   @relation(fields: [roleId], references: [id])
   createdAt DateTime @default(now())
-  uptatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 }
 
 model Role {
@@ -24,7 +24,7 @@ model Role {
   description String
   status      Boolean @default(true)
   createdAt DateTime @default(now())
-  uptatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt
   users       User[]
 }
 
@@ -40,7 +40,7 @@ model FormResponse{
   address String
   additionalDetails String?
   createdAt DateTime @default(now())
-  updateAdt DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 }
 
 model Category{
@@ -112,7 +112,6 @@ model Product {
   brand Brand? @relation(fields: [brandId], references: [id])
   name String
   slug String @unique
-  shortDescription String?
   description String? @db.Text
    mainImage String?
   status ProductStatus @default(DRAFT)

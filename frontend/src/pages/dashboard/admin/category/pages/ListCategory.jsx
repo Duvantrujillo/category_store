@@ -1,12 +1,27 @@
+import { useEffect, useState } from "react";
 import { useAllCategory } from "../hooks/useCategory";
 import CategoryTable from "../components/category-list/CategoryTable";
+import TablePagination from "@/components/ui/TablePagination";
 import CategoryCreateDialog from "../components/category-create/CategoryCreateDialog";
+
+const PAGE_SIZE = 10;
 
 function CategoryList() {
   const {
     categories = [],
     refetch,
   } = useAllCategory();
+
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(categories.length / PAGE_SIZE));
+  const paginatedCategories = categories.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   return (
     <div className="space-y-6 p-6">
 
@@ -30,9 +45,16 @@ function CategoryList() {
       </div>
 
       <CategoryTable
-        categories={categories}
+        categories={paginatedCategories}
         onRefresh={refetch}
+      />
 
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        totalItems={categories.length}
+        onPageChange={setPage}
+        className="pt-4"
       />
 
     </div>

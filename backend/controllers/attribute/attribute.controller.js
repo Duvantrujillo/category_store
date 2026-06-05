@@ -167,7 +167,12 @@ const deleteAttribute = async (req, res) => {
 const allAttribute = async (req, res) => {
   try {
 
-    const all = await prisma.attribute.findMany()
+    const all = await prisma.attribute.findMany({
+      orderBy: [
+        { updatedAt: 'desc' },
+        { createdAt: 'desc' }
+      ]
+    })
     if (all.length === 0) {
       return res.status(200).json({ message: "No Existen Registros Aun" })
     }

@@ -1,9 +1,13 @@
+import { useEffect, useState } from "react";
 import { useAllAttribute } from "../../attribute/hooks/useAttribute";
 import { useAllAttributeValue } from "../hooks/useAttributeValue";
 
 import AttributeValueTable from "../components/attribute-value-list/AttributeValueTable";
+import TablePagination from "@/components/ui/TablePagination";
 
 import AttributeValueCreateDialog from "../components/attribute-value-create/AttributeValueCreateDialog";
+
+const PAGE_SIZE = 10;
 
 function AttributeValueList() {
 
@@ -15,6 +19,16 @@ function AttributeValueList() {
     const {
         attributes = [],
     } = useAllAttribute();
+
+    const [page, setPage] = useState(1);
+    const totalPages = Math.max(1, Math.ceil(attributeValues.length / PAGE_SIZE));
+    const paginatedAttributeValues = attributeValues.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+    useEffect(() => {
+        if (page > totalPages) {
+            setPage(totalPages);
+        }
+    }, [page, totalPages]);
 
     return (
 
@@ -47,11 +61,18 @@ function AttributeValueList() {
                 />
 
             </div>
-
             <AttributeValueTable
-                attributeValues={attributeValues}
+                attributeValues={paginatedAttributeValues}
                 attributes={attributes}
                 onRefresh={refetch}
+            />
+
+            <TablePagination
+                page={page}
+                pageSize={PAGE_SIZE}
+                totalItems={attributeValues.length}
+                onPageChange={setPage}
+                className="pt-4"
             />
 
         </div>

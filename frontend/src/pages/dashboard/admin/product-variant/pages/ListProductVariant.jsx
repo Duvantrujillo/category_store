@@ -4,10 +4,13 @@ import { useAllProductVariant } from "../hooks/useProductVariant";
 import { useAllAttributeValue } from "../../attribute-value/hooks/useAttributeValue";
 
 import ProductVariantTable from "../components/product-variant-list/ProductVariantTable";
+import TablePagination from "@/components/ui/TablePagination";
 
 import ProductVariantCreateDialog from "../components/product-variant-create/ProductVariantCreateDialog";
 
 import { getAllProducts } from "@/api/productApi";
+
+const PAGE_SIZE = 10;
 
 function ProductVariantList() {
 
@@ -18,11 +21,21 @@ function ProductVariantList() {
 
   const [products, setProducts] = useState([]);
   const { attributeValues = [] } = useAllAttributeValue();
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(variants.length / PAGE_SIZE));
+  const paginatedVariants = variants.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/immutability
     loadProducts();
   }, []);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const loadProducts = async () => {
     try {
@@ -67,10 +80,18 @@ function ProductVariantList() {
       </div>
 
       <ProductVariantTable
-        variants={variants}
+        variants={paginatedVariants}
         onRefresh={refetch}
         products={products}
         attributes={attributeValues}
+      />
+
+      <TablePagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        totalItems={variants.length}
+        onPageChange={setPage}
+        className="pt-4"
       />
 
     </div>

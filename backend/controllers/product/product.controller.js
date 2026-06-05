@@ -10,7 +10,6 @@ const createProduct = async (req, res) => {
       categoryId,
       brandId,
       name,
-      shortDescription,
       description,
       status
     } = req.body;
@@ -58,7 +57,6 @@ const createProduct = async (req, res) => {
         brandId: brandIdNumb,
         name,
         slug,
-        shortDescription,
         description,
         mainImage,
         status
@@ -94,7 +92,6 @@ const updateProduct = async (req, res) => {
       categoryId,
       brandId,
       name,
-      shortDescription,
       description,
       status,
     } = req.body;
@@ -147,7 +144,6 @@ const updateProduct = async (req, res) => {
         brandId: brandIdNumb,
         name,
         slug,
-        shortDescription,
         description,
         mainImage,
         status,
@@ -229,6 +225,10 @@ const allProduct = async (req, res) => {
         category: true,
         brand: true,
       },
+      orderBy: [
+        { updatedAt: 'desc' },
+        { createdAt: 'desc' }
+      ],
     });
 
     if (all.length === 0) {

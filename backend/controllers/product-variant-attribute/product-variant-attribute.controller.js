@@ -145,14 +145,19 @@ const deleteproductVarianAtribute = async (req, res) => {
 
 }
 
-const allproductVarianAtribute = async (req,res)=>{
-    const all = await prisma.productVariantAttribute.findMany()
+const allproductVarianAtribute = async (req, res) => {
+    const all = await prisma.productVariantAttribute.findMany({
+        orderBy: [
+            { updatedAt: 'desc' },
+            { createdAt: 'desc' }
+        ]
+    })
 
-    if (all.length === 0){
-        return res.status(200).json({message: "no existen registro aun"})
+    if (all.length === 0) {
+        return res.status(200).json({ message: "no existen registro aun" })
     }
 
-    return res.status(200).json({data: all})
+    return res.status(200).json({ data: all })
 }
 
 

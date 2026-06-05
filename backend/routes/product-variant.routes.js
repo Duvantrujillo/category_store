@@ -12,7 +12,7 @@ const path = require('path');
  */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const tempPath = path.join(__dirname, '../../uploads/product-variant/temp');
+    const tempPath = path.join(__dirname, '../uploads/product-variant/temp');
     fs.mkdirSync(tempPath, { recursive: true });
     cb(null, tempPath);
   },
