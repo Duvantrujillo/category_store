@@ -247,7 +247,7 @@ const allBrand = async (req, res) => {
 
         return res.status(200).json({ data: all })
     } catch (error) {
-        return res.status(500).json({ message: 'error interno del servidor' })
+        return res.status(500).json({ message: 'error interno del servidor' }, error)
     }
 }
 
