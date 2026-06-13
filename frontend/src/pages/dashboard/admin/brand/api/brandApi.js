@@ -1,10 +1,9 @@
+import App from "@/App";
 import axios from "axios";
 
 const API = import.meta.env.VITE_API_URL;
 
-/* =========================================
-   CREATE BRAND
-========================================= */
+
 
 export const createBrand = async (
   formData
@@ -19,9 +18,7 @@ export const createBrand = async (
 
 };
 
-/* =========================================
-   UPDATE BRAND
-========================================= */
+
 
 export const updateBrand = async (
   id,
@@ -37,32 +34,28 @@ export const updateBrand = async (
 
 };
 
-/* =========================================
-   DELETE BRAND
-========================================= */
+
 
 export const deleteBrand = async (
   id
 ) => {
-
   const res = await axios.delete(
     `${API}/brand/delete/${id}`
   );
-
   return res.data;
-
 };
 
-/* =========================================
-   GET ALL BRANDS
-========================================= */
+
 
 export const AllBrands = async () => {
 
   const res = await axios.get(
-    `${API}/brand/all`
-  );
-
+    `${API}/brand/all`);
   return res.data;
 
 };
+
+export const searchBrand =  async (q) => {
+  const res = await axios.get(`${API}/brand/search`,{params:{q}})
+  return res.data
+}

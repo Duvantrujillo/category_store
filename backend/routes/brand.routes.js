@@ -17,13 +17,11 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 
 // Rutas
-// ✅ Subir imagen al crear marca
 router.post('/create', upload.single('logo'), branchController.createBrand)
 
-// Opcional: si quieres permitir cambiar logo al actualizar
 router.put('/update/:id', upload.single('logo'), branchController.updateBrand)
 
 router.delete('/delete/:id', branchController.deleteBrand)
 router.get('/all', branchController.allBrand)
-
+router.get('/search',branchController.searchBrand)
 module.exports = router

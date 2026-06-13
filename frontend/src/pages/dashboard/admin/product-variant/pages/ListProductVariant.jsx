@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 
-import { useAllProductVariant } from "../hooks/useProductVariant";
+import { useAllProductVariant, useSearchProductVariant } from "../hooks/useProductVariant";
 import { useAllAttributeValue } from "../../attribute-value/hooks/useAttributeValue";
 
 import ProductVariantTable from "../components/product-variant-list/ProductVariantTable";
 import TablePagination from "@/components/ui/TablePagination";
 
 import ProductVariantCreateDialog from "../components/product-variant-create/ProductVariantCreateDialog";
-
+import ProductVariantSearch from "../components/product-variant-search/ProductVariantSearch";
 import { getAllProducts } from "@/api/productApi";
 
 const PAGE_SIZE = 10;
 
 function ProductVariantList() {
-
+const {
+  query,
+  setQuery,
+  results,
+  loading,
+} = useSearchProductVariant();
   const {
     variants = [],
     refetch,
@@ -24,7 +29,10 @@ function ProductVariantList() {
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(variants.length / PAGE_SIZE));
   const paginatedVariants = variants.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
+const dataToShow =
+  query.trim()
+    ? results
+    : paginatedVariants;
   useEffect(() => {
     // eslint-disable-next-line react-hooks/immutability
     loadProducts();
@@ -68,7 +76,11 @@ function ProductVariantList() {
           <p className="text-muted-foreground">
             Administra las variantes de productos.
           </p>
-
+  <ProductVariantSearch
+    query={query}
+    setQuery={setQuery}
+    resultsCount={results.length}
+  />
         </div>
 
         <ProductVariantCreateDialog
@@ -79,20 +91,22 @@ function ProductVariantList() {
 
       </div>
 
-      <ProductVariantTable
-        variants={paginatedVariants}
-        onRefresh={refetch}
-        products={products}
-        attributes={attributeValues}
-      />
+    <ProductVariantTable
+  variants={dataToShow}
+  onRefresh={refetch}
+  products={products}
+  attributes={attributeValues}
+/>
 
-      <TablePagination
-        page={page}
-        pageSize={PAGE_SIZE}
-        totalItems={variants.length}
-        onPageChange={setPage}
-        className="pt-4"
-      />
+{!query.trim() && (
+  <TablePagination
+    page={page}
+    pageSize={PAGE_SIZE}
+    totalItems={variants.length}
+    onPageChange={setPage}
+    className="pt-4"
+  />
+)}
 
     </div>
 

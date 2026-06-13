@@ -5,7 +5,8 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-  allProduct
+  allProduct,
+  searchProduct
 } from "../api/productApi";
 
 /* =========================================
@@ -396,4 +397,73 @@ export const useAllProduct = () => {
     error,
     refetch: fetchProducts,
   };
+};
+
+export const useSearchProduct = (
+  delay = 400
+) => {
+
+  const [query, setQuery] = useState("");
+
+  const [results, setResults] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  useEffect(() => {
+
+    if (!query.trim()) {
+
+      setResults([]);
+
+      return;
+
+    }
+
+    const timer = setTimeout(
+      async () => {
+
+        try {
+
+          setLoading(true);
+
+          const res =
+            await searchProduct(
+              query
+            );
+
+          const data =
+            res?.data || [];
+
+          setResults(data);
+
+        } catch (error) {
+
+          console.error(error);
+
+          setResults([]);
+
+        } finally {
+
+          setLoading(false);
+
+        }
+
+      },
+      delay
+    );
+
+    return () =>
+      clearTimeout(timer);
+
+  }, [query, delay]);
+
+  return {
+    query,
+    setQuery,
+    results,
+    loading,
+  };
+
 };

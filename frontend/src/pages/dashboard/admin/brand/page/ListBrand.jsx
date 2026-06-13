@@ -1,16 +1,22 @@
 import { useEffect, useState } from "react";
 
-import { useAllBrand } from "../hooks/useBrand";
+import { useAllBrand, useSearchBrand } from "../hooks/useBrand";
 
 import BrandTable from "../components/brand-list/BrandTable";
 import TablePagination from "@/components/ui/TablePagination";
 
 import BrandCreateDialog from "../components/brand-create/BrandCreateDialog";
+import BrandSearch from "../components/brand-search/BrandSearch";
 
 const PAGE_SIZE = 10;
 
 function BrandList() {
-
+const {
+  query,
+  setQuery,
+  results,
+  loading,
+} = useSearchBrand();
   const {
     brands = [],
     refetch,
@@ -19,7 +25,10 @@ function BrandList() {
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(brands.length / PAGE_SIZE));
   const paginatedBrands = brands.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
+const dataToShow =
+  query.trim()
+    ? results
+    : paginatedBrands;
   useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);
@@ -48,7 +57,12 @@ function BrandList() {
           <p className="text-muted-foreground">
             Administra las marcas del sistema.
           </p>
-
+<BrandSearch
+  query={query}
+  setQuery={setQuery}
+  resultsCount={results.length}
+  loading={loading}
+/>
         </div>
 
         <BrandCreateDialog
@@ -57,18 +71,20 @@ function BrandList() {
 
       </div>
 
-      <BrandTable
-        brands={paginatedBrands}
-        onRefresh={refetch}
-      />
+<BrandTable
+  brands={dataToShow}
+  onRefresh={refetch}
+/>
 
-      <TablePagination
-        page={page}
-        pageSize={PAGE_SIZE}
-        totalItems={brands.length}
-        onPageChange={setPage}
-        className="pt-4"
-      />
+{!query.trim() && (
+  <TablePagination
+    page={page}
+    pageSize={PAGE_SIZE}
+    totalItems={brands.length}
+    onPageChange={setPage}
+    className="pt-4"
+  />
+)}
 
     </div>
 

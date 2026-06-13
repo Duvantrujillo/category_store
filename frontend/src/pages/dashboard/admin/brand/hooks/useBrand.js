@@ -7,6 +7,7 @@ import {
   createBrand,
   updateBrand,
   deleteBrand,
+  searchBrand
 } from "../api/brandApi";
 
 /* =========================================
@@ -381,6 +382,103 @@ export const useDeleteBrand = () => {
     loading,
     error,
     response,
+  };
+
+};
+
+export const useSearchBrand = (
+  delay = 400
+) => {
+
+  const [query, setQuery] = useState("");
+
+  const [results, setResults] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState(null);
+
+  useEffect(() => {
+
+    if (!query.trim()) {
+
+      setResults([]);
+
+      setLoading(false);
+
+      return;
+
+    }
+
+    const timer = setTimeout(
+      async () => {
+
+        try {
+
+          setLoading(true);
+
+          setError(null);
+
+          const res =
+            await searchBrand(
+              query
+            );
+
+          const data =
+            res?.data || [];
+
+          setResults(data);
+
+        } catch (err) {
+
+          console.error(err);
+
+          setError(err);
+
+          setResults([]);
+
+        } finally {
+
+          setLoading(false);
+
+        }
+
+      },
+      delay
+    );
+
+    return () =>
+      clearTimeout(timer);
+
+  }, [query, delay]);
+
+  const clearSearch = () => {
+
+    setQuery("");
+
+    setResults([]);
+
+    setError(null);
+
+  };
+
+  return {
+
+    query,
+
+    setQuery,
+
+    results,
+
+    loading,
+
+    error,
+
+    clearSearch,
+
   };
 
 };

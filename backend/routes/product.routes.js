@@ -20,6 +20,6 @@ routes.post('/create', upload.single('mainImage'),productController.createProduc
 routes.put('/update/:id', upload.single('mainImage'), productController.updateProduct)
 routes.delete('/delete/:id', productController.deleteProduct)
 routes.get('/all', productController.allProduct)
-
+routes.get('/search',productController.searchProduct)
 
 module.exports = routes

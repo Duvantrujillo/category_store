@@ -1,5 +1,12 @@
-node_modules
-# Keep environment variables out of version control
+# Dependencies
+node_modules/
+
+# Env
 .env
 
+# Prisma
 /generated/prisma
+
+# Uploads (ignorar archivos pero mantener carpeta)
+uploads/*
+!uploads/.gitkeep

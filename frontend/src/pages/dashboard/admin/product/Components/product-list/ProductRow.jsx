@@ -8,8 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import ProductEditDialog from "@/pages/dashboard/admin/product/components/product-update/ProductEditDialog";
-
+import ProductEditDialog from "@/pages/dashboard/admin/product/Components/product-update/ProductEditDialog";
 function ProductRow({
   item,
   onDelete,

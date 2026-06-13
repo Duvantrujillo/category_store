@@ -119,6 +119,7 @@ const loginUser = async (req, res) => {
     })
 
   } catch (error) {
+     console.log("🔥 LOGIN ERROR REAL:", error);
     return res.status(500).json({ message: 'error interno del servidor' })
   }
 

@@ -18,3 +18,10 @@ export const deleteProduct = async (id)=>{
     const res = await axios.delete(`${API}/product/delete/${id}`)
     return res.data
 }
+
+export const searchProduct = async (q) => {
+    const res = await axios.get(`${API}/product/search`, {
+        params: { q }
+    })
+    return res.data
+}

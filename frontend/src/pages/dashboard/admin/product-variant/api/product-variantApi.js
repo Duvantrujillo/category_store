@@ -22,3 +22,10 @@ export const deleteProductVariant = async (id) => {
     const res = await axios.delete(`${API}/product-variant/delete/${id}`)
     return res.data
 }
+
+export const searchSkuBarcode = async (q) => {
+    const res = await axios.get(`${API}/product-variant/search`, {
+        params: { q }
+    })
+    return res.data
+}

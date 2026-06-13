@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import toast from "react-hot-toast";
 
-import { createProductVariant, allProductVariant, updateProductVariant, deleteProductVariant } from "../api/product-variantApi";
+import { createProductVariant, allProductVariant, updateProductVariant, deleteProductVariant, searchSkuBarcode} from "../api/product-variantApi";
 
 /* =========================================
    CREATE PRODUCT VARIANT
@@ -381,6 +381,97 @@ export const useDeleteProductVariant = () => {
     submitDelete,
     loading,
     error,
+  };
+
+};
+
+export const useSearchProductVariant = (delay = 400) => {
+
+  const [query, setQuery] = useState("");
+
+  const [results, setResults] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+
+    if (!query.trim()) {
+
+      setResults([]);
+
+      setLoading(false);
+
+      return;
+
+    }
+
+    const timer = setTimeout(async () => {
+
+      try {
+
+        setLoading(true);
+
+        setError(null);
+
+        const res =
+          await searchSkuBarcode(query);
+
+        const data =
+          res?.data?.data ||
+          res?.data ||
+          res;
+
+        setResults(
+          Array.isArray(data)
+            ? data
+            : []
+        );
+
+      } catch (err) {
+
+        setError(err);
+
+        setResults([]);
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    }, delay);
+
+    return () =>
+      clearTimeout(timer);
+
+  }, [query, delay]);
+
+  const clearSearch = () => {
+
+    setQuery("");
+
+    setResults([]);
+
+    setError(null);
+
+  };
+
+  return {
+
+    query,
+
+    setQuery,
+
+    results,
+
+    loading,
+
+    error,
+
+    clearSearch,
+
   };
 
 };

@@ -60,7 +60,6 @@ const createBrand = async (req, res) => {
     }
 }
 
-// funcion de actualizar
 const updateBrand = async (req, res) => {
     try {
         const formId = Number(req.params.id)
@@ -177,6 +176,19 @@ const deleteBrand = async (req, res) => {
             });
         }
 
+
+        const productExist = await prisma.product.findFirst({
+            where: {
+                brandId: formId
+            }
+        })
+
+        if (productExist) {
+            return res.status(400).json({
+                message: "La marca no puede ser eliminada porque está asociada a uno o más productos."
+            });
+        }
+
         /*
         |--------------------------------------------------------------------------
         | ELIMINAR LOGO FÍSICO
@@ -229,7 +241,7 @@ const deleteBrand = async (req, res) => {
         });
 
     }
-};
+}
 
 const allBrand = async (req, res) => {
     try {
@@ -251,11 +263,58 @@ const allBrand = async (req, res) => {
     }
 }
 
+const searchBrand = async (req, res) => {
+  try {
 
+    const q = (req.query.q || "").trim();
+
+    if (!q) {
+      return res.status(200).json({
+        data: [],
+      });
+    }
+
+    const brands = await prisma.brand.findMany({
+      where: {
+        OR: [
+          {
+            name: {
+              contains: q,
+            },
+          },
+          {
+            slug: {
+              contains: q,
+            },
+          },
+        ],
+      },
+
+      take: 20,
+    });
+
+    return res.status(200).json({
+      data: brands,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Error searching brands:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Error al buscar marcas",
+    });
+
+  }
+};
 
 module.exports = {
     createBrand,
     updateBrand,
     deleteBrand,
-    allBrand
+    allBrand,
+    searchBrand
 }

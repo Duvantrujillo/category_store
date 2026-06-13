@@ -32,5 +32,6 @@ routes.post("/create", upload.array('images', 5), productVariantController.creat
 routes.put("/update/:id", upload.array('images', 5), productVariantController.updateProductVariant);
 routes.delete("/delete/:id", productVariantController.deleteProductVariant);
 routes.get("/all", productVariantController.allProductVariant);
+routes.get("/search",productVariantController.searchSkuBarcode)
 
 module.exports = routes;

@@ -34,6 +34,18 @@ const createProduct = async (req, res) => {
     if (!categoryExists) {
       return res.status(400).json({ message: "Categoría no existe" });
     }
+    const hasChildren = await prisma.category.findFirst({
+  where: {
+    parentId: categoryIdNumb,
+  },
+  select: { id: true },
+});
+
+if (hasChildren) {
+  return res.status(400).json({
+    message: "Solo se pueden asignar productos a categorías hija",
+  });
+}
 
     if (brandIdNumb) {
       const brandExists = await prisma.brand.findUnique({
@@ -184,8 +196,20 @@ const deleteProduct = async (req, res) => {
         message: "El registro no existe"
       });
     }
-    if (productExist.mainImage) {
 
+    // 🔥 VALIDAR SI TIENE VARIANTES
+    const count = await prisma.productVariant.count({
+      where: { productId: formId }
+    });
+
+    if (count > 0) {
+      return res.status(400).json({
+        message: "No se puede eliminar el producto porque tiene variantes asociadas"
+      });
+    }
+
+    // 🧹 eliminar imagen si existe
+    if (productExist.mainImage) {
       const imagePath = path.join(
         __dirname,
         "../../",
@@ -195,10 +219,9 @@ const deleteProduct = async (req, res) => {
       if (fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath);
       }
-
     }
 
-
+    // 🗑️ eliminar producto
     const deletedProduct = await prisma.product.delete({
       where: { id: formId }
     });
@@ -209,7 +232,7 @@ const deleteProduct = async (req, res) => {
     });
 
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res.status(500).json({
       message: "Error interno del servidor"
     });
@@ -249,10 +272,78 @@ const allProduct = async (req, res) => {
   }
 };
 
+const searchProduct = async (req, res) => {
+  try {
+
+    const q = (req.query.q || "").trim();
+
+    if (!q) {
+      return res.status(200).json({
+        data: [],
+      });
+    }
+
+    const products = await prisma.product.findMany({
+      where: {
+        OR: [
+          {
+            name: {
+              contains: q,
+            },
+          },
+          {
+            slug: {
+              contains: q,
+            },
+          },
+          {
+            category: {
+              name: {
+                contains: q,
+              },
+            },
+          },
+          {
+            brand: {
+              name: {
+                contains: q,
+              },
+            },
+          },
+        ],
+      },
+
+      include: {
+        category: true,
+        brand: true,
+        variants: true,
+      },
+
+      take: 20,
+    });
+
+    return res.status(200).json({
+      data: products,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Error searching products:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Error al buscar productos",
+    });
+
+  }
+};
 
 module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
-  allProduct
+  allProduct,
+  searchProduct
 }

@@ -437,9 +437,53 @@ const allProductVariant = async (req, res) => {
   return res.status(200).json({ data: all })
 }
 
+
+
+
+
+const searchSkuBarcode = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+
+    if (!q) {
+      return res.status(200).json({ data: [] });
+    }
+const variants = await prisma.productVariant.findMany({
+  where: {
+    OR: [
+      {
+        sku: {
+          contains: q,
+        },
+      },
+      {
+        barcode: {
+          contains: q,
+        },
+      },
+    ],
+  },
+ include: {
+  images: true,
+  attributes: true,
+  product: true,
+},
+  take: 20,
+});
+
+    return res.status(200).json({ data: variants });
+  } catch (error) {
+    console.error("Error searching variants:", error);
+    return res.status(500).json({
+      message: "Error al buscar variantes",
+    });
+  }
+};
+
 module.exports = {
   createProductVariant,
   updateProductVariant,
   deleteProductVariant,
-  allProductVariant
+  allProductVariant,
+  searchSkuBarcode
 }
