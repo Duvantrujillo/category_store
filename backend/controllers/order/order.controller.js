@@ -84,6 +84,41 @@ const createOrder = async (req, res) => {
   }
 };
 
+
+
+const allOrder = async (req, res) => {
+  try {
+    const orders = await prisma.order.findMany({
+      include: {
+        user: true,
+        payment: true,
+        items: {
+          include: {
+            productVariant: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return res.status(200).json({
+      ok: true,
+      orders
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      ok: false,
+      message: 'Error obteniendo los pedidos'
+    });
+  }
+};
+
+
 module.exports = {
-createOrder
+createOrder,
+allOrder
 }

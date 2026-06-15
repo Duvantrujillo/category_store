@@ -1,31 +1,28 @@
 import { Outlet } from "react-router-dom";
+import { useState } from "react";
+
+import AppHeader from "@/components/layouts/header/AppHeader";
 import AppSidebar from "@/components/layouts/sidebar/AppSidebar";
-import {
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 
 export default function Admin() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+    <div className="flex min-h-screen w-full">
 
-        <AppSidebar />
+      {/* SIDEBAR */}
+      <AppSidebar open={open} setOpen={setOpen} />
 
-        <main className="flex-1 min-w-0 bg-gray-50 pl-0 md:pl-6">
+      {/* CONTENIDO */}
+      <div className="flex flex-1 flex-col min-w-0 bg-gray-50">
 
-          <div className="md:hidden p-2">
-            <SidebarTrigger />
-          </div>
+        <AppHeader onToggleSidebar={() => setOpen(!open)} />
 
-          {/* 🔥 RESPONSIVE REAL */}
-          <div className="px-4 py-6 md:p-6 max-w-6xl mx-auto w-full">
-            <Outlet />
-          </div>
-
+        <main className="flex-1 px-4 py-6 md:p-6">
+          <Outlet />
         </main>
 
       </div>
-    </SidebarProvider>
+    </div>
   );
 }
