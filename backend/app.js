@@ -42,6 +42,15 @@ const orderRouter = require('./routes/order.routes.js')
 const paymentRouter = require('./routes/payment.routes.js')
 const webhookRouter = require('./routes/webhook.routes.js')
 const epaycoRouter = require('./routes/epayco.routes.js')
+const returnRequestRouter = require('./routes/return-request.routes.js')
+const returnItemRouter = require('./routes/return-item.routes.js')
+const refundRouter = require('./routes/refund.routes.js')
+
+
+
+
+
+
 
 
 
@@ -60,6 +69,12 @@ app.use('/order',orderRouter)
 app.use('/payment',paymentRouter)
 app.use('/webhook',webhookRouter)
 app.use('/epayco',epaycoRouter)
+app.use('/return-request',returnRequestRouter)
+app.use('/return-item',returnItemRouter)
+app.use('/refund',refundRouter)
+
+
+
 /*
 |--------------------------------------------------------------------------
 | SERVER

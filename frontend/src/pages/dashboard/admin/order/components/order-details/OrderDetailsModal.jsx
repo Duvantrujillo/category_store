@@ -103,7 +103,7 @@ function OrderDetailsModal({
 
           {/* CLIENTE */}
 
-          <Card>
+          <Card className="shadow-sm">
 
             <CardHeader>
 
@@ -143,7 +143,7 @@ function OrderDetailsModal({
 
           {/* DIRECCIÓN */}
 
-          <Card>
+          <Card className="shadow-sm">
 
             <CardHeader>
 
@@ -190,7 +190,7 @@ function OrderDetailsModal({
 
           {/* RESUMEN */}
 
-          <Card>
+          <Card className="shadow-sm">
 
             <CardHeader>
 
@@ -241,7 +241,7 @@ function OrderDetailsModal({
 
           {/* PEDIDO */}
 
-          <Card>
+          <Card className="shadow-sm">
 
             <CardHeader>
 

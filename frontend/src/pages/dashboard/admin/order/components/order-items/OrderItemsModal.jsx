@@ -76,7 +76,7 @@ function OrderItemsModal({
 
             <div className="grid gap-4 md:grid-cols-3">
 
-              <Card>
+              <Card className="shadow-sm">
 
                 <CardContent className="pt-6">
 
@@ -92,7 +92,7 @@ function OrderItemsModal({
 
               </Card>
 
-              <Card>
+              <Card className="shadow-sm">
 
                 <CardContent className="pt-6">
 
@@ -108,7 +108,7 @@ function OrderItemsModal({
 
               </Card>
 
-              <Card>
+              <Card className="shadow-sm">
 
                 <CardContent className="pt-6">
 

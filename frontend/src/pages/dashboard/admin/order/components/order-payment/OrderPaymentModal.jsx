@@ -115,7 +115,7 @@ function OrderPaymentModal({
         </DialogHeader>
 
         {!payment ? (
-          <Card>
+          <Card className="shadow-sm">
 
             <CardContent className="py-10 text-center text-muted-foreground">
 
@@ -130,7 +130,7 @@ function OrderPaymentModal({
 
             <div className="grid gap-4 md:grid-cols-3">
 
-              <Card>
+              <Card className="shadow-sm">
 
                 <CardContent className="pt-6">
 
@@ -157,7 +157,7 @@ function OrderPaymentModal({
 
               </Card>
 
-              <Card>
+              <Card className="shadow-sm">
 
                 <CardContent className="pt-6">
 
@@ -173,7 +173,7 @@ function OrderPaymentModal({
 
               </Card>
 
-              <Card>
+              <Card className="shadow-sm">  
 
                 <CardContent className="pt-6">
 
@@ -196,7 +196,7 @@ function OrderPaymentModal({
 
             <div className="grid gap-4 md:grid-cols-2">
 
-              <Card>
+              <Card className="shadow-sm">
 
                 <CardHeader>
 
@@ -243,7 +243,7 @@ function OrderPaymentModal({
 
               </Card>
 
-              <Card>
+              <Card className="shadow-sm">
 
                 <CardHeader>
 
@@ -288,7 +288,7 @@ function OrderPaymentModal({
 
               </Card>
 
-              <Card>
+              <Card className="shadow-sm">
 
                 <CardHeader>
 
@@ -336,7 +336,7 @@ function OrderPaymentModal({
 
               </Card>
 
-              <Card className="border-primary">
+              <Card className="shadow-sm">
 
                 <CardHeader>
 

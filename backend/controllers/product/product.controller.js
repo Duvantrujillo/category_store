@@ -57,8 +57,34 @@ if (hasChildren) {
       }
     }
 
-    const slug = slugify(name, { strict: true, lower: true });
+    let brandName = '';
 
+if (brandIdNumb) {
+  const brand = await prisma.brand.findUnique({
+    where: { id: brandIdNumb },
+    select: { name: true }
+  });
+
+  brandName = brand?.name || '';
+}
+
+const slugBase = `${name} ${brandName}`.trim();
+
+const slug = slugify(slugBase, {
+  strict: true,
+  lower: true
+});
+const slugExist = await prisma.product.findUnique({
+  where: {
+    slug: slug
+  }
+})
+
+if (slugExist) {
+  return res.status(400).json({
+    message: "El producto ya existe"
+  })
+}
     const mainImage = file
       ? `/uploads/product/${file.filename}`
       : null;
@@ -141,7 +167,36 @@ const updateProduct = async (req, res) => {
       }
     }
 
-    const slug = slugify(name, { strict: true, lower: true });
+const brandToUse = brandIdNumb || productExist.brandId;
+
+let brandName = '';
+
+if (brandToUse) {
+  const brand = await prisma.brand.findUnique({
+    where: { id: brandToUse },
+    select: { name: true }
+  });
+
+  brandName = brand?.name || '';
+}
+
+const slug = slugify(`${name} ${brandName}`.trim(), {
+  strict: true,
+  lower: true
+});
+
+
+const slugExist = await prisma.product.findUnique({
+  where: {
+    slug: slug
+  }
+})
+
+if (slugExist) {
+  return res.status(400).json({
+    message: "El producto ya existe"
+  })
+}
 
     let mainImage = productExist.mainImage;
 

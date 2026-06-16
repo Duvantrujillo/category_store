@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import adminIcon from "@/assets/icons/admin.png";
+import adminIcon from "@/assets/icons/gestion.png";
 
 import {
   LayoutGrid,
