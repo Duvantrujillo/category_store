@@ -67,7 +67,12 @@ export default function BasicInfoSection({
                                             key={product.id}
                                             value={String(product.id)}
                                         >
-                                            {product.name}
+                                            <span>{product.name}</span>
+                                            {product.brand?.name && (
+                                                <span className="ml-1.5 text-muted-foreground text-xs">
+                                                    — {product.brand.name}
+                                                </span>
+                                            )}
                                         </SelectItem>
 
                                     ))}

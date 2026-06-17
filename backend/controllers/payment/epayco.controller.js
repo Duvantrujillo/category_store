@@ -26,7 +26,7 @@ const createPayment = async (req, res) => {
 
     if (!tokenResponse.success) {
       return res.status(400).json({
-        error: "No se pudo generar el token de la tarjeta en ePayco",
+        error: "Error al generar token",
         details: tokenResponse
       });
     }
@@ -53,7 +53,7 @@ const createPayment = async (req, res) => {
 
     if (!customerResponse.success) {
       return res.status(400).json({
-        error: "No se pudo registrar el cliente en ePayco",
+        error: "Error al registrar cliente",
         details: customerResponse
       });
     }
@@ -71,7 +71,7 @@ const createPayment = async (req, res) => {
       email: customer.email,
       bill: paymentReference, 
       description: "Compra de prueba",
-      value: "100000", 
+      value: "10000", 
       currency: "COP",
       dues: "1", 
       ip: "127.0.0.1", 
@@ -88,7 +88,7 @@ const createPayment = async (req, res) => {
     console.error("ERROR COMPLETO EN EL PROCESO:");
     console.error(err);
     return res.status(500).json({
-      error: "Fallo interno al procesar el pago",
+      error: "Error al procesar pago",
       details: err.message || err
     });
   }

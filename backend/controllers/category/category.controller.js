@@ -14,12 +14,12 @@ const createCategory = async (req, res) => {
         })
         // 1. Validar campos de texto obligatorios
         if (!name || !customerSlug) {
-            return res.status(400).json({ error: "El nombre y el slug son obligatorios" });
+            return res.status(400).json({ error: "Nombre requerido" });
         }
 
         // 2. Validar que los campos numéricos o booleanos existan realmente
         if (isActive === undefined || sortOrder === undefined) {
-            return res.status(400).json({ error: "Faltan los campos de estado u ordenamiento" });
+            return res.status(400).json({ error: "Campos incompletos" });
         }
 
         // 3. Verificar si el slug ya existe (Corrección: prisma.category.findUnique)
@@ -30,7 +30,7 @@ const createCategory = async (req, res) => {
         })
 
         if (slugExist) {
-            return res.status(400).json({ message: "La categoría ya existe" }); // Corrección: Status 400
+            return res.status(400).json({ message: "El nombre ya existe" }); // Corrección: Status 400
         }
 
 
@@ -46,11 +46,11 @@ const createCategory = async (req, res) => {
         })
 
         // 5. Responder con el objeto creado (Corrección: Status 201 e incluir result)
-        return res.status(201).json({ message: "Registro Exitoso", data: result });
+        return res.status(201).json({ message: "Categoría creada", data: result });
 
     } catch (error) {
 
-        return res.status(500).json({ error: "Error inesperado del servidor" }); // Corrección: .status(500)
+        return res.status(500).json({ error: "Error interno" }); // Corrección: .status(500)
     }
 }
 
@@ -77,7 +77,7 @@ const updateCategory = async (req, res) => {
         // Validar ID
         if (!formId) {
             return res.status(400).json({
-                message: "El ID es obligatorio para actualizar"
+                message: "ID requerido"
             });
         }
 
@@ -91,7 +91,7 @@ const updateCategory = async (req, res) => {
         })
 
         if (slugExist) {
-            return res.status(400).json({ message: "nombre de la categoria Existente" })
+            return res.status(400).json({ message: "El nombre ya existe" })
         }
 
         // Buscar categoría
@@ -103,7 +103,7 @@ const updateCategory = async (req, res) => {
 
         if (!existenResponse) {
             return res.status(404).json({
-                message: "La categoría no existe"
+                message: "No encontrada"
             });
         }
 
@@ -128,7 +128,7 @@ const updateCategory = async (req, res) => {
         });
 
         return res.status(200).json({
-            message: "Datos actualizados correctamente",
+            message: "Categoría actualizada",
             data: updateResponse
         });
 
@@ -138,12 +138,12 @@ const updateCategory = async (req, res) => {
 
         if (error.code === 'P2002') {
             return res.status(400).json({
-                message: "El slug ya está siendo usado"
+                message: "El nombre ya existe"
             });
         }
 
         return res.status(500).json({
-            message: "Error interno del servidor"
+            message: "Error interno"
         });
     }
 }
@@ -163,7 +163,7 @@ const deleteCategory = async (req, res) => {
         })
 
         if (!existenResponse) {
-            return res.status(404).json({ message: "el registro no existe" }) // Tip: 404 queda mejor para "no existe"
+            return res.status(404).json({ message: "No encontrada" }) // Tip: 404 queda mejor para "no existe"
         }
 
         const hasRelatedProducts = await prisma.product.findFirst({
@@ -173,7 +173,7 @@ const deleteCategory = async (req, res) => {
 
         if (hasRelatedProducts) {
             return res.status(400).json({
-                message: "No se puede eliminar la categoría porque tiene productos asociados."
+                message: "Tiene productos asociados"
             });
         }
 
@@ -183,11 +183,11 @@ const deleteCategory = async (req, res) => {
             }
         })
 
-        return res.status(200).json({ message: "Registro Eliminiado exitosamente", data: registerDelete })
+        return res.status(200).json({ message: "Categoría eliminada", data: registerDelete })
 
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ error: "error interno del servidor" })
+        return res.status(500).json({ error: "Error interno" })
     }
 }
 const allCategory = async (req, res) => {
@@ -209,7 +209,7 @@ const allCategory = async (req, res) => {
     } catch (error) {
 
         return res.status(500).json({
-            message: "error interno del servidor"
+            message: "Error interno"
         });
     }
 };
@@ -229,7 +229,7 @@ const activeCategory = async (req, res) => {
 
         return res.status(200).json({ data: activeCategory })
     } catch (error) {
-        return res.status(500).json({ error: "Error interno del servidor" });
+        return res.status(500).json({ error: "Error interno" });
     }
 }
 

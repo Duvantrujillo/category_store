@@ -98,10 +98,6 @@ export const useAllProductVariant = () => {
 
       setError(err);
 
-      toast.error(
-        "Error loading variants"
-      );
-
     } finally {
 
       setLoading(false);

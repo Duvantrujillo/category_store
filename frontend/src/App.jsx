@@ -15,6 +15,12 @@ import BrandList from './pages/dashboard/admin/brand/page/ListBrand'
 import ProductList from './pages/dashboard/admin/product/pages/ListProduct'
 import ProductVariantList from './pages/dashboard/admin/product-variant/pages/ListProductVariant'
 import OrderList from './pages/dashboard/admin/order/pages/OrderList'
+import ShipmentList from './pages/dashboard/admin/shipment/pages/ListShipment'
+import ReturnList from './pages/dashboard/admin/return/pages/ListReturn'
+import AdminHome from './pages/dashboard/admin/home/AdminHome'
+
+
+
 function App() {
 
 
@@ -27,6 +33,7 @@ function App() {
 
       
       <Route path="/dashboard/admin" element={<Admin />}>
+        <Route index element={<AdminHome />} />
         <Route path="list/category" element={<CategoryList />} />
         <Route path="list/shipping" element={<ShippingList />} />
         <Route path="list/attibute" element={<AttributeList />} />
@@ -35,6 +42,8 @@ function App() {
         <Route path="list/product" element={<ProductList />} />
         <Route path="list/product-variant" element={<ProductVariantList />} />
         <Route path="list/order" element={<OrderList/>}/>
+        <Route path="list/shipment" element={<ShipmentList />} />
+        <Route path="list/return" element={<ReturnList />} />
       </Route>
 
 

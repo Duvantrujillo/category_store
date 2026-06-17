@@ -5,7 +5,7 @@ const createproductVarianAtribute = async (req, res) => {
     try {
         const { productVariantId, attributeValueId } = req.body
         if (!productVariantId || !attributeValueId) {
-            return res.status(400).json({ message: "debes selecionr un producto y su atributo" })
+            return res.status(400).json({ message: "Campos requeridos" })
         }
 
         const variantIdNum = Number(productVariantId)
@@ -16,7 +16,7 @@ const createproductVarianAtribute = async (req, res) => {
         })
 
         if (!productVariantIdExist) {
-            return res.status(400).json({ message: "el producto no existe" })
+            return res.status(400).json({ message: "Variante no encontrada" })
         }
 
         const attributeValueIdExist = await prisma.attributeValue.findUnique({
@@ -24,7 +24,7 @@ const createproductVarianAtribute = async (req, res) => {
         })
 
         if (!attributeValueIdExist) {
-            return res.status(400).json({ message: "el atributo no existe" })
+            return res.status(400).json({ message: "Atributo no encontrado" })
         }
 
         // 🛡️ NUEVO CONTROL: Evita el error P2002 de Prisma
@@ -37,7 +37,7 @@ const createproductVarianAtribute = async (req, res) => {
 
         if (relationAlreadyExists) {
             return res.status(400).json({
-                message: "Este atributo ya se encuentra asignado a la variante del producto"
+                message: "Atributo ya asignado"
             })
         }
 
@@ -49,10 +49,10 @@ const createproductVarianAtribute = async (req, res) => {
             }
         })
 
-        return res.status(201).json({ message: "Registro exitoso" })
+        return res.status(201).json({ message: "Atributo asignado" })
     } catch (error) {
         console.error(error) // Importante mantenerlo para ver otros problemas en la consola
-        return res.status(500).json({ message: "error interno del servidor " })
+        return res.status(500).json({ message: "Error interno" })
     }
 }
 
@@ -64,7 +64,7 @@ const updateproductVarianAtribute = async (req, res) => {
         const attributeValueIdNum = Number(attributeValueId)
 
         if (isNaN(formId)) {
-            return res.status(400).json({ message: "el Id debe ser numerico" })
+            return res.status(400).json({ message: "ID inválido" })
         }
 
         const formIdExist = await prisma.productVariantAttribute.findUnique({
@@ -72,11 +72,11 @@ const updateproductVarianAtribute = async (req, res) => {
         })
 
         if (!formIdExist) {
-            return res.status(400).json({ message: "el Registro no existe" })
+            return res.status(400).json({ message: "No encontrado" })
         }
 
         if (!productVariantIdNum || !attributeValueIdNum) {
-            return res.status(400).json({ message: "debes seleccionar un porducto y un atributo" })
+            return res.status(400).json({ message: "Campos requeridos" })
         }
 
         const productVariantExist = await prisma.productVariant.findUnique({
@@ -84,7 +84,7 @@ const updateproductVarianAtribute = async (req, res) => {
         })
 
         if (!productVariantExist) {
-            return res.status(400).json({ message: "el producto no existe" })
+            return res.status(400).json({ message: "Variante no encontrada" })
         }
 
         const attributeValueIdExist = await prisma.attributeValue.findUnique({
@@ -93,7 +93,7 @@ const updateproductVarianAtribute = async (req, res) => {
 
         // ⬇️ CORREGIDO: Ahora sí valida si la consulta a la BD trajo resultados
         if (!attributeValueIdExist) {
-            return res.status(400).json({ message: "el atributo no existe" })
+            return res.status(400).json({ message: "Atributo no encontrado" })
         }
 
         // ⬇️ CORREGIDO: Mapeo correcto de base de datos -> variable numérica
@@ -106,11 +106,11 @@ const updateproductVarianAtribute = async (req, res) => {
         })
 
         // Nota: Para actualizaciones exitosas se suele usar el estado 200 en vez de 201 (201 es para creación)
-        return res.status(200).json({ message: "registro actualizado correctamente" })
+        return res.status(200).json({ message: "Atributo actualizado" })
 
     } catch (error) {
         console.error(error) // 💡 Indispensable para debuguear en tu terminal
-        return res.status(500).json({ message: "error interno del servidor" }) // 🛡️ Evita que el servidor se quede colgado
+        return res.status(500).json({ message: "Error interno" }) // 🛡️ Evita que el servidor se quede colgado
     }
 }
 
@@ -119,7 +119,7 @@ const deleteproductVarianAtribute = async (req, res) => {
     try {
         const formId = Number(req.params.id)
         if (isNaN(formId)) {
-            return res.status(400).json({ message: "el ID debe ser numerico" })
+            return res.status(400).json({ message: "ID inválido" })
         }
         const formaIdExist = await prisma.productVariantAttribute.findUnique({
             where: {
@@ -129,7 +129,7 @@ const deleteproductVarianAtribute = async (req, res) => {
 
 
         if (!formaIdExist) {
-            return res.status(400).json({ message: "el registro no existe" })
+            return res.status(400).json({ message: "No encontrado" })
         }
 
         const deletedproductVarianAtribute = await prisma.productVariantAttribute.delete({
@@ -138,9 +138,9 @@ const deleteproductVarianAtribute = async (req, res) => {
             }
         })
 
-        return res.status(200).json({ message: "registro eliminado exitosamente" })
+        return res.status(200).json({ message: "Atributo eliminado" })
     } catch (error) {
-        return res.status(500).json({ message: "error interno del servidor" })
+        return res.status(500).json({ message: "Error interno" })
     }
 
 }

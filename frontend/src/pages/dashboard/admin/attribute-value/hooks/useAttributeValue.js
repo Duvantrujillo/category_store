@@ -46,10 +46,6 @@ export const useAllAttributeValue = () => {
 
       setError(err);
 
-      toast.error(
-        "Error loading attribute values"
-      );
-
     } finally {
 
       setLoading(false);

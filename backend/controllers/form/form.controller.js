@@ -18,19 +18,19 @@ const createForm = async (req, res) => {
 
 
         if (!firstName || !lastName || !documentNumber || !phoneNumber || !address || !departament || !municipality) {
-            return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+            return res.status(400).json({ message: 'Campos incompletos' });
         }
 
         const documentNumberNumb = Number(documentNumber)
         if (isNaN(documentNumberNumb) || documentNumber.length > 10 || documentNumber.length < 4) {
-            return res.status(400).json({ message: "Tu Documento debe ser numérico y tener entre 4 y 10 dígitos" })
+            return res.status(400).json({ message: "Documento inválido (4-10 dígitos)" })
         }
 
         const phoneNumberNumb = Number(phoneNumber)
 
         if (isNaN(phoneNumberNumb) || phoneNumber.length > 10 || phoneNumber.length < 7) {
             // Actualizamos el mensaje para reflejar el rango de 7 a 10 dígitos
-            return res.status(400).json({ message: "Tu teléfono debe ser numérico y tener entre 7 y 10 dígitos" })
+            return res.status(400).json({ message: "Teléfono inválido (7-10 dígitos)" })
         }
 
 
@@ -70,13 +70,13 @@ const createForm = async (req, res) => {
         }
 
         return res.status(200).json({
-            message: 'Registro procesado correctamente',
+            message: 'Formulario guardado',
             data: result
         });
 
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: 'Error interno del servidor' });
+        return res.status(500).json({ message: 'Error interno' });
     }
 }
 
@@ -122,7 +122,7 @@ const updateForm = async (req, res) => {
 
         if (hasEmptyFields) {
             return res.status(400).json({
-                message: 'Todos los campos obligatorios deben estar completos'
+                message: 'Campos incompletos'
             });
         }
 
@@ -135,7 +135,7 @@ const updateForm = async (req, res) => {
 
         if (!existingResponse) {
             return res.status(404).json({
-                message: 'Registro no encontrado'
+                message: 'No encontrado'
             });
         }
 
@@ -156,13 +156,13 @@ const updateForm = async (req, res) => {
             }
         });
         return res.status(200).json({
-            message: 'Registro actualizado correctamente',
+            message: 'Formulario actualizado',
             data: updatedResponse
         });
 
     } catch (error) {
         return res.status(500).json({
-            message: 'Error al actualizar el registro'
+            message: 'Error interno'
         });
     }
 }
@@ -178,7 +178,7 @@ const deleteForm = async (req, res) => {
         })
 
         if (!formIdExist) {
-            return res.status(404).json({ message: "el registro no existe" })
+            return res.status(404).json({ message: "No encontrado" })
         }
 
         const deleteForm = await prisma.formResponse.delete({
@@ -187,10 +187,10 @@ const deleteForm = async (req, res) => {
             }
         })
 
-        return res.status(200).json({ message: "registro eliminado" })
+        return res.status(200).json({ message: "Formulario eliminado" })
 
     } catch (error) {
-        return res.status(500).json({ message: "error interno del servidor" })
+        return res.status(500).json({ message: "Error interno" })
     }
 
 }
@@ -212,7 +212,7 @@ const AllForm = async (req, res) => {
 
         return res.status(200).json({ data: all })
     } catch (error) {
-        return res.status(500).json({ message: "error interno del servidor" })
+        return res.status(500).json({ message: "Error interno" })
     }
 }
 

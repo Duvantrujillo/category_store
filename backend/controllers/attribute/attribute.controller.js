@@ -15,7 +15,7 @@ const createAttribute = async (req, res) => {
 
     if (!name) {
       return res.status(400).json({
-        message: "nombre es obligatorio"
+        message: "Nombre requerido"
       })
     }
     const customerSlug = slugify(name, {
@@ -34,19 +34,19 @@ const createAttribute = async (req, res) => {
     })
 
     return res.status(201).json({
-      message: "Atributo registrado correctamente",
+      message: "Atributo creado",
       data: newAttribute
     })
 
   } catch (error) {
     if (error.code === "P2002") {
       return res.status(400).json({
-        message: "El slug ya existe"
+        message: "El nombre ya existe"
       })
     }
 
     return res.status(500).json({
-      error: "error interno del servidor"
+      error: "Error interno"
     })
   }
 }
@@ -74,7 +74,7 @@ const updateAttribute = async (req, res) => {
     });
 
     if (!idExist) {
-      return res.status(404).json({ message: "El registro no existe" });
+      return res.status(404).json({ message: "No encontrado" });
     }
 
     const customerSlug = slugify(name, {
@@ -92,7 +92,7 @@ const updateAttribute = async (req, res) => {
       });
 
       if (slugExist) {
-        return res.status(400).json({ message: "El slug ya existe" });
+        return res.status(400).json({ message: "El nombre ya existe" });
       }
     }
 
@@ -108,12 +108,12 @@ const updateAttribute = async (req, res) => {
 
     // 5️⃣ Responder al cliente
     return res.status(200).json({
-      message: "Registro actualizado correctamente",
+      message: "Atributo actualizado",
       data: registerUpdate
     });
 
   } catch (error) {
-    return res.status(500).json({ message: "error interno del servidor" });
+    return res.status(500).json({ message: "Error interno" });
   }
 }
 
@@ -133,7 +133,7 @@ const deleteAttribute = async (req, res) => {
     });
 
     if (!idExist) {
-      return res.status(404).json({ message: "El registro no existe" });
+      return res.status(404).json({ message: "No encontrado" });
     }
 
     const ExistAttributeValue = await prisma.attributeValue.findFirst({
@@ -144,7 +144,7 @@ const deleteAttribute = async (req, res) => {
 
     if (ExistAttributeValue) {
       return res.status(400).json({
-        message: "No se puede eliminar el atributo porque tiene valores asociados."
+        message: "Tiene valores asociados"
       })
     }
 
@@ -155,12 +155,12 @@ const deleteAttribute = async (req, res) => {
 
     // 4️⃣ Responder al cliente
     return res.status(200).json({
-      message: "El registro fue eliminado satisfactoriamente"
+      message: "Atributo eliminado"
     });
 
   } catch (error) {
     return res.status(500).json({
-      message: "Error interno del servidor"
+      message: "Error interno"
     });
   }
 }
@@ -179,7 +179,7 @@ const allAttribute = async (req, res) => {
     return res.status(200).json({ data: all })
 
   } catch (error) {
-    return res.status(500).json({ message: "error interno del servidor" })
+    return res.status(500).json({ message: "Error interno" })
   }
 }
 

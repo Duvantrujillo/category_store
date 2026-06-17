@@ -34,10 +34,6 @@ export const useAllOrder = () => {
       setError(null);
     } catch (err) {
       setError(err);
-
-      toast.error(
-        "Error loading orders"
-      );
     } finally {
       setLoading(false);
     }

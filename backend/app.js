@@ -45,7 +45,8 @@ const epaycoRouter = require('./routes/epayco.routes.js')
 const returnRequestRouter = require('./routes/return-request.routes.js')
 const returnItemRouter = require('./routes/return-item.routes.js')
 const refundRouter = require('./routes/refund.routes.js')
-
+const shipmentRouter =  require('./routes/shipment.routes.js')
+const dashboardRouter = require('./routes/dashboard.routes.js')
 
 
 
@@ -72,7 +73,8 @@ app.use('/epayco',epaycoRouter)
 app.use('/return-request',returnRequestRouter)
 app.use('/return-item',returnItemRouter)
 app.use('/refund',refundRouter)
-
+app.use('/shipment',shipmentRouter)
+app.use('/dashboard',dashboardRouter)
 
 
 /*

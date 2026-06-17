@@ -10,7 +10,7 @@ const createCartItem = async (req, res) => {
     // 1. validar que sea array
     if (!Array.isArray(items)) {
       return res.status(400).json({
-        message: "El body debe ser un array de items"
+        message: "Se esperaba un array de ítems"
       })
     }
 
@@ -49,7 +49,7 @@ const createCartItem = async (req, res) => {
 
       if (!productVariantId) {
         return res.status(400).json({
-          message: "productVariantId requerido en uno de los items"
+          message: "productVariantId requerido"
         })
       }
 
@@ -76,13 +76,13 @@ const createCartItem = async (req, res) => {
     }
 
     return res.json({
-      message: "Items agregados correctamente",
+      message: "Ítems agregados",
       items: results
     })
 
   } catch (error) {
     return res.status(500).json({
-      message: "Error al agregar al carrito"
+      message: "Error interno"
     })
   }
 }

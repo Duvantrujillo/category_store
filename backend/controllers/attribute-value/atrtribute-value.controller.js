@@ -23,7 +23,7 @@ const createAtribute_Value = async (req, res) => {
         })
 
         if (slugExist) {
-            return res.status(400).json({ Messages: "el slug ya existe" })
+            return res.status(400).json({ Messages: "El nombre ya existe" })
         }
 
 
@@ -36,7 +36,7 @@ const createAtribute_Value = async (req, res) => {
         })
 
         if (!attributeIdExist) {
-            return res.status(400).json({ message: "el Atributo no existe" })
+            return res.status(400).json({ message: "Atributo no encontrado" })
         }
 
 
@@ -51,11 +51,11 @@ const createAtribute_Value = async (req, res) => {
             }
         })
 
-        return res.status(201).json({ Messages: "Registro exitoso", newAttributeValue })
+        return res.status(201).json({ Messages: "Valor creado", newAttributeValue })
 
     } catch (error) {
         console.error(error) // Recomendado para que puedas ver el error real en tu consola
-        return res.status(500).json({ Messages: "error interno del servidor" })
+        return res.status(500).json({ Messages: "Error interno" })
     }
 }
 
@@ -66,7 +66,7 @@ const updateAtribute_Value = async (req, res) => {
         const { value, slug, attributeId, sortOrder } = req.body
 
         if (isNaN(formId)) {
-            return res.status(400).json({ Messages: "el id es invalido" }) // Unificado a Messages
+            return res.status(400).json({ Messages: "ID inválido" }) // Unificado a Messages
         }
 
         const idExist = await prisma.attributeValue.findFirst({
@@ -75,7 +75,7 @@ const updateAtribute_Value = async (req, res) => {
         })
 
         if (!idExist) {
-            return res.status(404).json({ Messages: "No se encontro este registro" }) // Cambiado a 404 Not Found
+            return res.status(404).json({ Messages: "No encontrado" }) // Cambiado a 404 Not Found
         }
 
         const customerSlug = slugify(value, {
@@ -93,7 +93,7 @@ const updateAtribute_Value = async (req, res) => {
         })
 
         if (slugExist) {
-            return res.status(400).json({ Messages: "la slug ya existe" })
+            return res.status(400).json({ Messages: "El nombre ya existe" })
         }
 
         const registerUpdate = await prisma.attributeValue.update({
@@ -105,11 +105,11 @@ const updateAtribute_Value = async (req, res) => {
             }
         })
 
-        return res.status(200).json({ Messages: "Registro Exitoso", registerUpdate })
+        return res.status(200).json({ Messages: "Valor actualizado", registerUpdate })
 
     } catch (error) {
         console.error(error)
-        return res.status(500).json({ Messages: "error interno del servidor" })
+        return res.status(500).json({ Messages: "Error interno" })
     }
 }
 
@@ -121,7 +121,7 @@ const deleteAtribute_Value = async (req, res) => {
 
         if (isNaN(id)) {
             return res.status(400).json({
-                message: 'El id debe ser numérico'
+                message: 'ID inválido'
             })
         }
 
@@ -133,7 +133,7 @@ const deleteAtribute_Value = async (req, res) => {
 
         if (productExist) {
             return res.status(400).json({
-                message: "No se puede eliminar este registro porque está asociado a uno o más productos."
+                message: "Tiene productos asociados"
             })
         }
 
@@ -142,18 +142,18 @@ const deleteAtribute_Value = async (req, res) => {
         })
 
         return res.status(200).json({
-            message: 'Registro eliminado correctamente'
+            message: 'Valor eliminado'
         })
 
     } catch (error) {
         if (error.code === 'P2025') {
             return res.status(404).json({
-                message: 'El registro no existe'
+                message: 'No encontrado'
             })
         }
 
         return res.status(500).json({
-            message: 'Error interno del servidor'
+            message: 'Error interno'
         })
     }
 }
@@ -176,7 +176,7 @@ const allAtribute_Value = async (req, res) => {
 
         return res.status(200).json({ data: all })
     } catch (error) {
-        return res.status(500).json({ message: "error interno del servidor" })
+        return res.status(500).json({ message: "Error interno" })
     }
 }
 

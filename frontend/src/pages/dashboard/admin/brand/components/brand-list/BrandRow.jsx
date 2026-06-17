@@ -1,116 +1,63 @@
 import { Trash } from "lucide-react";
-
 import noPhotos from "@/assets/icons/no-fotos.png";
 import { Button } from "@/components/ui/button";
-
-import {
-  TableCell,
-  TableRow,
-} from "@/components/ui/table";
-
+import { TableCell, TableRow } from "@/components/ui/table";
 import BrandEditDialog from "@/pages/dashboard/admin/brand/components/brand-update/BrandEditDialog";
 
-function BrandRow({
-  item,
-  onDelete,
-  onRefresh,
-}) {
-
+function BrandRow({ item, onDelete, onRefresh }) {
   return (
-
-    <TableRow className="hover:bg-muted/40 transition-colors">
+    <TableRow className="hover:bg-slate-50/80 transition-colors">
 
       {/* Logo */}
-      <TableCell className="flex justify-center">
-
-        <img
-          src={item.logoUrl ? `${import.meta.env.VITE_API_URL}${item.logoUrl}` : noPhotos}
-          alt={item.name || "Sin imagen"}
-          className="
-            h-10
-            w-10
-            rounded-md
-            object-cover
-            border
-          "
-        />
-
+      <TableCell className="px-4 py-3">
+        <div className="flex justify-center">
+          <img
+            src={item.logoUrl ? `${import.meta.env.VITE_API_URL}${item.logoUrl}` : noPhotos}
+            alt={item.name || "Sin imagen"}
+            className="h-10 w-10 rounded-lg object-cover border border-slate-200 shadow-sm"
+          />
+        </div>
       </TableCell>
 
       {/* Marca */}
-      <TableCell>
-
+      <TableCell className="px-4 py-3">
         <div className="flex flex-col">
-
-          <span className="font-medium">
-            {item.name}
-          </span>
-
-          <small className="text-muted-foreground">
-            {item.slug}
-          </small>
-
+          <span className="font-medium text-slate-800">{item.name}</span>
+          <small className="text-slate-400">{item.slug}</small>
         </div>
-
       </TableCell>
 
       {/* Descripción */}
-      <TableCell>
-
-        <p className="line-clamp-2 max-w-xs">
-
-          {item.description || "Sin descripción"}
-
-        </p>
-
+      <TableCell className="px-4 py-3 text-slate-600">
+        <p className="line-clamp-2 max-w-xs">{item.description || "Sin descripción"}</p>
       </TableCell>
 
       {/* Estado */}
-      <TableCell>
-
-        <span
-          className={`
-        px-2 py-1 rounded-full text-sm font-medium
-        ${item.isActive
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-            }
-      `}
-        >
-          {item.isActive
-            ? "Activo"
-            : "Inactivo"}
+      <TableCell className="px-4 py-3">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          item.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+        }`}>
+          {item.isActive ? "Activo" : "Inactivo"}
         </span>
-
       </TableCell>
 
       {/* Acciones */}
-      <TableCell className="text-center space-x-2">
-
-        <BrandEditDialog
-          item={item}
-          onRefresh={onRefresh}
-        />
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="
-        text-destructive
-        hover:text-destructive
-        hover:bg-destructive/10
-      "
-          onClick={() => onDelete(item.id)}
-        >
-          <Trash className="h-4 w-4" />
-        </Button>
-
+      <TableCell className="text-center px-4 py-3">
+        <div className="flex items-center justify-center gap-1">
+          <BrandEditDialog item={item} onRefresh={onRefresh} />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+            onClick={() => onDelete(item.id)}
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
       </TableCell>
 
     </TableRow>
-
   );
-
 }
 
 export default BrandRow;

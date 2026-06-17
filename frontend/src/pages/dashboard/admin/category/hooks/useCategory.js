@@ -200,7 +200,6 @@ export const useAllCategory = () => {
 
     } catch (err) {
       setError(err);
-      toast.error("Error loading categories");
     } finally {
       setLoading(false);
     }
@@ -238,7 +237,6 @@ export const useActiveCategory = () => {
 
     } catch (err) {
       setError(err);
-      toast.error("Error loading categories");
     } finally {
       setLoading(false);
     }

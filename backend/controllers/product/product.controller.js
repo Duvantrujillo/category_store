@@ -32,7 +32,7 @@ const createProduct = async (req, res) => {
     });
 
     if (!categoryExists) {
-      return res.status(400).json({ message: "Categoría no existe" });
+      return res.status(400).json({ message: "Categoría no encontrada" });
     }
     const hasChildren = await prisma.category.findFirst({
   where: {
@@ -53,7 +53,7 @@ if (hasChildren) {
       });
 
       if (!brandExists) {
-        return res.status(400).json({ message: "Marca no existe" });
+        return res.status(400).json({ message: "Marca no encontrada" });
       }
     }
 
@@ -82,7 +82,7 @@ const slugExist = await prisma.product.findUnique({
 
 if (slugExist) {
   return res.status(400).json({
-    message: "El producto ya existe"
+    message: "El nombre ya existe"
   })
 }
     const mainImage = file
@@ -102,14 +102,14 @@ if (slugExist) {
     });
 
     return res.status(201).json({
-      message: "Registro exitoso",
+      message: "Producto creado",
       data: newProduct,
     });
   } catch (error) {
     console.log("🔥 ERROR CREATE PRODUCT:", error);
 
     return res.status(500).json({
-      message: error.message,
+      message: "Error interno",
     });
   }
 };
@@ -142,7 +142,7 @@ const updateProduct = async (req, res) => {
     });
 
     if (!productExist) {
-      return res.status(404).json({ message: "No existe" });
+      return res.status(404).json({ message: "No encontrado" });
     }
 
     if (!Number.isInteger(categoryIdNumb) || !name) {
@@ -154,7 +154,7 @@ const updateProduct = async (req, res) => {
     });
 
     if (!categoryExists) {
-      return res.status(400).json({ message: "Categoría no existe" });
+      return res.status(400).json({ message: "Categoría no encontrada" });
     }
 
     if (brandIdNumb) {
@@ -163,7 +163,7 @@ const updateProduct = async (req, res) => {
       });
 
       if (!brandExists) {
-        return res.status(400).json({ message: "Marca no existe" });
+        return res.status(400).json({ message: "Marca no encontrada" });
       }
     }
 
@@ -186,15 +186,18 @@ const slug = slugify(`${name} ${brandName}`.trim(), {
 });
 
 
-const slugExist = await prisma.product.findUnique({
+const slugExist = await prisma.product.findFirst({
   where: {
-    slug: slug
+    slug: slug,
+    NOT: {
+      id: formId
+    }
   }
 })
 
 if (slugExist) {
   return res.status(400).json({
-    message: "El producto ya existe"
+    message: "El nombre ya existe"
   })
 }
 
@@ -218,14 +221,14 @@ if (slugExist) {
     });
 
     return res.status(200).json({
-      message: "Actualizado correctamente",
+      message: "Producto actualizado",
       data: updatedProduct,
     });
   } catch (error) {
     console.log("🔥 UPDATE ERROR:", error);
 
     return res.status(500).json({
-      message: error.message,
+      message: "Error interno",
     });
   }
 };
@@ -238,7 +241,7 @@ const deleteProduct = async (req, res) => {
 
     if (isNaN(formId)) {
       return res.status(400).json({
-        message: "El ID debe ser numérico"
+        message: "ID inválido"
       });
     }
 
@@ -248,7 +251,7 @@ const deleteProduct = async (req, res) => {
 
     if (!productExist) {
       return res.status(404).json({
-        message: "El registro no existe"
+        message: "No encontrado"
       });
     }
 
@@ -259,7 +262,7 @@ const deleteProduct = async (req, res) => {
 
     if (count > 0) {
       return res.status(400).json({
-        message: "No se puede eliminar el producto porque tiene variantes asociadas"
+        message: "Tiene variantes asociadas"
       });
     }
 
@@ -282,14 +285,14 @@ const deleteProduct = async (req, res) => {
     });
 
     return res.status(200).json({
-      message: "Registro eliminado exitosamente",
+      message: "Producto eliminado",
       data: deletedProduct
     });
 
   } catch (error) {
     console.log(error);
     return res.status(500).json({
-      message: "Error interno del servidor"
+      message: "Error interno"
     });
   }
 };
@@ -322,7 +325,7 @@ const allProduct = async (req, res) => {
     console.log(error); // 🔥 importante para ver el error real
 
     return res.status(500).json({
-      message: "Error interno del servidor",
+      message: "Error interno",
     });
   }
 };
@@ -389,7 +392,7 @@ const searchProduct = async (req, res) => {
     );
 
     return res.status(500).json({
-      message: "Error al buscar productos",
+      message: "Error al buscar",
     });
 
   }

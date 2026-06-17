@@ -11,11 +11,11 @@ const createBrand = async (req, res) => {
         const file = req.file
 
         if (!name) {
-            return res.status(400).json({ message: 'El nombre es requerido' })
+            return res.status(400).json({ message: 'Nombre requerido' })
         }
 
         if (!file) {
-            return res.status(400).json({ message: 'Debes subir un logo' })
+            return res.status(400).json({ message: 'Logo requerido' })
         }
 
         const customerSlug = slugify(name, { lower: true, strict: true })
@@ -25,7 +25,7 @@ const createBrand = async (req, res) => {
         })
 
         if (slugExist) {
-            return res.status(409).json({ message: 'El slug ya existe' })
+            return res.status(409).json({ message: 'El nombre ya existe' })
         }
 
         // Convertir isActive a boolean
@@ -50,13 +50,13 @@ const createBrand = async (req, res) => {
         })
 
         return res.status(201).json({
-            message: 'Registro exitoso',
+            message: 'Marca creada',
             data: newBrand
         })
 
     } catch (error) {
         console.error('Error en createBrand:', error)
-        return res.status(500).json({ message: 'Error interno del servidor' })
+        return res.status(500).json({ message: 'Error interno' })
     }
 }
 
@@ -67,7 +67,7 @@ const updateBrand = async (req, res) => {
         const file = req.file
 
         if (isNaN(formId)) {
-            return res.status(400).json({ message: "El ID debe ser numérico" })
+            return res.status(400).json({ message: "ID inválido" })
         }
 
         const brandExist = await prisma.brand.findUnique({
@@ -75,11 +75,11 @@ const updateBrand = async (req, res) => {
         })
 
         if (!brandExist) {
-            return res.status(404).json({ message: "El registro no existe" })
+            return res.status(404).json({ message: "No encontrado" })
         }
 
         if (!name) {
-            return res.status(400).json({ message: "El nombre es obligatorio" })
+            return res.status(400).json({ message: "Nombre requerido" })
         }
 
         // 🔹 slug
@@ -96,7 +96,7 @@ const updateBrand = async (req, res) => {
         })
 
         if (existSlug) {
-            return res.status(400).json({ message: "El slug ya existe" })
+            return res.status(400).json({ message: "El nombre ya existe" })
         }
 
         // 🔥 CONVERTIR BOOLEAN BIEN
@@ -144,13 +144,13 @@ const updateBrand = async (req, res) => {
         })
 
         return res.status(200).json({
-            message: "Registro actualizado correctamente",
+            message: "Marca actualizada",
             data: updatedBrand
         })
 
     } catch (error) {
         console.error("Error en updateBrand:", error)
-        return res.status(500).json({ message: "Error interno del servidor" })
+        return res.status(500).json({ message: "Error interno" })
     }
 }
 const deleteBrand = async (req, res) => {
@@ -160,7 +160,7 @@ const deleteBrand = async (req, res) => {
 
         if (isNaN(formId)) {
             return res.status(400).json({
-                message: "El ID debe ser numérico"
+                message: "ID inválido"
             });
         }
 
@@ -172,7 +172,7 @@ const deleteBrand = async (req, res) => {
 
         if (!brandExist) {
             return res.status(404).json({
-                message: "El registro a eliminar no existe"
+                message: "No encontrado"
             });
         }
 
@@ -185,7 +185,7 @@ const deleteBrand = async (req, res) => {
 
         if (productExist) {
             return res.status(400).json({
-                message: "La marca no puede ser eliminada porque está asociada a uno o más productos."
+                message: "Tiene productos asociados"
             });
         }
 
@@ -223,8 +223,7 @@ const deleteBrand = async (req, res) => {
             });
 
         return res.status(200).json({
-            message:
-                "El registro fue eliminado satisfactoriamente",
+            message: "Marca eliminada",
             data: registerDelete
         });
 
@@ -237,7 +236,7 @@ const deleteBrand = async (req, res) => {
 
         return res.status(500).json({
             message:
-                "Error interno del servidor"
+                "Error interno"
         });
 
     }
@@ -259,7 +258,7 @@ const allBrand = async (req, res) => {
 
         return res.status(200).json({ data: all })
     } catch (error) {
-        return res.status(500).json({ message: 'error interno del servidor' }, error)
+        return res.status(500).json({ message: 'Error interno' })
     }
 }
 
@@ -305,7 +304,7 @@ const searchBrand = async (req, res) => {
     );
 
     return res.status(500).json({
-      message: "Error al buscar marcas",
+      message: "Error al buscar",
     });
 
   }

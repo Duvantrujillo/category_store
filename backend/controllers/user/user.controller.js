@@ -10,7 +10,7 @@ const createUser = async (req, res) => {
     // 1. Validación básica
     if (!name || !email || !password) {
       return res.status(400).json({
-        message: 'datos faltantes'
+        message: 'Campos requeridos'
       });
     }
 
@@ -21,7 +21,7 @@ const createUser = async (req, res) => {
 
     if (userExist) {
       return res.status(409).json({
-        message: 'este correo ya existe'
+        message: 'Correo ya registrado'
       });
     }
 
@@ -35,7 +35,7 @@ const createUser = async (req, res) => {
     });
 
     if (!roleExist) {
-      return res.status(400).json({ message: 'Rol customer no existe' })
+      return res.status(400).json({ message: 'Error de configuración' })
     }
 
     // 4. Crear usuario en DB
@@ -54,13 +54,13 @@ const createUser = async (req, res) => {
     const { password: _, ...userWithoutPassword } = newUser;
 
     return res.status(201).json({
-      message: 'Usuario registrado correctamente',
+      message: 'Usuario creado',
       user: userWithoutPassword
     });
 
   } catch (error) {
     return res.status(500).json({
-      message: 'error interno del servidor'
+      message: 'Error interno'
     });
   }
 }
@@ -71,7 +71,7 @@ const loginUser = async (req, res) => {
 
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Todos los Campos son Obligatorios' })
+      return res.status(400).json({ message: 'Campos requeridos' })
     }
 
     //verifica que el usuario exista
@@ -84,7 +84,7 @@ const loginUser = async (req, res) => {
 
 
     if (!userExist) {
-      return res.status(400).json({ message: 'Credenciales invalidas' })
+      return res.status(400).json({ message: 'Credenciales inválidas' })
     }
 
 
@@ -93,7 +93,7 @@ const loginUser = async (req, res) => {
 
 
     if (!validPassword) {
-      return res.status(401).json({ message: "Credenciales invalidas" })
+      return res.status(401).json({ message: "Credenciales inválidas" })
     }
 
     if (!process.env.JWT_SECRET) {
@@ -109,7 +109,7 @@ const loginUser = async (req, res) => {
 
 
     return res.status(200).json({
-      message: "login existoso", token,
+      message: "Sesión iniciada", token,
       user: {
         id: userExist.id,
         name: userExist.name,
@@ -120,7 +120,7 @@ const loginUser = async (req, res) => {
 
   } catch (error) {
      console.log("🔥 LOGIN ERROR REAL:", error);
-    return res.status(500).json({ message: 'error interno del servidor' })
+    return res.status(500).json({ message: 'Error interno' })
   }
 
 }
@@ -143,7 +143,7 @@ const allUser = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({
-      message: 'error al obtener usuarios'
+      message: 'Error interno'
     });
   }
 }

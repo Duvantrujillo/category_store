@@ -10,7 +10,7 @@ const createPayment = async (req, res) => {
         // Validaciones básicas
         if (!orderId || !provider || !reference || !amount) {
             return res.status(400).json({
-                message: "Faltan datos obligatorios para crear el Payment"
+                message: "Campos requeridos"
             });
         }
 
@@ -38,7 +38,7 @@ const createPayment = async (req, res) => {
         });
 
         return res.status(201).json({
-            message: "Pago creado correctamente",
+            message: "Pago creado",
             payment
         });
 
@@ -48,14 +48,12 @@ const createPayment = async (req, res) => {
         // Manejar errores de unicidad
         if (error.code === "P2002") { // Prisma unique constraint failed
             return res.status(400).json({
-                message: "Ya existe un pago con ese reference o orderId",
-                error: error.meta.target
+                message: "Referencia ya registrada"
             });
         }
 
         return res.status(500).json({
-            message: "Error creando el Payment",
-            error: error.message
+            message: "Error interno"
         });
     }
 };
@@ -63,6 +61,24 @@ const createPayment = async (req, res) => {
 
 
 
+const getPaymentMethods = async (req, res) => {
+    try {
+        const rows = await prisma.payment.findMany({
+            where: { paymentMethod: { not: null } },
+            select: { paymentMethod: true },
+            distinct: ['paymentMethod'],
+        })
+
+        const methods = rows.map((r) => r.paymentMethod)
+
+        return res.status(200).json({ methods })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({ message: "Error interno" })
+    }
+}
+
 module.exports = {
-    createPayment
+    createPayment,
+    getPaymentMethods,
 }

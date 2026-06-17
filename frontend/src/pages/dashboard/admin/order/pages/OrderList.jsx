@@ -9,12 +9,7 @@ import OrderItemsModal from "../components/order-items/OrderItemsModal";
 import OrderPaymentModal from "../components/order-payment/OrderPaymentModal";
 
 const OrderList = () => {
-  const {
-    orders,
-    loading,
-    error,
-    refetch,
-  } = useAllOrder();
+  const { orders } = useAllOrder();
 
   const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -38,14 +33,6 @@ const OrderList = () => {
     setSelectedOrder(order);
     setOpenPayment(true);
   };
-
-  if (loading) {
-    return <p>Cargando órdenes...</p>;
-  }
-
-  if (error) {
-    return <p>Error cargando órdenes.</p>;
-  }
 
   return (
     <>

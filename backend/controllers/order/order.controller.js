@@ -21,11 +21,37 @@ const createOrder = async (req, res) => {
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
-        message: "El body debe tener items"
+        message: "Se esperaba un array de ítems"
       });
     }
 
-    // 🔥 CALCULAR SUBTOTAL Y TOTAL
+    // Verificar que el unitPrice de cada item coincida con el precio real en BD
+    const variantIds = items.map(item => item.productVariantId);
+    const variants = await prisma.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      select: { id: true, price: true }
+    });
+
+    const variantPriceMap = Object.fromEntries(variants.map(v => [v.id, v.price]));
+
+    for (const item of items) {
+      const realPrice = variantPriceMap[item.productVariantId];
+      if (realPrice === undefined) {
+        return res.status(400).json({
+          message: `Variante ${item.productVariantId} no encontrada`
+        });
+      }
+      if (Number(realPrice) !== Number(item.unitPrice)) {
+        return res.status(400).json({
+          message: `Precio incorrecto`,
+          productVariantId: item.productVariantId,
+          expectedPrice: Number(realPrice),
+          receivedPrice: Number(item.unitPrice)
+        });
+      }
+    }
+
+    // CALCULAR SUBTOTAL Y TOTAL
     const subtotal = items.reduce((acc, item) => {
       return acc + Number(item.unitPrice) * Number(item.quantity);
     }, 0);
@@ -70,7 +96,7 @@ const createOrder = async (req, res) => {
     });
 
     return res.status(201).json({
-      message: "Orden creada correctamente",
+      message: "Orden creada",
       order
     });
 
@@ -78,8 +104,7 @@ const createOrder = async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      message: "Error creando la orden",
-      error: error.message
+      message: "Error interno"
     });
   }
 };
@@ -94,7 +119,10 @@ const allOrder = async (req, res) => {
         payment: true,
         items: {
           include: {
-            productVariant: true
+            productVariant: true,
+            returnItems: {
+              select: { quantity: true }
+            }
           }
         }
       },
@@ -112,7 +140,7 @@ const allOrder = async (req, res) => {
 
     return res.status(500).json({
       ok: false,
-      message: 'Error obteniendo los pedidos'
+      message: 'Error interno'
     });
   }
 };

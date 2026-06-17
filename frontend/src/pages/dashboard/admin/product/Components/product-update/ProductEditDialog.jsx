@@ -137,7 +137,7 @@ export default function ProductEditDialog({
         open={open}
         onOpenChange={setOpen}
       >
-        <DialogContent className="sm:max-w-2xl rounded-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl rounded-lg">
           <DialogHeader>
             <DialogTitle className="text-lg">
               Editar Producto

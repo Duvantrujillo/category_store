@@ -49,7 +49,7 @@ const createProductVariant = async (req, res) => {
 
       if (barcodeExist) {
         return res.status(409).json({
-          message: "El código de barras ya existe"
+          message: "Código de barras ya registrado"
         });
       }
     }
@@ -65,7 +65,7 @@ const createProductVariant = async (req, res) => {
 
       if (existingDefault) {
         return res.status(409).json({
-          message: "Ya existe una variante principal para este producto"
+          message: "Ya existe una variante principal"
         });
       }
     }
@@ -167,7 +167,7 @@ const createProductVariant = async (req, res) => {
     });
 
     return res.status(201).json({
-      message: "Variante creada correctamente",
+      message: "Variante creada",
       data: finalVariant
     });
 
@@ -175,8 +175,7 @@ const createProductVariant = async (req, res) => {
     console.error("🔥 ERROR:", error);
 
     return res.status(500).json({
-      message: "Error interno del servidor",
-      error: error.message
+      message: "Error interno"
     });
   }
 };
@@ -232,7 +231,7 @@ const updateProductVariant = async (req, res) => {
     });
 
     if (!variantExist) {
-      return res.status(404).json({ message: "La variante no existe" });
+      return res.status(404).json({ message: "No encontrada" });
     }
 
     // 2. validar producto
@@ -241,7 +240,7 @@ const updateProductVariant = async (req, res) => {
     });
 
     if (!productExist) {
-      return res.status(404).json({ message: "El producto no existe" });
+      return res.status(404).json({ message: "Producto no encontrado" });
     }
 
     // 4. validar que por producto sólo exista una variante principal
@@ -256,7 +255,7 @@ const updateProductVariant = async (req, res) => {
 
       if (existingDefault) {
         return res.status(409).json({
-          message: "Ya existe una variante principal para este producto"
+          message: "Ya existe una variante principal"
         });
       }
     }
@@ -271,7 +270,7 @@ const updateProductVariant = async (req, res) => {
       });
 
       if (skuExist) {
-        return res.status(409).json({ message: "El SKU ya existe" });
+        return res.status(409).json({ message: "SKU ya registrado" });
       }
     }
 
@@ -353,14 +352,14 @@ const updateProductVariant = async (req, res) => {
     });
 
     return res.status(200).json({
-      message: "Variante actualizada correctamente",
+      message: "Variante actualizada",
       data: updated
     });
 
   } catch (error) {
     console.error("Error en updateProductVariant:", error);
     return res.status(500).json({
-      message: "Error interno del servidor"
+      message: "Error interno"
     });
   }
 };
@@ -381,7 +380,7 @@ const deleteProductVariant = async (req, res) => {
     });
 
     if (!variantExist) {
-      return res.status(404).json({ message: "No existe" });
+      return res.status(404).json({ message: "No encontrada" });
     }
 
     // 1. borrar relaciones DB
@@ -405,7 +404,7 @@ const deleteProductVariant = async (req, res) => {
     });
 
     return res.status(200).json({
-      message: "Eliminado correctamente",
+      message: "Variante eliminada",
       data: deleted
     });
 
@@ -413,7 +412,7 @@ const deleteProductVariant = async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      message: "Error interno del servidor"
+      message: "Error interno"
     });
   }
 };
@@ -475,7 +474,7 @@ const variants = await prisma.productVariant.findMany({
   } catch (error) {
     console.error("Error searching variants:", error);
     return res.status(500).json({
-      message: "Error al buscar variantes",
+      message: "Error al buscar",
     });
   }
 };

@@ -227,6 +227,7 @@ model Order {
   items OrderItem[]
   returns ReturnRequest[]
   payment Payment?
+  shipment Shipment?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -354,4 +355,60 @@ model Refund {
   updatedAt DateTime @updatedAt
   @@index([returnRequestId])
   @@index([paymentId])
+}
+
+
+
+enum ShipmentStatus {
+  CREATED
+  PREPARING
+  SHIPPED
+  DELIVERED
+  RETURNED
+}
+
+enum Carrier {
+  SERVIENTREGA
+  INTERRAPIDISIMO
+  COORDINADORA
+  ENVIA
+}
+
+model Shipment {
+  id Int @id @default(autoincrement())
+
+  orderId Int @unique
+  order Order @relation(fields: [orderId], references: [id])
+
+  status ShipmentStatus @default(CREATED)
+
+  trackingNumber String?
+
+  carrier Carrier?
+
+  shippedAt DateTime?
+  deliveredAt DateTime?
+
+  history ShipmentHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+
+model ShipmentHistory {
+  id Int @id @default(autoincrement())
+
+  shipmentId Int
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+
+  status ShipmentStatus
+
+  note String?
+
+  createdAt DateTime @default(now())
+
+  @@index([shipmentId])
 }

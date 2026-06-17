@@ -379,8 +379,6 @@ export const useAllProduct = () => {
       setError(null);
     } catch (err) {
       setError(err);
-
-      toast.error("Error loading products");
     } finally {
       setLoading(false);
     }

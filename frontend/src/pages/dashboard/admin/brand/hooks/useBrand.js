@@ -47,10 +47,6 @@ export const useAllBrand = () => {
 
       setError(err);
 
-      toast.error(
-        "Error loading brands"
-      );
-
     } finally {
 
       setLoading(false);

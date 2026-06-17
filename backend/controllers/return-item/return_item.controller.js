@@ -9,13 +9,13 @@ const CreatereturnItem = async (req, res) => {
 
     if (isNaN(returnRequestNumb)) {
       return res.status(400).json({
-        message: "returnRequest debe ser numérico"
+        message: "ID inválido"
       })
     }
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
-        message: "items debe ser un array con productos"
+        message: "Se esperaba un array de ítems"
       })
     }
 
@@ -25,7 +25,7 @@ const CreatereturnItem = async (req, res) => {
 
     if (!returnRequestExist) {
       return res.status(400).json({
-        message: "La solicitud no existe"
+        message: "Solicitud no encontrada"
       })
     }
 
@@ -37,7 +37,7 @@ const CreatereturnItem = async (req, res) => {
 
       if (isNaN(orderItemNumb) || isNaN(quantityNumb)) {
         return res.status(400).json({
-          message: "orderItem y quantity deben ser numéricos"
+          message: "Datos inválidos"
         })
       }
 
@@ -47,13 +47,13 @@ const CreatereturnItem = async (req, res) => {
 
       if (!orderItemExist) {
         return res.status(400).json({
-          message: `El orderItem ${orderItemNumb} no existe`
+          message: `Ítem ${orderItemNumb} no encontrado`
         })
       }
 
       if (quantityNumb > orderItemExist.quantity) {
         return res.status(400).json({
-          message: `Cantidad inválida en orderItem ${orderItemNumb}`
+          message: `Cantidad excede el pedido`
         })
       }
 
@@ -78,14 +78,14 @@ const CreatereturnItem = async (req, res) => {
     }
 
     return res.status(201).json({
-      message: "Registro exitoso",
+      message: "Ítems registrados",
       data: createdItems
     })
 
   } catch (error) {
     console.error(error)
     return res.status(500).json({
-      message: "Error interno del servidor"
+      message: "Error interno"
     })
   }
 }

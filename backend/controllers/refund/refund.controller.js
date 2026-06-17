@@ -6,12 +6,12 @@ const createRefund = async (req, res) => {
     const { returnRequestId } = req.body
 if (!returnRequestId) {
   return res.status(400).json({
-    message: "returnRequestId es obligatorio"
+    message: "returnRequestId requerido"
   })
 }
 if (isNaN(returnRequestId)) {
   return res.status(400).json({
-    message: "returnRequestId debe ser numérico"
+    message: "returnRequestId inválido"
   })
 }
     // 1. Buscar la devolución
@@ -33,22 +33,22 @@ if (isNaN(returnRequestId)) {
 })
 
     if (!returnRequest) {
-      return res.status(404).json({ message: "Solicitud no existe" })
+      return res.status(404).json({ message: "Solicitud no encontrada" })
     }
 
     if (!returnRequest.order?.payment) {
   return res.status(400).json({
-    message: "La orden no tiene un pago asociado"
+    message: "Sin pago asociado"
   })
 }
 if (returnRequest.items.length === 0) {
   return res.status(400).json({
-    message: "La devolución no tiene productos asociados"
+    message: "Sin productos asociados"
   })
 }
     // 2. Evitar doble reembolso
     if (returnRequest.refunds.length > 0) {
-      return res.status(400).json({ message: "Ya existe un reembolso para esta devolución" })
+      return res.status(400).json({ message: "Reembolso ya registrado" })
     }
 
     // 3. Calcular el dinero desde los productos
@@ -60,7 +60,7 @@ if (returnRequest.items.length === 0) {
 
     // 4. Si no hay dinero que devolver
     if (totalRefund <= 0) {
-      return res.status(400).json({ message: "No hay monto para reembolsar" })
+      return res.status(400).json({ message: "Monto inválido" })
     }
 
     // 5. Crear el reembolso
@@ -76,13 +76,13 @@ const refund = await prisma.refund.create({
 
     // 6. Respuesta
     return res.status(201).json({
-      message: "Reembolso creado correctamente",
+      message: "Reembolso creado",
       refund
     })
 
   } catch (error) {
     console.error(error)
-    return res.status(500).json({ message: "Error interno del servidor" })
+    return res.status(500).json({ message: "Error interno" })
   }
 }
 
@@ -102,13 +102,13 @@ const processRefund = async (req, res) => {
     })
 
     return res.json({
-      message: "Reembolso pagado correctamente",
+      message: "Reembolso procesado",
       refund
     })
 
   } catch (error) {
     console.error(error)
-    return res.status(500).json({ message: "Error interno del servidor" })
+    return res.status(500).json({ message: "Error interno" })
   }
 }
 
