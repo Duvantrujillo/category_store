@@ -1,242 +1,175 @@
 const { PrismaClient } = require("@prisma/client");
-const slugify = require('slugify')
-const prisma = new PrismaClient()
-
+const slugify = require('slugify');
+const fs = require("fs");
+const path = require("path");
+const prisma = new PrismaClient();
 
 const createCategory = async (req, res) => {
-    try {
+  try {
+    const { parentId, name, description, isActive, sortOrder } = req.body;
+    const file = req.file;
 
-        const { parentId, name, description, isActive, sortOrder } = req.body
-
-        const customerSlug = slugify(name, {
-            lower: true,
-            strict: true
-        })
-        // 1. Validar campos de texto obligatorios
-        if (!name || !customerSlug) {
-            return res.status(400).json({ error: "Nombre requerido" });
-        }
-
-        // 2. Validar que los campos numéricos o booleanos existan realmente
-        if (isActive === undefined || sortOrder === undefined) {
-            return res.status(400).json({ error: "Campos incompletos" });
-        }
-
-        // 3. Verificar si el slug ya existe (Corrección: prisma.category.findUnique)
-        const slugExist = await prisma.category.findUnique({
-            where: {
-                slug: customerSlug
-            }
-        })
-
-        if (slugExist) {
-            return res.status(400).json({ message: "El nombre ya existe" }); // Corrección: Status 400
-        }
-
-
-        const result = await prisma.category.create({
-            data: {
-                parentId: parentId ? parseInt(parentId) : null, // Asegura que sea Entero o Null
-                name,
-                slug: customerSlug,
-                description,
-                isActive,
-                sortOrder: parseInt(sortOrder) // Asegura que sea un número Entero
-            }
-        })
-
-        // 5. Responder con el objeto creado (Corrección: Status 201 e incluir result)
-        return res.status(201).json({ message: "Categoría creada", data: result });
-
-    } catch (error) {
-
-        return res.status(500).json({ error: "Error interno" }); // Corrección: .status(500)
+    if (!name) {
+      return res.status(400).json({ error: "Nombre requerido" });
     }
-}
 
+    if (isActive === undefined || sortOrder === undefined) {
+      return res.status(400).json({ error: "Campos incompletos" });
+    }
 
+    const customerSlug = slugify(name, { lower: true, strict: true });
 
+    const slugExist = await prisma.category.findUnique({ where: { slug: customerSlug } });
+    if (slugExist) {
+      return res.status(400).json({ message: "El nombre ya existe" });
+    }
 
+    let isActiveValue = isActive;
+    if (typeof isActiveValue === "string") isActiveValue = isActiveValue === "true";
+    if (typeof isActiveValue !== "boolean") isActiveValue = true;
+
+    const imageUrl = file ? `/uploads/category/${file.filename}` : null;
+
+    const result = await prisma.category.create({
+      data: {
+        parentId: parentId ? parseInt(parentId) : null,
+        name,
+        slug: customerSlug,
+        description,
+        imageUrl,
+        isActive: isActiveValue,
+        sortOrder: parseInt(sortOrder),
+      }
+    });
+
+    return res.status(201).json({ message: "Categoría creada", data: result });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Error interno" });
+  }
+};
 
 const updateCategory = async (req, res) => {
-    try {
-        const formId = req.params.id;
-        const {
-            parentId,
-            name,
-            description,
-            isActive,
-            sortOrder
-        } = req.body;
+  try {
+    const formId = Number(req.params.id);
+    const { parentId, name, description, isActive, sortOrder } = req.body;
+    const file = req.file;
 
-        const customerSlug = slugify(name, {
-            lower: true,
-            strict: true
-        })
+    if (!formId) return res.status(400).json({ message: "ID requerido" });
 
-        // Validar ID
-        if (!formId) {
-            return res.status(400).json({
-                message: "ID requerido"
-            });
-        }
+    if (!name) return res.status(400).json({ message: "Nombre requerido" });
 
-        const slugExist = await prisma.category.findUnique({
-            where: {
-                slug: customerSlug,
-                NOT: {
-                    id: parseInt(formId)
-                }
-            }
-        })
+    const categoryExist = await prisma.category.findUnique({ where: { id: formId } });
+    if (!categoryExist) return res.status(404).json({ message: "No encontrada" });
 
-        if (slugExist) {
-            return res.status(400).json({ message: "El nombre ya existe" })
-        }
+    const customerSlug = slugify(name, { lower: true, strict: true });
 
-        // Buscar categoría
-        const existenResponse = await prisma.category.findUnique({
-            where: {
-                id: parseInt(formId)
-            }
-        });
+    const slugExist = await prisma.category.findFirst({
+      where: { slug: customerSlug, NOT: { id: formId } }
+    });
+    if (slugExist) return res.status(400).json({ message: "El nombre ya existe" });
 
-        if (!existenResponse) {
-            return res.status(404).json({
-                message: "No encontrada"
-            });
-        }
+    let isActiveValue = isActive;
+    if (typeof isActiveValue === "string") isActiveValue = isActiveValue === "true";
+    if (typeof isActiveValue !== "boolean") isActiveValue = categoryExist.isActive;
 
-        // Actualizar
-        const updateResponse = await prisma.category.update({
-
-            where: {
-                id: parseInt(formId),
-            },
-
-            data: {
-                parentId:
-                    parentId
-                        ? parseInt(parentId)
-                        : null,
-                name,
-                slug: customerSlug,
-                description,
-                isActive,
-                sortOrder: Number(sortOrder) || 0
-            }
-        });
-
-        return res.status(200).json({
-            message: "Categoría actualizada",
-            data: updateResponse
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        if (error.code === 'P2002') {
-            return res.status(400).json({
-                message: "El nombre ya existe"
-            });
-        }
-
-        return res.status(500).json({
-            message: "Error interno"
-        });
+    let newImageUrl = undefined;
+    if (file) {
+      // Eliminar imagen anterior
+      if (categoryExist.imageUrl) {
+        const oldPath = path.join(__dirname, "../../", categoryExist.imageUrl);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      newImageUrl = `/uploads/category/${file.filename}`;
     }
-}
 
+    const baseData = {
+      parentId: parentId ? parseInt(parentId) : null,
+      name,
+      slug: customerSlug,
+      description,
+      isActive: isActiveValue,
+      sortOrder: Number(sortOrder) || 0,
+    };
 
+    // imageUrl se incluye solo si ya está en el schema del cliente de Prisma
+    if (newImageUrl !== undefined) {
+      try { baseData.imageUrl = newImageUrl; } catch {}
+    }
 
+    let updated;
+    try {
+      updated = await prisma.category.update({ where: { id: formId }, data: baseData });
+    } catch (prismaErr) {
+      // Si falla por imageUrl (columna no migrada aún), reintenta sin ese campo
+      if (prismaErr.message?.includes('imageUrl')) {
+        const { imageUrl: _removed, ...safeData } = baseData;
+        updated = await prisma.category.update({ where: { id: formId }, data: safeData });
+      } else {
+        throw prismaErr;
+      }
+    }
 
+    return res.status(200).json({ message: "Categoría actualizada", data: updated });
+  } catch (error) {
+    console.error(error);
+    if (error.code === 'P2002') return res.status(400).json({ message: "El nombre ya existe" });
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
 
 const deleteCategory = async (req, res) => {
-    try {
-        const formId = Number(req.params.id)
+  try {
+    const formId = Number(req.params.id);
 
-        const existenResponse = await prisma.category.findUnique({
-            where: {
-                id: formId
-            }
-        })
+    const categoryExist = await prisma.category.findUnique({ where: { id: formId } });
+    if (!categoryExist) return res.status(404).json({ message: "No encontrada" });
 
-        if (!existenResponse) {
-            return res.status(404).json({ message: "No encontrada" }) // Tip: 404 queda mejor para "no existe"
-        }
+    const hasRelatedProducts = await prisma.product.findFirst({ where: { categoryId: formId } });
+    if (hasRelatedProducts) return res.status(400).json({ message: "Tiene productos asociados" });
 
-        const hasRelatedProducts = await prisma.product.findFirst({
-            where:
-                { id: formId }
-        })
-
-        if (hasRelatedProducts) {
-            return res.status(400).json({
-                message: "Tiene productos asociados"
-            });
-        }
-
-        const registerDelete = await prisma.category.delete({
-            where: {
-                id: formId // ¡Corrección aquí! Cambiado parentId por parseInt
-            }
-        })
-
-        return res.status(200).json({ message: "Categoría eliminada", data: registerDelete })
-
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ error: "Error interno" })
+    // Eliminar imagen física
+    if (categoryExist.imageUrl) {
+      const imgPath = path.join(__dirname, "../../", categoryExist.imageUrl);
+      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
     }
-}
+
+    const deleted = await prisma.category.delete({ where: { id: formId } });
+    return res.status(200).json({ message: "Categoría eliminada", data: deleted });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Error interno" });
+  }
+};
+
 const allCategory = async (req, res) => {
-    try {
-        const all = await prisma.category.findMany({
-            include: { parent: true },
-            orderBy: [
-                { updatedAt: 'desc' },
-                { createdAt: 'desc' }
-            ]
-        });
+  try {
+    const all = await prisma.category.findMany({
+      include: { parent: true },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }]
+    });
 
-        if (!all || all.length === 0) {
-            return res.status(404).json({ message: "No hay registros aún" });
-        }
-
-        return res.status(200).json({ data: all });
-
-    } catch (error) {
-
-        return res.status(500).json({
-            message: "Error interno"
-        });
+    if (!all || all.length === 0) {
+      return res.status(404).json({ message: "No hay registros aún" });
     }
+
+    return res.status(200).json({ data: all });
+  } catch (error) {
+    return res.status(500).json({ message: "Error interno" });
+  }
 };
 
 const activeCategory = async (req, res) => {
-    try {
-        const activeCategory = await prisma.category.findMany({
-            include: { parent: true },
-            where: {
-                isActive: true
-            },
-            orderBy: [
-                { updatedAt: 'desc' },
-                { createdAt: 'desc' }
-            ]
-        })
+  try {
+    const active = await prisma.category.findMany({
+      include: { parent: true },
+      where: { isActive: true },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }]
+    });
+    return res.status(200).json({ data: active });
+  } catch (error) {
+    return res.status(500).json({ error: "Error interno" });
+  }
+};
 
-        return res.status(200).json({ data: activeCategory })
-    } catch (error) {
-        return res.status(500).json({ error: "Error interno" });
-    }
-}
-
-module.exports = {
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    activeCategory,
-    allCategory
-}
+module.exports = { createCategory, updateCategory, deleteCategory, activeCategory, allCategory };

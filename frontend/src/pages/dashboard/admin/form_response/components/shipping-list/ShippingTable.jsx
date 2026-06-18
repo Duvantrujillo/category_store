@@ -3,6 +3,7 @@ import { Inbox } from "lucide-react";
 
 import DeleteShippingDialog from "../shipping-delete/DeleteShippingDialog";
 import ShippingRow from "./ShippingRow";
+import TablePagination from "@/components/ui/TablePagination";
 
 import {
   Table, TableBody, TableCell,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function ShippingTable({ shipping, onRefresh }) {
+function ShippingTable({ shipping, totalItems, page, pageSize, onPageChange, onRefresh }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
@@ -29,7 +30,7 @@ function ShippingTable({ shipping, onRefresh }) {
               <p className="text-xs text-slate-400 mt-0.5">Lista completa de envíos registrados.</p>
             </div>
             <span className="text-xs font-medium bg-indigo-50 text-indigo-600 border border-indigo-100 px-2.5 py-1 rounded-full">
-              {Array.isArray(shipping) ? shipping.length : 0} registros
+              {totalItems} registros
             </span>
           </div>
         </CardHeader>
@@ -69,6 +70,7 @@ function ShippingTable({ shipping, onRefresh }) {
               </TableBody>
             </Table>
           </div>
+          <TablePagination page={page} pageSize={pageSize} totalItems={totalItems} onPageChange={onPageChange} />
         </CardContent>
       </Card>
 

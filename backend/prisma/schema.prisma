@@ -16,6 +16,7 @@ model User {
   role     Role   @relation(fields: [roleId], references: [id])
   carts  Cart[]
    orders   Order[]
+   notifications Notification[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -52,6 +53,7 @@ model Category{
  name String
  slug String @unique
  description String? @db.Text
+ imageUrl String?
  isActive Boolean @default(true)
  sortOrder Int
  createdAt DateTime @default(now())
@@ -411,4 +413,47 @@ model ShipmentHistory {
   createdAt DateTime @default(now())
 
   @@index([shipmentId])
+}
+
+
+enum NotificationType {
+  ORDER_CREATED
+  ORDER_PAID
+  ORDER_CANCELLED
+
+  PAYMENT_DECLINED
+
+  SHIPMENT_CREATED
+
+  RETURN_CREATED
+  RETURN_APPROVED
+  RETURN_REJECTED
+  RETURN_COMPLETED
+
+  REFUND_PROCESSED
+
+  LOW_STOCK
+  OUT_OF_STOCK
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user User @relation(fields: [userId], references: [id])
+
+  type NotificationType
+
+  title String
+  message String
+
+  actionUrl String?
+
+  isRead Boolean @default(false)
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, isRead])
 }

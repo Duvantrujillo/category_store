@@ -1,10 +1,6 @@
-import axios from 'axios'
-const API = import.meta.env.VITE_API_URL
-
-
-
+import apiClient from "@/lib/apiClient";
 
 export const allOrder = async () => {
-    const res = await axios.get(`${API}/order/all`)
-    return res.data
-}
+  const res = await apiClient.get('/order/all');
+  return res.data;
+};

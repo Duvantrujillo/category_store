@@ -4,6 +4,8 @@ const cors = require("cors");
 const path = require("path");
 require('dotenv').config();
 
+const { authMiddleware } = require('./middlewares/auth.middleware');
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -45,15 +47,38 @@ const epaycoRouter = require('./routes/epayco.routes.js')
 const returnRequestRouter = require('./routes/return-request.routes.js')
 const returnItemRouter = require('./routes/return-item.routes.js')
 const refundRouter = require('./routes/refund.routes.js')
-const shipmentRouter =  require('./routes/shipment.routes.js')
+const shipmentRouter = require('./routes/shipment.routes.js')
 const dashboardRouter = require('./routes/dashboard.routes.js')
+const notificationRouter = require('./routes/notification.routes.js')
 
+/*
+|--------------------------------------------------------------------------
+| AUTH GUARD
+| El webhook debe estar antes del guard porque ePayco lo llama sin token.
+| Las rutas de login/registro/formulario de cliente son públicas.
+|--------------------------------------------------------------------------
+*/
 
+// ePayco llama este endpoint sin token — debe ser completamente público
+app.use('/webhook', webhookRouter)
 
+// Rutas públicas (no requieren sesión)
+const PUBLIC_ROUTES = new Set([
+  'POST /user/create',
+  'POST /user/login',
+  'POST /form/create',
+])
 
+app.use((req, res, next) => {
+  if (PUBLIC_ROUTES.has(`${req.method} ${req.path}`)) return next()
+  return authMiddleware(req, res, next)
+})
 
-
-
+/*
+|--------------------------------------------------------------------------
+| PROTECTED ROUTES
+|--------------------------------------------------------------------------
+*/
 
 app.use('/user', userRouter);
 app.use('/form', formRouter);
@@ -68,14 +93,13 @@ app.use('/cart',cartRouter)
 app.use('/cart-item',cartItemRouter)
 app.use('/order',orderRouter)
 app.use('/payment',paymentRouter)
-app.use('/webhook',webhookRouter)
 app.use('/epayco',epaycoRouter)
 app.use('/return-request',returnRequestRouter)
 app.use('/return-item',returnItemRouter)
 app.use('/refund',refundRouter)
 app.use('/shipment',shipmentRouter)
 app.use('/dashboard',dashboardRouter)
-
+app.use('/notification',notificationRouter)
 
 /*
 |--------------------------------------------------------------------------

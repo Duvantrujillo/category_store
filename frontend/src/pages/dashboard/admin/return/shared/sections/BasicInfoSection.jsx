@@ -23,7 +23,12 @@ const RESOLUTION_OPTIONS = [
   { value: "STORE_CREDIT", label: "Crédito tienda" },
 ];
 
-export default function BasicInfoSection({ mode, form, handleChange, orders = [] }) {
+function FieldError({ message }) {
+  if (!message) return null;
+  return <p className="text-xs text-red-500 mt-1">{message}</p>;
+}
+
+export default function BasicInfoSection({ mode, form, handleChange, orders = [], errors = {} }) {
   const isCreate = mode === "create";
 
   return (
@@ -32,12 +37,14 @@ export default function BasicInfoSection({ mode, form, handleChange, orders = []
       {/* SELECTOR DE ORDEN (solo en crear) */}
       {isCreate && (
         <div className="flex flex-col gap-1.5">
-          <Label>Orden <span className="text-red-500">*</span></Label>
+          <Label>
+            Orden <span className="text-red-500">*</span>
+          </Label>
           <Select
             value={String(form.orderId)}
             onValueChange={(val) => handleChange("orderId", Number(val))}
           >
-            <SelectTrigger>
+            <SelectTrigger className={errors.orderId ? "border-red-500 focus:ring-red-500" : ""}>
               <SelectValue placeholder="Selecciona una orden" />
             </SelectTrigger>
             <SelectContent>
@@ -48,6 +55,7 @@ export default function BasicInfoSection({ mode, form, handleChange, orders = []
               ))}
             </SelectContent>
           </Select>
+          <FieldError message={errors.orderId} />
         </div>
       )}
 
@@ -63,7 +71,9 @@ export default function BasicInfoSection({ mode, form, handleChange, orders = []
 
       {/* ESTADO */}
       <div className="flex flex-col gap-1.5">
-        <Label>Estado</Label>
+        <Label>
+          Estado <span className="text-red-500">*</span>
+        </Label>
         <Select
           value={form.status}
           onValueChange={(val) => handleChange("status", val)}
@@ -83,13 +93,15 @@ export default function BasicInfoSection({ mode, form, handleChange, orders = []
 
       {/* RESOLUCIÓN */}
       <div className="flex flex-col gap-1.5">
-        <Label>Resolución</Label>
+        <Label>
+          Resolución <span className="text-red-500">*</span>
+        </Label>
         <Select
           value={form.resolution || ""}
           onValueChange={(val) => handleChange("resolution", val)}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona una resolución (opcional)" />
+          <SelectTrigger className={errors.resolution ? "border-red-500 focus:ring-red-500" : ""}>
+            <SelectValue placeholder="Selecciona una resolución" />
           </SelectTrigger>
           <SelectContent>
             {RESOLUTION_OPTIONS.map((opt) => (
@@ -99,17 +111,22 @@ export default function BasicInfoSection({ mode, form, handleChange, orders = []
             ))}
           </SelectContent>
         </Select>
+        <FieldError message={errors.resolution} />
       </div>
 
       {/* MOTIVO */}
       <div className="flex flex-col gap-1.5">
-        <Label>Motivo</Label>
+        <Label>
+          Motivo <span className="text-red-500">*</span>
+        </Label>
         <Textarea
           placeholder="Describe el motivo de la devolución..."
           value={form.reason || ""}
           onChange={(e) => handleChange("reason", e.target.value)}
           rows={3}
+          className={errors.reason ? "border-red-500 focus:ring-red-500" : ""}
         />
+        <FieldError message={errors.reason} />
       </div>
 
     </div>

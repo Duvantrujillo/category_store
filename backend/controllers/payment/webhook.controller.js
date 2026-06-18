@@ -3,6 +3,12 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { createShipment } = require("../../services/shipment.service");
+const {
+  notifyOrderPaid,
+  notifyOrderCancelled,
+  notifyPaymentDeclined,
+  checkStockNotifications
+} = require("../../services/notification.service");
 
 const epaycoWebhook = async (req, res) => {
   console.log("===============");
@@ -85,9 +91,39 @@ const epaycoWebhook = async (req, res) => {
 
     console.log("Orden y pago actualizados correctamente");
 
-    if (paymentStatus === "APPROVED") {
+    const order = await prisma.order.findUnique({
+      where: { id: payment.orderId },
+      select: { id: true, orderNumber: true }
+    });
+
+    if (paymentStatus === "APPROVED" && order) {
       createShipment(payment.orderId).catch((err) => {
         console.error("Error creando shipment para orden", payment.orderId, err);
+      });
+
+      notifyOrderPaid(order).catch((err) => {
+        console.error("Error notificando ORDER_PAID", err);
+      });
+
+      const variantIds = await prisma.orderItem.findMany({
+        where: { orderId: payment.orderId },
+        select: { productVariantId: true }
+      }).then((items) => items.map((i) => i.productVariantId).filter(Boolean));
+
+      checkStockNotifications(variantIds).catch((err) => {
+        console.error("Error revisando stock notifications", err);
+      });
+    }
+
+    if (paymentStatus === "DECLINED" && order) {
+      notifyPaymentDeclined(order).catch((err) => {
+        console.error("Error notificando PAYMENT_DECLINED", err);
+      });
+    }
+
+    if ((paymentStatus === "ERROR") && order) {
+      notifyOrderCancelled(order).catch((err) => {
+        console.error("Error notificando ORDER_CANCELLED", err);
       });
     }
 

@@ -2,13 +2,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDropzone } from "react-dropzone";
+import { ImageUp, X } from "lucide-react";
+
 export default function CategorySharedForm({
   mode = "create",
   form,
@@ -18,155 +15,159 @@ export default function CategorySharedForm({
   onSubmit,
   categories = [],
 }) {
-
   const isEdit = mode === "edit";
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: { "image/*": [] },
+    maxFiles: 1,
+    onDrop: (files) => {
+      const file = files[0];
+      if (!file) return;
+      handleChange("image", file);
+      handleChange("preview", URL.createObjectURL(file));
+    },
+  });
+
+  const previewSrc = form.preview
+    ? form.preview.startsWith("/uploads")
+      ? `${import.meta.env.VITE_API_URL}${form.preview}`
+      : form.preview
+    : null;
 
   return (
     <div className="grid gap-4">
 
-      {/* Nombre */}
-      <div>
+      {/* Imagen */}
+      <div className="space-y-1.5">
+        <Label>Imagen</Label>
 
-        <Label>Nombre</Label>
+        {previewSrc ? (
+          <div
+            className="relative flex items-center justify-center rounded-xl border border-slate-200 bg-white overflow-hidden h-36"
+            style={{
+              backgroundImage: "radial-gradient(circle at 1px 1px, #e2e8f0 1px, transparent 0)",
+              backgroundSize: "16px 16px",
+            }}
+          >
+            <img
+              src={previewSrc}
+              alt="Preview"
+              className="max-h-24 max-w-[75%] w-auto object-contain drop-shadow-sm"
+            />
+            <button
+              type="button"
+              className="absolute top-2 right-2 h-7 w-7 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow hover:opacity-90"
+              onClick={() => { handleChange("image", null); handleChange("preview", null); }}
+            >
+              <X size={13} />
+            </button>
+          </div>
+        ) : (
+          <div
+            {...getRootProps()}
+            className={`flex flex-col items-center justify-center gap-2 h-36 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
+              isDragActive
+                ? "border-indigo-400 bg-indigo-50/60"
+                : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <input {...getInputProps()} />
+            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-100">
+              <ImageUp size={16} className="text-slate-400" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-slate-600">
+                {isDragActive ? "Suelta aquí" : "Arrastra la imagen aquí"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">o haz clic para seleccionarla</p>
+            </div>
+          </div>
+        )}
+      </div>
 
-        <Input
-          value={form.name || ""}
-          onChange={(e) =>
-            handleChange("name", e.target.value)
-          }
-          placeholder="Nombre de la categoría"
-        />
+      {/* Nombre + Estado */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label>Nombre</Label>
+          <Input
+            value={form.name || ""}
+            onChange={(e) => handleChange("name", e.target.value)}
+            placeholder="Nombre de la categoría"
+          />
+        </div>
 
+        <div className="space-y-1.5">
+          <Label>Estado</Label>
+          <Select
+            value={form.isActive ? "true" : "false"}
+            onValueChange={(val) => handleChange("isActive", val === "true")}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500" />
+                  <span>Activo</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="false">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-red-500" />
+                  <span>Inactivo</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Descripción */}
-      <div>
-
+      <div className="space-y-1.5">
         <Label>Descripción</Label>
-
         <Textarea
           value={form.description || ""}
-          onChange={(e) =>
-            handleChange("description", e.target.value)
-          }
+          onChange={(e) => handleChange("description", e.target.value)}
           placeholder="Descripción de la categoría"
+          className="resize-none min-h-20"
         />
-
       </div>
 
-      <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/20 px-3 py-3">
-
-        {/* TEXTO */}
-        <div className="space-y-0.5">
-          <Label className="text-sm font-medium">
-            Estado
-          </Label>
-
-          <p className="text-xs text-muted-foreground">
-            Activar o desactivar categoría
-          </p>
+      {/* Orden + Categoría padre */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label>Orden</Label>
+          <Input
+            type="number"
+            value={form.sortOrder}
+            onChange={(e) => handleChange("sortOrder", e.target.value)}
+          />
         </div>
 
-        {/* SELECT MODERNO */}
-        <Select
-          value={form.isActive ? "true" : "false"}
-          onValueChange={(val) =>
-            handleChange("isActive", val === "true")
-          }
-        >
-          <SelectTrigger className="h-9 w-30 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-
-          <SelectContent>
-            <SelectItem value="true">
-              <span className="text-green-600 font-medium">
-                Activo
-              </span>
-            </SelectItem>
-
-            <SelectItem value="false">
-              <span className="text-red-600 font-medium">
-                Inactivo
-              </span>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-
-      </div>
-
-      {/* Orden */}
-      <div>
-
-        <Label>Orden</Label>
-
-        <Input
-          type="number"
-          value={form.sortOrder}
-          onChange={(e) =>
-            handleChange(
-              "sortOrder",
-              e.target.value
-            )
-          }
-        />
-
-      </div>
-
-      {/* Categoría Padre */}
-      <div>
-
-        <Label>Categoría Padre</Label>
-
-        <select
-          className="w-full border rounded-md h-10 px-3 bg-background"
-          value={form.parentId != null ? String(form.parentId) : ""}
-          onChange={(e) =>
-            handleChange(
-              "parentId",
-              e.target.value ? Number(e.target.value) : null
-            )
-          }
-        >
-          <option value="">
-            Sin categoría padre
-          </option>
-
-          {categories.map((category) => (
-            <option
-              key={category.id}
-              value={category.id}
-            >
-              {category.name}
-            </option>
-          ))}
-        </select>
-
+        <div className="space-y-1.5">
+          <Label>Categoría Padre</Label>
+          <select
+            className="w-full border rounded-md h-10 px-3 bg-background text-sm"
+            value={form.parentId != null ? String(form.parentId) : ""}
+            onChange={(e) => handleChange("parentId", e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">Sin categoría padre</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Botones */}
-      <div className="flex justify-end gap-2 mt-4">
-
-        <Button
-          variant="outline"
-          onClick={onCancel}
-        >
-          Cancelar
-        </Button>
-
-        <Button
-          onClick={onSubmit}
-          disabled={loading}
-        >
+      <div className="flex justify-end gap-2 pt-2">
+        <Button variant="outline" type="button" onClick={onCancel}>Cancelar</Button>
+        <Button type="button" onClick={onSubmit} disabled={loading}>
           {loading
-            ? isEdit
-              ? "Guardando..."
-              : "Creando..."
-            : isEdit
-              ? "Guardar cambios"
-              : "Crear categoría"}
+            ? isEdit ? "Guardando..." : "Creando..."
+            : isEdit ? "Guardar cambios" : "Crear categoría"}
         </Button>
-
       </div>
 
     </div>

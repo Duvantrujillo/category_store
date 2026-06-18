@@ -1,4 +1,3 @@
-
 import './App.css'
 import { Routes, Route } from 'react-router-dom'
 import RegisterForm from './pages/auth/register/RegisterPages'
@@ -18,21 +17,26 @@ import OrderList from './pages/dashboard/admin/order/pages/OrderList'
 import ShipmentList from './pages/dashboard/admin/shipment/pages/ListShipment'
 import ReturnList from './pages/dashboard/admin/return/pages/ListReturn'
 import AdminHome from './pages/dashboard/admin/home/AdminHome'
-
-
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
-
-
   return (
-
     <Routes>
+      {/* Rutas públicas */}
       <Route path="/" element={<Home />} />
-      <Route path='/register' element={<RegisterForm />} />
-      <Route path='/login' element={<LoginForm />} />
+      <Route path="/register" element={<RegisterForm />} />
+      <Route path="/login" element={<LoginForm />} />
+      <Route path="/create/shipping" element={<CreateShipping />} />
 
-      
-      <Route path="/dashboard/admin" element={<Admin />}>
+      {/* Panel de administración — requiere sesión con rol admin */}
+      <Route
+        path="/dashboard/admin"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Admin />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<AdminHome />} />
         <Route path="list/category" element={<CategoryList />} />
         <Route path="list/shipping" element={<ShippingList />} />
@@ -41,18 +45,14 @@ function App() {
         <Route path="list/brand" element={<BrandList />} />
         <Route path="list/product" element={<ProductList />} />
         <Route path="list/product-variant" element={<ProductVariantList />} />
-        <Route path="list/order" element={<OrderList/>}/>
+        <Route path="list/order" element={<OrderList />} />
         <Route path="list/shipment" element={<ShipmentList />} />
         <Route path="list/return" element={<ReturnList />} />
       </Route>
 
-
-
-      <Route path='/dashboard/customer' element={<Customer />} />
-      <Route path='/create/shipping' element={<CreateShipping />} />
+      {/* Panel de cliente */}
+      <Route path="/dashboard/customer" element={<Customer />} />
     </Routes>
-
-
   )
 }
 

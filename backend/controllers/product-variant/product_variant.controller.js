@@ -84,30 +84,21 @@ const createProductVariant = async (req, res) => {
 
     const variantId = newVariant.id;
 
-    // 4️⃣ Guardar atributos
+    // 4️⃣ Guardar atributos (igual que update: directo con valueId)
     let attributeValues = [];
 
-    if (attributes?.length) {
-      const existingValues = await prisma.attributeValue.findMany({
-        where: {
-          id: {
-            in: attributes.map(a => a.valueId)
-          }
-        },
-        include: {
-          attribute: true
-        }
+    if (Array.isArray(attributes) && attributes.length) {
+      await prisma.productVariantAttribute.createMany({
+        data: attributes.map(av => ({
+          productVariantId: variantId,
+          attributeValueId: av.valueId
+        }))
       });
 
-      attributeValues = existingValues;
-
-      const dataToInsert = existingValues.map(av => ({
-        productVariantId: variantId,
-        attributeValueId: av.id
-      }));
-
-      await prisma.productVariantAttribute.createMany({
-        data: dataToInsert
+      // Solo para generar el SKU
+      attributeValues = await prisma.attributeValue.findMany({
+        where: { id: { in: attributes.map(a => a.valueId) } },
+        include: { attribute: true }
       });
     }
 
@@ -421,7 +412,13 @@ const allProductVariant = async (req, res) => {
   const all = await prisma.productVariant.findMany({
     include: {
       images: true,
-      attributes: true,
+      attributes: {
+        include: {
+          attributeValue: {
+            include: { attribute: true }
+          }
+        }
+      },
     },
     orderBy: [
       { updatedAt: 'desc' },
@@ -464,7 +461,13 @@ const variants = await prisma.productVariant.findMany({
   },
  include: {
   images: true,
-  attributes: true,
+  attributes: {
+    include: {
+      attributeValue: {
+        include: { attribute: true }
+      }
+    }
+  },
   product: true,
 },
   take: 20,

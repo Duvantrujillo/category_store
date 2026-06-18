@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
+const { notifyRefundProcessed } = require('../../services/notification.service')
 
 const createRefund = async (req, res) => {
   try {
@@ -99,6 +100,10 @@ const processRefund = async (req, res) => {
         reference,
         paidAt: new Date()
       }
+    })
+
+    notifyRefundProcessed(refund).catch((err) => {
+      console.error('Error notificando REFUND_PROCESSED', err)
     })
 
     return res.json({

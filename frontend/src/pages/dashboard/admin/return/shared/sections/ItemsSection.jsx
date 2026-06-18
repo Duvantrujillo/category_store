@@ -14,7 +14,7 @@ import {
 /*  MODO CREAR – seleccionar items de la orden                          */
 /* ------------------------------------------------------------------ */
 
-function CreateItemsSection({ orderItems, selectedItems, handleChange }) {
+function CreateItemsSection({ orderItems, selectedItems, handleChange, errors = {} }) {
   const toggle = (orderItemId, availableQty) => {
     const exists = selectedItems.find((i) => i.orderItemId === orderItemId);
     if (exists) {
@@ -51,9 +51,16 @@ function CreateItemsSection({ orderItems, selectedItems, handleChange }) {
   return (
     <div className="flex flex-col gap-3">
 
-      <p className="text-sm text-muted-foreground">
-        Selecciona los productos que el cliente desea devolver y ajusta la cantidad.
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Selecciona los productos que el cliente desea devolver y ajusta la cantidad.{" "}
+          <span className="text-red-500 font-medium">*</span>
+        </p>
+      </div>
+
+      {errors.selectedItems && (
+        <p className="text-xs text-red-500 -mt-1">{errors.selectedItems}</p>
+      )}
 
       <div className="rounded-xl border overflow-hidden">
         <Table>
@@ -194,6 +201,7 @@ export default function ItemsSection({
   handleChange,
   orderItems = [],
   existingItems = [],
+  errors = {},
 }) {
   if (mode === "create") {
     return (
@@ -201,6 +209,7 @@ export default function ItemsSection({
         orderItems={orderItems}
         selectedItems={form.selectedItems ?? []}
         handleChange={handleChange}
+        errors={errors}
       />
     );
   }

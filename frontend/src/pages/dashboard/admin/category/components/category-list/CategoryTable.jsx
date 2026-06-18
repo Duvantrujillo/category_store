@@ -1,21 +1,14 @@
 import { useState } from "react";
 import { Inbox } from "lucide-react";
 
+import CategoryCard from "./CategoryCard";
 import DeleteCategoryDialog from "../category-delete/CategoryDeleteDialog";
-import CategoryRow from "./CategoryRow";
+import TablePagination from "@/components/ui/TablePagination";
 
-import {
-  Table, TableBody, TableCell,
-  TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function CategoryTable({ categories, onRefresh }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
-
-  const openConfirmModal  = (id) => { setSelectedId(id); setIsOpen(true); };
-  const closeConfirmModal = ()   => { setSelectedId(null); setIsOpen(false); };
+function CategoryTable({ categories, totalItems, page, pageSize, onPageChange, onRefresh }) {
+  const [deleteId, setDeleteId] = useState(null);
 
   return (
     <>
@@ -29,55 +22,44 @@ function CategoryTable({ categories, onRefresh }) {
               <p className="text-xs text-slate-400 mt-0.5">Lista completa de categorías.</p>
             </div>
             <span className="text-xs font-medium bg-indigo-50 text-indigo-600 border border-indigo-100 px-2.5 py-1 rounded-full">
-              {Array.isArray(categories) ? categories.length : 0} registros
+              {totalItems} registros
             </span>
           </div>
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
-                  {["Nombre","Descripción","Estado","Orden","Padre","Acciones"].map((h) => (
-                    <TableHead key={h} className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 text-center whitespace-nowrap">
-                      {h}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
+          {Array.isArray(categories) && categories.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-5">
+              {categories.map((item) => (
+                <CategoryCard
+                  key={item.id}
+                  item={item}
+                  categories={categories}
+                  onDelete={(id) => setDeleteId(id)}
+                  onRefresh={onRefresh}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-slate-400 py-16">
+              <Inbox size={36} className="opacity-40" />
+              <span className="text-sm">No hay registros.</span>
+            </div>
+          )}
 
-              <TableBody>
-                {Array.isArray(categories) && categories.length > 0 ? (
-                  categories.map((item) => (
-                    <CategoryRow
-                      key={item.id}
-                      item={item}
-                      categories={categories}
-                      onDelete={openConfirmModal}
-                      onRefresh={onRefresh}
-                    />
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center">
-                      <div className="flex flex-col items-center gap-2 text-slate-400">
-                        <Inbox size={30} className="opacity-40" />
-                        <span className="text-sm">No hay registros.</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <TablePagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={onPageChange}
+          />
         </CardContent>
       </Card>
 
       <DeleteCategoryDialog
-        open={isOpen}
-        onClose={closeConfirmModal}
-        categoryId={selectedId}
+        open={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        categoryId={deleteId}
         onDeleted={onRefresh}
       />
     </>

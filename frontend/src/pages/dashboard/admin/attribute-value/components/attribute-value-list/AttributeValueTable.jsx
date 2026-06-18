@@ -3,6 +3,7 @@ import { Inbox } from "lucide-react";
 
 import AttributeValueRow from "./AttributeValueRow";
 import DeleteAttributeValueDialog from "../attribute-value-delete/AttributeValueDeleteDialog";
+import TablePagination from "@/components/ui/TablePagination";
 
 import {
   Table, TableBody, TableCell,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function AttributeValueTable({ attributeValues, attributes, onRefresh }) {
+function AttributeValueTable({ attributeValues, attributes, totalItems, page, pageSize, onPageChange, onRefresh }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
@@ -29,7 +30,7 @@ function AttributeValueTable({ attributeValues, attributes, onRefresh }) {
               <p className="text-xs text-slate-400 mt-0.5">Lista completa de valores de atributos.</p>
             </div>
             <span className="text-xs font-medium bg-indigo-50 text-indigo-600 border border-indigo-100 px-2.5 py-1 rounded-full">
-              {Array.isArray(attributeValues) ? attributeValues.length : 0} registros
+              {totalItems} registros
             </span>
           </div>
         </CardHeader>
@@ -71,6 +72,7 @@ function AttributeValueTable({ attributeValues, attributes, onRefresh }) {
               </TableBody>
             </Table>
           </div>
+          <TablePagination page={page} pageSize={pageSize} totalItems={totalItems} onPageChange={onPageChange} />
         </CardContent>
       </Card>
 

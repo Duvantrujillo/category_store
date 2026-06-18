@@ -1,5 +1,6 @@
 const {PrismaClient} = require('@prisma/client')
 const prisma = new PrismaClient()
+const { notifyOrderCreated } = require('../../services/notification.service')
 
 
 const createOrder = async (req, res) => {
@@ -94,6 +95,10 @@ const createOrder = async (req, res) => {
         }
       });
     });
+
+    notifyOrderCreated(order).catch((err) => {
+      console.error('Error notificando ORDER_CREATED', err)
+    })
 
     return res.status(201).json({
       message: "Orden creada",

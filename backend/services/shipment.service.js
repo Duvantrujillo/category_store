@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { notifyShipmentCreated } = require("./notification.service");
 
 const prisma = new PrismaClient();
 
@@ -28,6 +29,10 @@ const createShipment = async (orderId) => {
     include: {
       history: true,
     },
+  });
+
+  notifyShipmentCreated(shipment).catch((err) => {
+    console.error("Error notificando SHIPMENT_CREATED", err);
   });
 
   return shipment;

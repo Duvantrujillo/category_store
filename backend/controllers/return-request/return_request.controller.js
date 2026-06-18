@@ -1,31 +1,57 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
+const {
+  notifyReturnCreated,
+  notifyReturnApproved,
+  notifyReturnRejected,
+  notifyReturnCompleted
+} = require('../../services/notification.service')
+
+const VALID_STATUSES    = ['PENDING', 'APPROVED', 'REJECTED', 'RECEIVED', 'COMPLETED']
+const VALID_RESOLUTIONS = ['REFUND', 'EXCHANGE', 'STORE_CREDIT']
 
 const createreturnRequest = async (req, res) => {
     try {
         const { orderId, status, resolution, reason } = req.body
 
+        // ── Campos obligatorios ──────────────────────────────────────
         const orderIdNumb = Number(orderId)
-
-        if (isNaN(orderIdNumb)) {
-            return res.status(400).json({ message: "ID inválido" })
+        if (!orderId || isNaN(orderIdNumb)) {
+            return res.status(400).json({ message: "Debes seleccionar una orden" })
         }
+
+        if (!resolution || !VALID_RESOLUTIONS.includes(resolution)) {
+            return res.status(400).json({ message: "Debes seleccionar una resolución válida" })
+        }
+
+        if (!reason || !reason.trim()) {
+            return res.status(400).json({ message: "Debes ingresar el motivo de la devolución" })
+        }
+
+        if (status && !VALID_STATUSES.includes(status)) {
+            return res.status(400).json({ message: "Estado inválido" })
+        }
+        // ────────────────────────────────────────────────────────────
 
         const orderIdExist = await prisma.order.findUnique({
             where: { id: orderIdNumb }
         })
 
         if (!orderIdExist) {
-            return res.status(400).json({ message: 'Orden no encontrada' })
+            return res.status(404).json({ message: 'Orden no encontrada' })
         }
 
         const createReturnRequest = await prisma.returnRequest.create({
             data: {
                 orderId: orderIdNumb,
-                status,        // debe ser enum válido
-                resolution,    // opcional
-                reason
+                status: status || 'PENDING',
+                resolution,
+                reason: reason.trim()
             }
+        })
+
+        notifyReturnCreated(createReturnRequest).catch((err) => {
+            console.error('Error notificando RETURN_CREATED', err)
         })
 
         return res.status(201).json({
@@ -95,6 +121,20 @@ const updateReturnRequest = async (req, res) => {
                 ...(reason !== undefined && { reason }),
             }
         })
+
+        if (status === 'APPROVED') {
+            notifyReturnApproved(updated).catch((err) => {
+                console.error('Error notificando RETURN_APPROVED', err)
+            })
+        } else if (status === 'REJECTED') {
+            notifyReturnRejected(updated).catch((err) => {
+                console.error('Error notificando RETURN_REJECTED', err)
+            })
+        } else if (status === 'COMPLETED') {
+            notifyReturnCompleted(updated).catch((err) => {
+                console.error('Error notificando RETURN_COMPLETED', err)
+            })
+        }
 
         return res.status(200).json({
             message: "Solicitud actualizada correctamente",
