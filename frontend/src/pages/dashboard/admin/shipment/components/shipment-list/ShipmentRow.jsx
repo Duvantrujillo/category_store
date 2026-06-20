@@ -1,6 +1,7 @@
 import { Pencil, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { useHasPermission } from "@/lib/permissions";
 
 const statusConfig = {
   CREATED:   { label: "Creado",      cls: "bg-slate-100 text-slate-700" },
@@ -18,6 +19,7 @@ const carrierLabel = {
 };
 
 function ShipmentRow({ shipment, onEdit, onHistory }) {
+  const canUpdate = useHasPermission("shipments.update");
   const order = shipment.order;
   const { label, cls } = statusConfig[shipment.status] ?? { label: shipment.status, cls: "bg-slate-100 text-slate-700" };
 
@@ -70,8 +72,10 @@ function ShipmentRow({ shipment, onEdit, onHistory }) {
           <Button
             size="icon"
             variant="outline"
-            className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-40 disabled:pointer-events-none"
             onClick={() => onEdit(shipment)}
+            disabled={!canUpdate}
+            title={!canUpdate ? "Sin permiso para editar envíos" : undefined}
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>

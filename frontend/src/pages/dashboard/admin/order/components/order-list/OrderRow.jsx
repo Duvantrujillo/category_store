@@ -1,4 +1,4 @@
-import { Eye, Package, CreditCard } from "lucide-react";
+import { Eye, Package, CreditCard, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 
@@ -9,7 +9,7 @@ const statusConfig = {
   REFUNDED:  { label: "Reembolsada", cls: "bg-blue-100 text-blue-700" },
 };
 
-function OrderRow({ order, onOpenDetails, onOpenItems, onOpenPayment }) {
+function OrderRow({ order, onOpenDetails, onOpenItems, onOpenPayment, onOpenShippingGuide }) {
   const { label, cls } = statusConfig[order.status] ?? { label: order.status, cls: "bg-slate-100 text-slate-700" };
 
   return (
@@ -71,6 +71,16 @@ function OrderRow({ order, onOpenDetails, onOpenItems, onOpenPayment }) {
             onClick={() => onOpenPayment(order)}
           >
             <CreditCard className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-25 disabled:cursor-not-allowed"
+            title={order.status === "PAID" ? "Generar guía de envío" : "Solo disponible para órdenes pagadas"}
+            disabled={order.status !== "PAID"}
+            onClick={() => onOpenShippingGuide(order)}
+          >
+            <Printer className="h-3.5 w-3.5" />
           </Button>
         </div>
       </TableCell>

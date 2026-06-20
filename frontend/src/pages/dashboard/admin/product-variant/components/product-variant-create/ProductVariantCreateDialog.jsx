@@ -21,6 +21,7 @@ export default function ProductVariantCreateDialog({
   productId,
   products = [],
   attributes = [],
+  disabled = false,
 }) {
   const [open, setOpen] = useState(false);
 
@@ -69,7 +70,12 @@ export default function ProductVariantCreateDialog({
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} className="gap-2">
+      <Button
+        onClick={() => setOpen(true)}
+        disabled={disabled}
+        title={disabled ? "Sin permiso para crear variantes" : undefined}
+        className="gap-2 disabled:opacity-40 disabled:pointer-events-none"
+      >
         <Plus className="w-4 h-4" />
         Nueva variante
       </Button>

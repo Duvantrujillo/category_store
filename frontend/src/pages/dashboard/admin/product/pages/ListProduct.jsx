@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
+import { ShieldOff } from "lucide-react";
 import { useAllProduct, useSearchProduct } from "@/pages/dashboard/admin/product/hooks/useProduct";
 import ProductTable from "@/pages/dashboard/admin/product/Components/product-list/ProductTable";
 import ProductCreateDialog from "@/pages/dashboard/admin/product/Components/product-create/ProductCreateDialog";
 import ProductSearch from "@/pages/dashboard/admin/product/Components/product-search/ProductSearch";
+import { useHasPermission } from "@/lib/permissions";
 
 const PAGE_SIZE = 15;
 
 function ProductList() {
-  const { products = [], refetch } = useAllProduct();
+  const canView   = useHasPermission("products.view");
+  const canCreate = useHasPermission("products.create");
+  const { products = [], refetch } = useAllProduct({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchProduct();
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(products.length / PAGE_SIZE));
@@ -18,15 +22,23 @@ function ProductList() {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  if (!canView) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
+        <ShieldOff size={40} className="opacity-40" />
+        <p className="text-sm">No tienes permisos para visualizar esta sección.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Productos</h1>
-          <p className="text-muted-foreground">Administra los productos del sistema.</p>
-          <ProductSearch query={query} setQuery={setQuery} resultsCount={results.length} loading={loading} />
-        </div>
-        <ProductCreateDialog onRefresh={refetch} />
+    <div className="p-6 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <ProductSearch query={query} setQuery={setQuery} resultsCount={results.length} loading={loading} />
+        <ProductCreateDialog
+          onRefresh={refetch}
+          disabled={!canCreate}
+        />
       </div>
 
       <ProductTable

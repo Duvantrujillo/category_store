@@ -50,6 +50,9 @@ const refundRouter = require('./routes/refund.routes.js')
 const shipmentRouter = require('./routes/shipment.routes.js')
 const dashboardRouter = require('./routes/dashboard.routes.js')
 const notificationRouter = require('./routes/notification.routes.js')
+const reportRouter       = require('./routes/report.routes.js')
+const searchRouter       = require('./routes/search.routes.js')
+const permissionRouter   = require('./routes/permission.routes.js')
 
 /*
 |--------------------------------------------------------------------------
@@ -100,6 +103,9 @@ app.use('/refund',refundRouter)
 app.use('/shipment',shipmentRouter)
 app.use('/dashboard',dashboardRouter)
 app.use('/notification',notificationRouter)
+app.use('/report',      reportRouter)
+app.use('/search',      searchRouter)
+app.use('/permission',  permissionRouter)
 
 /*
 |--------------------------------------------------------------------------

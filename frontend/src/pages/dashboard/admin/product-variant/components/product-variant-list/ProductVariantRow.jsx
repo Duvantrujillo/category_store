@@ -3,8 +3,11 @@ import noPhotos from "@/assets/icons/no-fotos.png";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import ProductVariantEditDialog from "@/pages/dashboard/admin/product-variant/components/product-variant-update/ProductVariantEditDialog";
+import { useHasPermission } from "@/lib/permissions";
 
 function ProductVariantRow({ item, onDelete, onRefresh, products = [], attributes = [] }) {
+  const canUpdate = useHasPermission("product-variants.update");
+  const canDelete = useHasPermission("product-variants.delete");
   return (
     <TableRow className="hover:bg-slate-50/80 transition-colors">
 
@@ -66,11 +69,14 @@ function ProductVariantRow({ item, onDelete, onRefresh, products = [], attribute
             onRefresh={onRefresh}
             products={products}
             attributes={attributes}
+            disabled={!canUpdate}
           />
           <Button
             variant="ghost"
             size="icon"
-            className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+            className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:pointer-events-none"
+            disabled={!canDelete}
+            title={!canDelete ? "Sin permiso para eliminar variantes" : undefined}
             onClick={() => onDelete(item.id)}
           >
             <Trash className="h-4 w-4" />

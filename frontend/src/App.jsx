@@ -1,5 +1,6 @@
 import './App.css'
 import { Routes, Route } from 'react-router-dom'
+import { PermissionProvider } from './context/PermissionContext'
 import RegisterForm from './pages/auth/register/RegisterPages'
 import LoginForm from './pages/auth/login/LoginPage'
 import Home from "./pages/public/Home/Home"
@@ -16,11 +17,15 @@ import ProductVariantList from './pages/dashboard/admin/product-variant/pages/Li
 import OrderList from './pages/dashboard/admin/order/pages/OrderList'
 import ShipmentList from './pages/dashboard/admin/shipment/pages/ListShipment'
 import ReturnList from './pages/dashboard/admin/return/pages/ListReturn'
+import ReportsPage from './pages/dashboard/admin/reports/pages/ReportsPage'
+import ListUser from './pages/dashboard/admin/user/pages/ListUser'
+import ListPermission from './pages/dashboard/admin/permission/pages/ListPermission'
 import AdminHome from './pages/dashboard/admin/home/AdminHome'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
+    <PermissionProvider>
     <Routes>
       {/* Rutas públicas */}
       <Route path="/" element={<Home />} />
@@ -32,7 +37,7 @@ function App() {
       <Route
         path="/dashboard/admin"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
             <Admin />
           </ProtectedRoute>
         }
@@ -48,11 +53,15 @@ function App() {
         <Route path="list/order" element={<OrderList />} />
         <Route path="list/shipment" element={<ShipmentList />} />
         <Route path="list/return" element={<ReturnList />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="list/users"       element={<ListUser />} />
+        <Route path="list/permissions" element={<ListPermission />} />
       </Route>
 
       {/* Panel de cliente */}
       <Route path="/dashboard/customer" element={<Customer />} />
     </Routes>
+    </PermissionProvider>
   )
 }
 

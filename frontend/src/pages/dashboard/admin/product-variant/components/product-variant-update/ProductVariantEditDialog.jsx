@@ -23,6 +23,7 @@ export default function ProductVariantEditDialog({
   onRefresh,
   attributes = [],
   products = [],
+  disabled = false,
 }) {
 
   const [open, setOpen] = useState(false);
@@ -97,12 +98,12 @@ export default function ProductVariantEditDialog({
       <Button
         variant="secondary"
         size="icon"
-        className="text-blue-500"
+        className="text-blue-500 disabled:opacity-40 disabled:pointer-events-none"
+        disabled={disabled}
+        title={disabled ? "Sin permiso para editar variantes" : undefined}
         onClick={() => setOpen(true)}
       >
-
         <UserPen className="w-4 h-4" />
-
       </Button>
 
       {/* MODAL */}

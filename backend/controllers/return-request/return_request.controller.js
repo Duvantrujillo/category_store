@@ -10,11 +10,12 @@ const {
 const VALID_STATUSES    = ['PENDING', 'APPROVED', 'REJECTED', 'RECEIVED', 'COMPLETED']
 const VALID_RESOLUTIONS = ['REFUND', 'EXCHANGE', 'STORE_CREDIT']
 
+const USER_SELECT = { select: { id: true, name: true, email: true } }
+
 const createreturnRequest = async (req, res) => {
     try {
         const { orderId, status, resolution, reason } = req.body
 
-        // ── Campos obligatorios ──────────────────────────────────────
         const orderIdNumb = Number(orderId)
         if (!orderId || isNaN(orderIdNumb)) {
             return res.status(400).json({ message: "Debes seleccionar una orden" })
@@ -31,7 +32,6 @@ const createreturnRequest = async (req, res) => {
         if (status && !VALID_STATUSES.includes(status)) {
             return res.status(400).json({ message: "Estado inválido" })
         }
-        // ────────────────────────────────────────────────────────────
 
         const orderIdExist = await prisma.order.findUnique({
             where: { id: orderIdNumb }
@@ -46,7 +46,8 @@ const createreturnRequest = async (req, res) => {
                 orderId: orderIdNumb,
                 status: status || 'PENDING',
                 resolution,
-                reason: reason.trim()
+                reason: reason.trim(),
+                registeredById: req.user.id,
             }
         })
 
@@ -89,7 +90,13 @@ const getAllReturnRequests = async (req, res) => {
                         }
                     }
                 },
-                refunds: true,
+                refunds: {
+                    include: {
+                        processedBy: USER_SELECT,
+                    }
+                },
+                registeredBy: USER_SELECT,
+                approvedBy:   USER_SELECT,
             }
         })
 
@@ -113,12 +120,15 @@ const updateReturnRequest = async (req, res) => {
             return res.status(404).json({ message: "Solicitud no encontrada" })
         }
 
+        const isApprovalAction = status === 'APPROVED' || status === 'REJECTED'
+
         const updated = await prisma.returnRequest.update({
             where: { id: Number(id) },
             data: {
                 ...(status && { status }),
                 ...(resolution !== undefined && { resolution }),
                 ...(reason !== undefined && { reason }),
+                ...(isApprovalAction && { approvedById: req.user.id }),
             }
         })
 

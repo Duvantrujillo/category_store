@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardFooter } from "@/components/ui/card";
 import ProductVariantEditDialog from "@/pages/dashboard/admin/product-variant/components/product-variant-update/ProductVariantEditDialog";
+import { useHasPermission } from "@/lib/permissions";
 
 function ProductVariantCard({ item, onDelete, onDetails, onRefresh, products = [], attributes = [] }) {
+  const canUpdate = useHasPermission("product-variants.update");
+  const canDelete = useHasPermission("product-variants.delete");
   const firstImage = item.images?.[0]?.imageUrl
     ? `${import.meta.env.VITE_API_URL}${item.images[0].imageUrl}`
     : noPhotos;
@@ -61,8 +64,15 @@ function ProductVariantCard({ item, onDelete, onDetails, onRefresh, products = [
         <Button variant="outline" size="icon" className="h-7 w-7 text-indigo-600 border-indigo-200 hover:bg-indigo-50" onClick={() => onDetails(item)}>
           <Eye className="h-3 w-3" />
         </Button>
-        <ProductVariantEditDialog item={item} onRefresh={onRefresh} products={products} attributes={attributes} />
-        <Button variant="outline" size="icon" className="h-7 w-7 text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => onDelete(item.id)}>
+        <ProductVariantEditDialog item={item} onRefresh={onRefresh} products={products} attributes={attributes} disabled={!canUpdate} />
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-7 w-7 text-rose-500 border-rose-200 hover:bg-rose-50 disabled:opacity-40 disabled:pointer-events-none"
+          onClick={() => onDelete(item.id)}
+          disabled={!canDelete}
+          title={!canDelete ? "Sin permiso para eliminar variantes" : undefined}
+        >
           <Trash className="h-3 w-3" />
         </Button>
       </CardFooter>

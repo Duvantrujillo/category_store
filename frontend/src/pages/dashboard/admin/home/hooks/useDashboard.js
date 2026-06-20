@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getStats } from '../api/dashboardApi';
 
-export function useDashboard() {
+export function useDashboard({ skip = false } = {}) {
   const [stats, setStats]     = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!skip);
   const [error, setError]     = useState(null);
 
   const fetchStats = async () => {
+    if (skip) return;
     try {
       setLoading(true);
       const data = await getStats();
@@ -18,7 +19,7 @@ export function useDashboard() {
     }
   };
 
-  useEffect(() => { fetchStats(); }, []);
+  useEffect(() => { fetchStats(); }, [skip]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { stats, loading, error, refetch: fetchStats };
 }

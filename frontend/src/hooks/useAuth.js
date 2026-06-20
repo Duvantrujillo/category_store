@@ -32,8 +32,9 @@ export const useAuth = () => {
 
       // 🚀 Routing por rol (escalable)
       const routesByRole = {
-        admin: "/dashboard/admin",
-        customer: "/dashboard/customer",
+        admin:       "/dashboard/admin",
+        super_admin: "/dashboard/admin",
+        customer:    "/dashboard/customer",
       };
 
       navigate(routesByRole[data.user.role] || "/");

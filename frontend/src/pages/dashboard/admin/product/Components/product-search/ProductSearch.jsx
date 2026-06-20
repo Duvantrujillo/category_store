@@ -1,64 +1,40 @@
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-
-function ProductSearch({
-  query,
-  setQuery,
-  resultsCount,
-}) {
+function ProductSearch({ query, setQuery, resultsCount, loading }) {
   return (
-    <Card className="mt-4 max-w-2xl">
+    <div className="flex items-center gap-3">
+      <div className="relative w-full max-w-sm">
+        <Search
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por nombre, marca, categoría..."
+          className="pl-9 pr-9"
+        />
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
 
-      <CardHeader>
+      {query.trim() && !loading && (
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {resultsCount} resultado{resultsCount !== 1 ? "s" : ""}
+        </span>
+      )}
 
-        <CardTitle>
-          Buscar productos
-        </CardTitle>
-
-        <CardDescription>
-          Busca por nombre, slug, categoría o marca.
-        </CardDescription>
-
-      </CardHeader>
-
-      <CardContent>
-
-        <InputGroup>
-
-          <InputGroupInput
-            value={query}
-            onChange={(e) =>
-              setQuery(e.target.value)
-            }
-            placeholder="Ej: Adidas, Camiseta Deportiva, Nike, Calzado..."
-          />
-
-          <InputGroupAddon>
-            <Search size={18} />
-          </InputGroupAddon>
-
-          <InputGroupAddon align="inline-end">
-            {resultsCount}
-          </InputGroupAddon>
-
-        </InputGroup>
-
-      </CardContent>
-
-    </Card>
+      {loading && (
+        <span className="text-xs text-muted-foreground whitespace-nowrap">Buscando...</span>
+      )}
+    </div>
   );
 }
 

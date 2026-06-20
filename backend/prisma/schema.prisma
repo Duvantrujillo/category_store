@@ -7,16 +7,27 @@ datasource db {
   url = env("DATABASE_URL")
 }
 
+enum UserStatus {
+  active
+  inactive
+  blocked
+}
+
 model User {
-  id       Int    @id @default(autoincrement())
+  id       Int        @id @default(autoincrement())
   name     String
-  email    String @unique
+  email    String     @unique
   password String
   roleId   Int
-  role     Role   @relation(fields: [roleId], references: [id])
-  carts  Cart[]
-   orders   Order[]
-   notifications Notification[]
+  status   UserStatus @default(active)
+  role     Role       @relation(fields: [roleId], references: [id])
+  carts             Cart[]
+  orders            Order[]
+  notifications     Notification[]
+  registeredReturns ReturnRequest[]  @relation("ReturnRegisteredBy")
+  approvedReturns   ReturnRequest[]  @relation("ReturnApprovedBy")
+  processedRefunds  Refund[]         @relation("RefundProcessedBy")
+  shipmentUpdates   ShipmentHistory[] @relation("ShipmentUpdatedBy")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -28,7 +39,33 @@ model Role {
   status      Boolean @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  permissions RolePermission[]
   users       User[]
+}
+
+model Permission {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  isActive     Boolean @default(true)
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+
+  @@index([roleId])
+  @@index([permissionId])
 }
 
 
@@ -302,6 +339,12 @@ model ReturnRequest {
 
   reason String?
 
+  registeredById Int?
+  registeredBy   User? @relation("ReturnRegisteredBy", fields: [registeredById], references: [id])
+
+  approvedById Int?
+  approvedBy   User? @relation("ReturnApprovedBy", fields: [approvedById], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -310,6 +353,8 @@ model ReturnRequest {
 
   @@index([orderId])
   @@index([status])
+  @@index([registeredById])
+  @@index([approvedById])
 }
 
 
@@ -350,13 +395,18 @@ model Refund {
   payment Payment @relation(fields: [paymentId], references: [id])
   amount Decimal @db.Decimal(12,2)
   status RefundStatus @default(PENDING)
-  method String? 
+  method String?
   reference String?
   paidAt DateTime?
+
+  processedById Int?
+  processedBy   User? @relation("RefundProcessedBy", fields: [processedById], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([returnRequestId])
   @@index([paymentId])
+  @@index([processedById])
 }
 
 
@@ -410,9 +460,13 @@ model ShipmentHistory {
 
   note String?
 
+  updatedById Int?
+  updatedBy   User? @relation("ShipmentUpdatedBy", fields: [updatedById], references: [id])
+
   createdAt DateTime @default(now())
 
   @@index([shipmentId])
+  @@index([updatedById])
 }
 
 

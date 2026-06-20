@@ -1,14 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Inbox } from "lucide-react";
 
-import AttributeValueRow from "./AttributeValueRow";
+import AttributeValueCard from "./AttributeValueCard";
 import DeleteAttributeValueDialog from "../attribute-value-delete/AttributeValueDeleteDialog";
 import TablePagination from "@/components/ui/TablePagination";
 
-import {
-  Table, TableBody, TableCell,
-  TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function AttributeValueTable({ attributeValues, attributes, totalItems, page, pageSize, onPageChange, onRefresh }) {
@@ -17,6 +13,20 @@ function AttributeValueTable({ attributeValues, attributes, totalItems, page, pa
 
   const openConfirmModal  = (id) => { setSelectedId(id); setIsOpen(true); };
   const closeConfirmModal = ()   => { setSelectedId(null); setIsOpen(false); };
+
+  // Group values by attribute name, preserving insertion order
+  const grouped = useMemo(() => {
+    if (!Array.isArray(attributeValues)) return [];
+    const map = new Map();
+    for (const item of attributeValues) {
+      const key = item.attribute?.name ?? "Sin atributo";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(item);
+    }
+    return Array.from(map.entries()); // [[attributeName, [values]], ...]
+  }, [attributeValues]);
+
+  const hasData = grouped.length > 0;
 
   return (
     <>
@@ -27,7 +37,9 @@ function AttributeValueTable({ attributeValues, attributes, totalItems, page, pa
               <CardTitle className="text-base font-semibold text-slate-800">
                 Valores de atributos
               </CardTitle>
-              <p className="text-xs text-slate-400 mt-0.5">Lista completa de valores de atributos.</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Agrupados por atributo · página actual
+              </p>
             </div>
             <span className="text-xs font-medium bg-indigo-50 text-indigo-600 border border-indigo-100 px-2.5 py-1 rounded-full">
               {totalItems} registros
@@ -35,44 +47,30 @@ function AttributeValueTable({ attributeValues, attributes, totalItems, page, pa
           </div>
         </CardHeader>
 
-        <CardContent className="p-0">
-          <div className="overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
-                  {["Atributo","Valor","Acciones"].map((h) => (
-                    <TableHead key={h} className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 text-center whitespace-nowrap">
-                      {h}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
+        <CardContent className="p-6">
+          {hasData ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {grouped.map(([attributeName, values]) => (
+                <AttributeValueCard
+                  key={attributeName}
+                  attributeName={attributeName}
+                  values={values}
+                  attributes={attributes}
+                  onDelete={openConfirmModal}
+                  onRefresh={onRefresh}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 gap-2 text-slate-400">
+              <Inbox size={36} className="opacity-40" />
+              <span className="text-sm">No hay registros.</span>
+            </div>
+          )}
 
-              <TableBody>
-                {Array.isArray(attributeValues) && attributeValues.length > 0 ? (
-                  attributeValues.map((item) => (
-                    <AttributeValueRow
-                      key={item.id}
-                      item={item}
-                      attributes={attributes}
-                      onDelete={openConfirmModal}
-                      onRefresh={onRefresh}
-                    />
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={3} className="h-32 text-center">
-                      <div className="flex flex-col items-center gap-2 text-slate-400">
-                        <Inbox size={30} className="opacity-40" />
-                        <span className="text-sm">No hay registros.</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+          <div className="mt-6">
+            <TablePagination page={page} pageSize={pageSize} totalItems={totalItems} onPageChange={onPageChange} />
           </div>
-          <TablePagination page={page} pageSize={pageSize} totalItems={totalItems} onPageChange={onPageChange} />
         </CardContent>
       </Card>
 

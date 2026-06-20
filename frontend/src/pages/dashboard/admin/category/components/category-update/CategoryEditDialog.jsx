@@ -21,6 +21,7 @@ export default function CategoryEditDialog({
   item,
   categories = [],
   onRefresh,
+  disabled = false,
 }) {
 
   const [open, setOpen] = useState(false);
@@ -85,6 +86,8 @@ export default function CategoryEditDialog({
         size="icon"
         className="text-blue-500"
         onClick={() => setOpen(true)}
+        disabled={disabled}
+        title={disabled ? "Sin permiso para editar categorías" : undefined}
       >
         <UserPen className="w-4 h-4" />
       </Button>

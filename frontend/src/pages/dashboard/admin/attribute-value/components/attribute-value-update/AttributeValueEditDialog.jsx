@@ -21,6 +21,7 @@ export default function AttributeValueEditDialog({
   item,
   attributes = [],
   onRefresh,
+  disabled = false,
 }) {
 
   const [open, setOpen] =
@@ -105,8 +106,9 @@ export default function AttributeValueEditDialog({
       <Button
         variant="secondary"
         size="icon"
-        className="text-blue-500"
+        className="text-blue-500 disabled:opacity-40 disabled:pointer-events-none"
         onClick={() => setOpen(true)}
+        disabled={disabled}
       >
 
         <UserPen className="w-4 h-4" />

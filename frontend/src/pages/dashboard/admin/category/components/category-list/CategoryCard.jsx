@@ -4,8 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import CategoryEditDialog from "@/pages/dashboard/admin/category/components/category-update/CategoryEditDialog";
+import CategoryDetailDialog from "@/pages/dashboard/admin/category/components/category-detail/CategoryDetailDialog";
+import { useHasPermission } from "@/lib/permissions";
 
 function CategoryCard({ item, onDelete, onRefresh, categories = [] }) {
+  const canUpdate = useHasPermission("categories.update");
+  const canDelete = useHasPermission("categories.delete");
   return (
     <Card className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200">
 
@@ -49,23 +53,24 @@ function CategoryCard({ item, onDelete, onRefresh, categories = [] }) {
           </span>
         )}
 
-        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-          {item.description || "Sin descripción"}
-        </p>
       </CardContent>
 
       {/* Acciones */}
       <CardFooter className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-1.5">
+        <CategoryDetailDialog item={item} />
         <CategoryEditDialog
           item={item}
           categories={categories.filter((c) => c.id !== item.id)}
           onRefresh={onRefresh}
+          disabled={!canUpdate}
         />
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8 text-rose-500 border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+          className="h-8 w-8 text-rose-500 border-rose-200 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40 disabled:pointer-events-none"
           onClick={() => onDelete(item.id)}
+          disabled={!canDelete}
+          title={!canDelete ? "Sin permiso para eliminar" : undefined}
         >
           <Trash className="h-3.5 w-3.5" />
         </Button>

@@ -151,7 +151,81 @@ const allOrder = async (req, res) => {
 };
 
 
+const searchOrder = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || !q.trim()) {
+      return res.status(400).json({ ok: false, message: 'Query requerida' });
+    }
+
+    const term = q.trim();
+    const orders = await prisma.order.findMany({
+      where: {
+        OR: [
+          { orderNumber: { contains: term } },
+          { email:       { contains: term } },
+          { firstName:   { contains: term } },
+          { lastName:    { contains: term } },
+        ],
+      },
+      include: {
+        user: true,
+        payment: true,
+        items: {
+          include: {
+            productVariant: true,
+            returnItems: { select: { quantity: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.status(200).json({ ok: true, orders });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ ok: false, message: 'Error interno' });
+  }
+};
+
+const filterOrderByDate = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    if (!from) {
+      return res.status(400).json({ ok: false, message: 'Fecha de inicio requerida' });
+    }
+
+    const fromDate = new Date(from);
+    fromDate.setHours(0, 0, 0, 0);
+
+    const toDate = to ? new Date(to) : new Date(from);
+    toDate.setHours(23, 59, 59, 999);
+
+    const orders = await prisma.order.findMany({
+      where: { createdAt: { gte: fromDate, lte: toDate } },
+      include: {
+        user: true,
+        payment: true,
+        items: {
+          include: {
+            productVariant: true,
+            returnItems: { select: { quantity: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.status(200).json({ ok: true, orders });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ ok: false, message: 'Error interno' });
+  }
+};
+
 module.exports = {
-createOrder,
-allOrder
+  createOrder,
+  allOrder,
+  searchOrder,
+  filterOrderByDate,
 }

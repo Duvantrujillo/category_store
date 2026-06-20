@@ -3,6 +3,7 @@ import noPhotos from "@/assets/icons/no-fotos.png";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import ProductEditDialog from "@/pages/dashboard/admin/product/Components/product-update/ProductEditDialog";
+import { useHasPermission } from "@/lib/permissions";
 
 const statusConfig = {
   ACTIVE:   { label: "Activo",   cls: "bg-green-100 text-green-700" },
@@ -11,6 +12,8 @@ const statusConfig = {
 };
 
 function ProductRow({ item, onDelete, onRefresh }) {
+  const canUpdate = useHasPermission("products.update");
+  const canDelete = useHasPermission("products.delete");
   const { label, cls } = statusConfig[item.status] ?? { label: item.status, cls: "bg-slate-100 text-slate-700" };
 
   return (
@@ -55,12 +58,18 @@ function ProductRow({ item, onDelete, onRefresh }) {
       {/* Acciones */}
       <TableCell className="text-center px-4 py-3">
         <div className="flex items-center justify-center gap-1">
-          <ProductEditDialog item={item} onRefresh={onRefresh} />
+          <ProductEditDialog
+            item={item}
+            onRefresh={onRefresh}
+            disabled={!canUpdate}
+          />
           <Button
             variant="ghost"
             size="icon"
-            className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+            className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:pointer-events-none"
             onClick={() => onDelete(item.id)}
+            disabled={!canDelete}
+            title={!canDelete ? "Sin permiso para eliminar" : undefined}
           >
             <Trash className="h-4 w-4" />
           </Button>

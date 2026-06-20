@@ -110,12 +110,13 @@ export const useUpdateCategory = () => {
 };
 
 
-export const useAllCategory = () => {
+export const useAllCategory = ({ skip = false } = {}) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchCategories = useCallback(async () => {
+    if (skip) return;
     try {
       setLoading(true);
       const res = await allCategory();
@@ -127,7 +128,7 @@ export const useAllCategory = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [skip]);
 
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
 

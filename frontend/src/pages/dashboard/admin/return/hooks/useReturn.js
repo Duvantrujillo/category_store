@@ -61,12 +61,13 @@ export const useCreateReturnRequest = () => {
    GET ALL RETURN REQUESTS
 ========================================= */
 
-export const useAllReturn = () => {
+export const useAllReturn = ({ skip = false } = {}) => {
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchReturns = useCallback(async () => {
+    if (skip) return;
     try {
       setLoading(true);
       const data = await allReturnRequests();
@@ -77,7 +78,7 @@ export const useAllReturn = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [skip]);
 
   useEffect(() => {
     fetchReturns();

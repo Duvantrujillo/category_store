@@ -21,6 +21,7 @@ import { useUpdateAttribute } from "../../hooks/useAttribute";
 export default function AttributeEditDialog({
   item,
   onRefresh,
+  disabled = false,
 }) {
 
   const [open, setOpen] = useState(false);
@@ -87,8 +88,9 @@ export default function AttributeEditDialog({
       <Button
         variant="secondary"
         size="icon"
-        className="text-blue-500"
+        className="text-blue-500 disabled:opacity-40 disabled:pointer-events-none"
         onClick={() => setOpen(true)}
+        disabled={disabled}
       >
 
         <UserPen className="w-4 h-4" />

@@ -4,6 +4,7 @@ const productVariantController = require("../controllers/product-variant/product
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const { requirePermission } = require('../middlewares/permission.middleware');
 
 /**
  * Storage dinámico para variantes
@@ -28,10 +29,10 @@ const upload = multer({ storage });
  * Rutas para variantes
  * upload.array('images', 5) -> permitimos hasta 5 imágenes
  */
-routes.post("/create", upload.array('images', 5), productVariantController.createProductVariant);
-routes.put("/update/:id", upload.array('images', 5), productVariantController.updateProductVariant);
-routes.delete("/delete/:id", productVariantController.deleteProductVariant);
-routes.get("/all", productVariantController.allProductVariant);
-routes.get("/search",productVariantController.searchSkuBarcode)
+routes.get("/all",       requirePermission('product-variants.view'),   productVariantController.allProductVariant);
+routes.get("/search",    requirePermission('product-variants.view'),   productVariantController.searchSkuBarcode);
+routes.post("/create",   requirePermission('product-variants.create'), upload.array('images', 5), productVariantController.createProductVariant);
+routes.put("/update/:id",requirePermission('product-variants.update'), upload.array('images', 5), productVariantController.updateProductVariant);
+routes.delete("/delete/:id", requirePermission('product-variants.delete'), productVariantController.deleteProductVariant);
 
 module.exports = routes;

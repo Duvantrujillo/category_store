@@ -10,14 +10,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import { UserPen } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 import ShippingEditForm from "./ShippingEditForm";
 
 import useUpdateShipping from "../../hooks/useShipping";
 import useDepartments from "../../hooks/useDepartament";
 
-export default function ShippingEditDialog({ item }) {
+export default function ShippingEditDialog({ item, onRefresh, disabled = false }) {
 
   const [open, setOpen] = useState(false);
 
@@ -81,6 +81,7 @@ export default function ShippingEditDialog({ item }) {
       await submitUpdate(item.id);
 
       setOpen(false);
+      onRefresh?.();
 
     } catch (err) {
 
@@ -94,12 +95,14 @@ export default function ShippingEditDialog({ item }) {
 
       {/* BOTÓN EDITAR */}
       <Button
-        variant="secondary"
         size="icon"
-        className="text-blue-500"
+        variant="outline"
+        className="h-8 w-8 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-40 disabled:pointer-events-none"
         onClick={() => setOpen(true)}
+        disabled={disabled}
+        title={disabled ? "Sin permiso para editar formularios" : undefined}
       >
-        <UserPen className="w-4 h-4" />
+        <Pencil className="h-3.5 w-3.5" />
       </Button>
 
       {/* MODAL */}

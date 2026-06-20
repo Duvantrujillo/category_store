@@ -25,7 +25,7 @@ const INITIAL_FORM = {
   selectedItems: [],
 };
 
-export default function ReturnCreateDialog({ onRefresh }) {
+export default function ReturnCreateDialog({ onRefresh, disabled = false }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
   const [orders, setOrders] = useState([]);
@@ -94,7 +94,12 @@ export default function ReturnCreateDialog({ onRefresh }) {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} className="gap-2">
+      <Button
+        onClick={() => setOpen(true)}
+        className="gap-2 disabled:opacity-40"
+        disabled={disabled}
+        title={disabled ? "Sin permiso para crear devoluciones" : undefined}
+      >
         <Plus className="w-4 h-4" />
         Nueva solicitud
       </Button>

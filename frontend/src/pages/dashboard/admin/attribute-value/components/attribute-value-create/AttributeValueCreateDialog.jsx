@@ -20,6 +20,7 @@ import { useCreateAttributeValue } from "../../hooks/useAttributeValue";
 export default function AttributeValueCreateDialog({
   attributes = [],
   onRefresh,
+  disabled = false,
 }) {
 
   const [open, setOpen] =
@@ -89,6 +90,7 @@ export default function AttributeValueCreateDialog({
       <Button
         onClick={() => setOpen(true)}
         className="gap-2"
+        disabled={disabled}
       >
         <Plus className="w-4 h-4" />
 

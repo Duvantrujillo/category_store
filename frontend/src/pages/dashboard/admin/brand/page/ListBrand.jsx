@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
+import { ShieldOff } from "lucide-react";
 import { useAllBrand, useSearchBrand } from "../hooks/useBrand";
 import BrandTable from "../components/brand-list/BrandTable";
 import BrandCreateDialog from "../components/brand-create/BrandCreateDialog";
 import BrandSearch from "../components/brand-search/BrandSearch";
+import { useHasPermission } from "@/lib/permissions";
 
 const PAGE_SIZE = 15;
 
 function BrandList() {
-  const { brands = [], refetch } = useAllBrand();
+  const canView   = useHasPermission("brands.view");
+  const canCreate = useHasPermission("brands.create");
+  const { brands = [], refetch } = useAllBrand({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchBrand();
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(brands.length / PAGE_SIZE));
@@ -18,15 +22,20 @@ function BrandList() {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  if (!canView) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
+        <ShieldOff size={40} className="opacity-40" />
+        <p className="text-sm">No tienes permisos para visualizar esta sección.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Marcas</h1>
-          <p className="text-muted-foreground">Administra las marcas del sistema.</p>
-          <BrandSearch query={query} setQuery={setQuery} resultsCount={results.length} loading={loading} />
-        </div>
-        <BrandCreateDialog onRefresh={refetch} />
+    <div className="p-6 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <BrandSearch query={query} setQuery={setQuery} resultsCount={results.length} loading={loading} />
+        <BrandCreateDialog onRefresh={refetch} disabled={!canCreate} />
       </div>
 
       <BrandTable

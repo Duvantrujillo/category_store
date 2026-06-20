@@ -13,7 +13,7 @@ import {
    GET ALL ATTRIBUTE VALUES
 ========================================= */
 
-export const useAllAttributeValue = () => {
+export const useAllAttributeValue = ({ skip = false } = {}) => {
 
   const [attributeValues, setAttributeValues] = useState([]);
 
@@ -22,6 +22,7 @@ export const useAllAttributeValue = () => {
   const [error, setError] = useState(null);
 
   const fetchAttributeValues = useCallback(async () => {
+    if (skip) return;
 
     try {
 
@@ -52,7 +53,7 @@ export const useAllAttributeValue = () => {
 
     }
 
-  }, []);
+  }, [skip]);
 
   useEffect(() => {
 

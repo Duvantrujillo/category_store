@@ -20,6 +20,7 @@ import { useCreateCategory } from "../../hooks/useCategory";
 export default function CategoryCreateDialog({
   categories = [],
   onRefresh,
+  disabled = false,
 }) {
 
   const [open, setOpen] = useState(false);
@@ -86,9 +87,10 @@ export default function CategoryCreateDialog({
       <Button
         onClick={() => setOpen(true)}
         className="gap-2"
+        disabled={disabled}
+        title={disabled ? "Sin permiso para crear categorías" : undefined}
       >
         <Plus className="w-4 h-4" />
-
         Nueva categoría
       </Button>
 

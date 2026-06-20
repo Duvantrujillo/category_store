@@ -1,4 +1,5 @@
 import axios from 'axios'
+import toast from 'react-hot-toast'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL
@@ -13,16 +14,34 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-// Si el servidor responde 401, la sesión expiró → redirigir a login
+// Maneja respuestas de error globalmente
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status
+    const { message, forceLogout } = error.response?.data ?? {}
+
+    if (status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       localStorage.removeItem('role')
-      window.location.href = '/login'
+
+      if (message) {
+        toast.error(message, { duration: 3000, id: 'auth-error' })
+      }
+
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, forceLogout ? 1500 : 800)
     }
+
+    if (status === 403) {
+      toast.error(message ?? 'No tienes permiso para realizar esta acción.', {
+        duration: 3000,
+        id: 'permission-error',
+      })
+    }
+
     return Promise.reject(error)
   }
 )

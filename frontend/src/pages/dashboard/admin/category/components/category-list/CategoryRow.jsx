@@ -2,8 +2,11 @@ import { Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CategoryEditDialog from "../category-update/CategoryEditDialog";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { useHasPermission } from "@/lib/permissions";
 
 function CategoryRow({ item, onDelete, categories, onRefresh }) {
+  const canUpdate = useHasPermission("categories.update");
+  const canDelete = useHasPermission("categories.delete");
   return (
     <TableRow className="hover:bg-slate-50/80 transition-colors">
 
@@ -47,12 +50,15 @@ function CategoryRow({ item, onDelete, categories, onRefresh }) {
             item={item}
             categories={Array.isArray(categories) ? categories.filter((c) => c.id !== item.id) : []}
             onRefresh={onRefresh}
+            disabled={!canUpdate}
           />
           <Button
             variant="ghost"
             size="icon"
-            className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+            className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:pointer-events-none"
             onClick={() => onDelete(item.id)}
+            disabled={!canDelete}
+            title={!canDelete ? "Sin permiso para eliminar" : undefined}
           >
             <Trash className="h-4 w-4" />
           </Button>

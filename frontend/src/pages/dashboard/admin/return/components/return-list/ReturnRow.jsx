@@ -1,6 +1,7 @@
 import { Eye, Pencil, BadgeDollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { useHasPermission } from "@/lib/permissions";
 
 const statusConfig = {
   PENDING:   { label: "Pendiente",   cls: "bg-amber-100 text-amber-700" },
@@ -23,6 +24,7 @@ const refundConfig = {
 };
 
 function ReturnRow({ item, onItems, onEdit, onRefund }) {
+  const canApprove = useHasPermission("returns.approve");
   const order = item.order;
   const totalAmount = item.items.reduce(
     (sum, ri) => sum + Number(ri.orderItem.unitPrice) * ri.quantity,
@@ -79,6 +81,30 @@ function ReturnRow({ item, onItems, onEdit, onRefund }) {
         )}
       </TableCell>
 
+      {/* Registrado por */}
+      <TableCell className="text-center px-4 py-3">
+        {item.registeredBy ? (
+          <div className="flex flex-col items-center">
+            <span className="text-xs font-medium text-slate-700">{item.registeredBy.name}</span>
+            <span className="text-[10px] text-slate-400">{item.registeredBy.email}</span>
+          </div>
+        ) : (
+          <span className="text-slate-300 text-xs">—</span>
+        )}
+      </TableCell>
+
+      {/* Aprobado por */}
+      <TableCell className="text-center px-4 py-3">
+        {item.approvedBy ? (
+          <div className="flex flex-col items-center">
+            <span className="text-xs font-medium text-slate-700">{item.approvedBy.name}</span>
+            <span className="text-[10px] text-slate-400">{item.approvedBy.email}</span>
+          </div>
+        ) : (
+          <span className="text-slate-300 text-xs">—</span>
+        )}
+      </TableCell>
+
       {/* Fecha */}
       <TableCell className="text-center px-4 py-3 text-slate-500 text-sm">
         {new Date(item.createdAt).toLocaleDateString("es-CO")}
@@ -98,16 +124,20 @@ function ReturnRow({ item, onItems, onEdit, onRefund }) {
           <Button
             size="icon"
             variant="outline"
-            className="h-8 w-8 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-700"
+            className="h-8 w-8 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-40 disabled:pointer-events-none"
             onClick={() => onEdit(item)}
+            disabled={!canApprove}
+            title={!canApprove ? "Sin permiso para aprobar devoluciones" : undefined}
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button
             size="icon"
             variant="outline"
-            className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+            className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 disabled:opacity-40 disabled:pointer-events-none"
             onClick={() => onRefund(item)}
+            disabled={!canApprove}
+            title={!canApprove ? "Sin permiso para procesar reembolso" : undefined}
           >
             <BadgeDollarSign className="h-3.5 w-3.5" />
           </Button>

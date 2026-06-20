@@ -1,5 +1,6 @@
 import { Label } from "@/components/ui/label";
-import { Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Eye, Phone, MapPin, FileText, User } from "lucide-react";
 
 import {
   Dialog,
@@ -10,29 +11,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-
-
-import {
-  Phone,
-  MapPin,
-  FileText,
-  User,
-} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 function ShippingDetailsDialog({ item }) {
   return (
     <Dialog>
 
       <DialogTrigger asChild>
-        <button
-          className="inline-flex items-center justify-center rounded-md border border-green-600 px-3 py-2 text-green-600 hover:bg-green-600 hover:text-white transition"
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
         >
-          <Eye className="w-4 h-4" />
-        </button>
+          <Eye className="h-3.5 w-3.5" />
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl rounded-2xl">
 

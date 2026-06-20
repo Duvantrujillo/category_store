@@ -1,9 +1,10 @@
 import {
   ShoppingCart, TrendingUp, Truck, RotateCcw,
   Package, AlertTriangle, Clock, CheckCircle2,
-  RefreshCw, Loader2,
+  RefreshCw, Loader2, ShieldOff,
 } from 'lucide-react';
 import { useDashboard } from './hooks/useDashboard';
+import { useHasPermission } from '@/lib/permissions';
 
 const fmt = (n) =>
   Number(n ?? 0).toLocaleString('es-CO');
@@ -41,7 +42,17 @@ function SectionTitle({ children }) {
 }
 
 export default function AdminHome() {
-  const { stats, loading, error, refetch } = useDashboard();
+  const canView = useHasPermission('dashboard.view');
+  const { stats, loading, error, refetch } = useDashboard({ skip: !canView });
+
+  if (!canView) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
+        <ShieldOff size={40} className="opacity-40" />
+        <p className="text-sm">No tienes permisos para visualizar esta sección.</p>
+      </div>
+    );
+  }
 
   if (error) {
     return (

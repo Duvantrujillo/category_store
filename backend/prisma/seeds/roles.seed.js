@@ -5,6 +5,11 @@ async function main() {
   // 🔥 Crear roles iniciales
   await prisma.role.createMany({
     data: [
+       {
+      name: 'super_admin',
+      description: 'Super Administrador',
+      status: true
+    },
       { name: 'admin', description: 'Administrador', status: true },
       { name: 'customer', description: 'Cliente', status: true }
     ],

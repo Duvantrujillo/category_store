@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import toast from "react-hot-toast";
 import { allshipment, updateShipment, getShipmentHistory } from "../api/shipmentApi";
 
-export const useAllShipment = () => {
+export const useAllShipment = ({ skip = false } = {}) => {
   const [shipments, setShipments] = useState([]);
 
   const [loading, setLoading] = useState(false);
@@ -10,6 +10,7 @@ export const useAllShipment = () => {
   const [error, setError] = useState(null);
 
   const fetchShipments = useCallback(async () => {
+    if (skip) return;
     try {
       setLoading(true);
 
@@ -30,7 +31,7 @@ export const useAllShipment = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [skip]);
 
   useEffect(() => {
     fetchShipments();

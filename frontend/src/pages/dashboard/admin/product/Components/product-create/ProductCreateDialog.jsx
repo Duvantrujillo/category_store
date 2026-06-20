@@ -24,6 +24,7 @@ import { AllBrands } from "@/pages/dashboard/admin/brand/api/brandApi";
 
 export default function ProductCreateDialog({
   onRefresh,
+  disabled = false,
 }) {
   const [open, setOpen] =
     useState(false);
@@ -118,13 +119,12 @@ export default function ProductCreateDialog({
       {/* BOTÓN CREAR */}
 
       <Button
-        onClick={() =>
-          setOpen(true)
-        }
+        onClick={() => setOpen(true)}
         className="gap-2"
+        disabled={disabled}
+        title={disabled ? "Sin permiso para crear productos" : undefined}
       >
         <Plus className="w-4 h-4" />
-
         Nuevo producto
       </Button>
 

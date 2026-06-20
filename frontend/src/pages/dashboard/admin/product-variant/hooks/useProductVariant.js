@@ -64,7 +64,7 @@ export const useCreateProductVariant = () => {
   };
 
 };
-export const useAllProductVariant = () => {
+export const useAllProductVariant = ({ skip = false } = {}) => {
 
   const [variants, setVariants] = useState([]);
 
@@ -73,6 +73,7 @@ export const useAllProductVariant = () => {
   const [error, setError] = useState(null);
 
   const fetchVariants = useCallback(async () => {
+    if (skip) return;
 
     try {
 
@@ -104,7 +105,7 @@ export const useAllProductVariant = () => {
 
     }
 
-  }, []);
+  }, [skip]);
 
   useEffect(() => {
 

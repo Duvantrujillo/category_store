@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
+import { ShieldOff } from "lucide-react";
 import { useAllShipment } from "../hooks/useShipment";
 import ShipmentTable from "../components/shipment-list/ShipmentTable";
 import ShipmentEditDialog from "../components/shipment-update/ShipmentEditDialog";
 import ShipmentHistoryModal from "../components/shipment-history/ShipmentHistoryModal";
+import { useHasPermission } from "@/lib/permissions";
 
 const PAGE_SIZE = 15;
 
 const ShipmentList = () => {
-  const { shipments = [], refetch } = useAllShipment();
+  const canView = useHasPermission("orders.view");
+  const { shipments = [], refetch } = useAllShipment({ skip: !canView });
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(shipments.length / PAGE_SIZE));
   const paginated = shipments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -25,15 +28,17 @@ const ShipmentList = () => {
   const handleCloseEdit    = () => { setOpenEdit(false);    setSelectedShipment(null); };
   const handleCloseHistory = () => { setOpenHistory(false); setSelectedShipment(null); };
 
-  return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Envíos</h1>
-          <p className="text-muted-foreground">Seguimiento y actualización de envíos.</p>
-        </div>
+  if (!canView) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
+        <ShieldOff size={40} className="opacity-40" />
+        <p className="text-sm">No tienes permisos para visualizar esta sección.</p>
       </div>
+    );
+  }
 
+  return (
+    <div className="p-6 space-y-3">
       <ShipmentTable
         shipments={paginated}
         totalItems={shipments.length}

@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
+import { ShieldOff } from "lucide-react";
 import { useAllCategory } from "../hooks/useCategory";
 import CategoryTable from "../components/category-list/CategoryTable";
 import CategoryCreateDialog from "../components/category-create/CategoryCreateDialog";
+import { useHasPermission } from "@/lib/permissions";
 
 const PAGE_SIZE = 15;
 
 function CategoryList() {
-  const { categories = [], refetch } = useAllCategory();
+  const canView   = useHasPermission("categories.view");
+  const canCreate = useHasPermission("categories.create");
+  const { categories = [], refetch } = useAllCategory({ skip: !canView });
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(categories.length / PAGE_SIZE));
   const paginated = categories.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -15,16 +19,24 @@ function CategoryList() {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Categorías</h1>
-          <p className="text-muted-foreground">Administra las categorías del sistema.</p>
-        </div>
-        <CategoryCreateDialog categories={categories} onRefresh={refetch} />
+  if (!canView) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
+        <ShieldOff size={40} className="opacity-40" />
+        <p className="text-sm">No tienes permisos para visualizar esta sección.</p>
       </div>
+    );
+  }
 
+  return (
+    <div className="p-6 space-y-3">
+      <div className="flex justify-end">
+        <CategoryCreateDialog
+          categories={categories}
+          onRefresh={refetch}
+          disabled={!canCreate}
+        />
+      </div>
       <CategoryTable
         categories={paginated}
         totalItems={categories.length}

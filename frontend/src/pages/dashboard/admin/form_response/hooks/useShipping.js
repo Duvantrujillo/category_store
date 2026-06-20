@@ -6,12 +6,13 @@ import toast from "react-hot-toast";
 // ======================================================
 // 🔹 HOOK: TRAER TODOS LOS REGISTROS (READ)
 // ======================================================
-export const useShipping = () => {
+export const useShipping = ({ skip = false } = {}) => {
   const [shipping, setShipping] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!skip);
   const [error, setError] = useState(null);
 
   const loadData = useCallback(async () => {
+    if (skip) return;
     try {
       setLoading(true);
 
@@ -24,7 +25,7 @@ export const useShipping = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [skip]);
 
   useEffect(() => {// eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();

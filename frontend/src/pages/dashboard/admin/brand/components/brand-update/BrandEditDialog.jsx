@@ -21,6 +21,7 @@ import { useUpdateBrand } from "../../hooks/useBrand";
 export default function BrandEditDialog({
   item,
   onRefresh,
+  disabled = false,
 }) {
 
   const [open, setOpen] = useState(false);
@@ -95,8 +96,9 @@ export default function BrandEditDialog({
       <Button
         variant="secondary"
         size="icon"
-        className="text-blue-500"
+        className="text-blue-500 disabled:opacity-40 disabled:pointer-events-none"
         onClick={() => setOpen(true)}
+        disabled={disabled}
       >
 
         <UserPen className="w-4 h-4" />

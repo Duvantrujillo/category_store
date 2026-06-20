@@ -2,30 +2,17 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const STATUS_ORDER = ["CREATED", "PREPARING", "SHIPPED", "DELIVERED", "RETURNED"];
+const USER_SELECT  = { select: { id: true, name: true, email: true } };
 
 const updateShipment = async (req, res) => {
   try {
     const { id } = req.params;
+    const { status, carrier, trackingNumber, note, shippedAt, deliveredAt } = req.body;
 
-    const {
-      status,
-      carrier,
-      trackingNumber,
-      note,
-      shippedAt,
-      deliveredAt,
-    } = req.body;
-
-    const shipment = await prisma.shipment.findUnique({
-      where: {
-        id: Number(id),
-      },
-    });
+    const shipment = await prisma.shipment.findUnique({ where: { id: Number(id) } });
 
     if (!shipment) {
-      return res.status(404).json({
-        message: "Envío no encontrado",
-      });
+      return res.status(404).json({ message: "Envío no encontrado" });
     }
 
     if (status) {
@@ -33,23 +20,14 @@ const updateShipment = async (req, res) => {
       const newIdx     = STATUS_ORDER.indexOf(status);
 
       if (newIdx === -1) {
-        return res.status(400).json({
-          message: `Estado "${status}" no es válido.`,
-        });
+        return res.status(400).json({ message: `Estado "${status}" no es válido.` });
       }
-
       if (newIdx <= currentIdx) {
-        return res.status(400).json({
-          message: `El estado "${status}" ya fue registrado.`,
-        });
+        return res.status(400).json({ message: `El estado "${status}" ya fue registrado.` });
       }
     }
 
-    const updateData = {
-      status,
-      carrier,
-      trackingNumber,
-    };
+    const updateData = { status, carrier, trackingNumber };
 
     if (shippedAt) {
       updateData.shippedAt = new Date(shippedAt);
@@ -64,17 +42,16 @@ const updateShipment = async (req, res) => {
     }
 
     const updatedShipment = await prisma.shipment.update({
-      where: {
-        id: Number(id),
-      },
+      where: { id: Number(id) },
       data: updateData,
     });
 
     await prisma.shipmentHistory.create({
       data: {
-        shipmentId: updatedShipment.id,
+        shipmentId:  updatedShipment.id,
         status,
-        note: note || null,
+        note:        note || null,
+        updatedById: req.user.id,
       },
     });
 
@@ -85,10 +62,7 @@ const updateShipment = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-
-    return res.status(500).json({
-      message: "Error interno",
-    });
+    return res.status(500).json({ message: "Error interno" });
   }
 };
 
@@ -96,16 +70,10 @@ const updateShipment = async (req, res) => {
 const allShipment = async (req, res) => {
   try {
     const shipments = await prisma.shipment.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
       include: {
         order: {
-          select: {
-            orderNumber: true,
-            firstName: true,
-            lastName: true,
-          },
+          select: { orderNumber: true, firstName: true, lastName: true },
         },
       },
     });
@@ -113,13 +81,9 @@ const allShipment = async (req, res) => {
     return res.status(200).json(shipments);
   } catch (error) {
     console.error(error);
-
-    return res.status(500).json({
-      message: "Error interno",
-    });
+    return res.status(500).json({ message: "Error interno" });
   }
 };
-
 
 
 const getShipmentHistory = async (req, res) => {
@@ -127,26 +91,16 @@ const getShipmentHistory = async (req, res) => {
     const { id } = req.params;
 
     const history = await prisma.shipmentHistory.findMany({
-      where: {
-        shipmentId: Number(id),
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+      where: { shipmentId: Number(id) },
+      orderBy: { createdAt: "desc" },
+      include: { updatedBy: USER_SELECT },
     });
 
     return res.status(200).json(history);
   } catch (error) {
     console.error(error);
-
-    return res.status(500).json({
-      message: "Error interno",
-    });
+    return res.status(500).json({ message: "Error interno" });
   }
 };
 
-module.exports = {
-  updateShipment,
-  allShipment,
-  getShipmentHistory,
-};
+module.exports = { updateShipment, allShipment, getShipmentHistory };

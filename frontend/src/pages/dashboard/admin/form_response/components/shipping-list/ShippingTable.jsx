@@ -55,6 +55,7 @@ function ShippingTable({ shipping, totalItems, page, pageSize, onPageChange, onR
                       key={item.id}
                       item={item}
                       onDelete={openConfirmModal}
+                      onRefresh={onRefresh}
                     />
                   ))
                 ) : (

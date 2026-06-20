@@ -24,6 +24,7 @@ import { AllBrands } from "@/pages/dashboard/admin/brand/api/brandApi";
 export default function ProductEditDialog({
   item,
   onRefresh,
+  disabled = false,
 }) {
   const [open, setOpen] = useState(false);
 
@@ -127,6 +128,8 @@ export default function ProductEditDialog({
         size="icon"
         className="text-blue-500"
         onClick={() => setOpen(true)}
+        disabled={disabled}
+        title={disabled ? "Sin permiso para editar productos" : undefined}
       >
         <UserPen className="w-4 h-4" />
       </Button>

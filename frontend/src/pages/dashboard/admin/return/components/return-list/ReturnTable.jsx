@@ -30,7 +30,7 @@ function ReturnTable({ returns, totalItems, page, pageSize, onPageChange, onItem
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50 hover:bg-slate-50">
-                {["Pedido","Estado","Resolución","Monto","Reembolso","Fecha","Acciones"].map((h) => (
+                {["Pedido","Estado","Resolución","Monto","Reembolso","Registrado por","Aprobado por","Fecha","Acciones"].map((h) => (
                   <TableHead key={h} className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 text-center whitespace-nowrap">
                     {h}
                   </TableHead>
@@ -51,7 +51,7 @@ function ReturnTable({ returns, totalItems, page, pageSize, onPageChange, onItem
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center">
+                  <TableCell colSpan={9} className="h-32 text-center">
                     <div className="flex flex-col items-center gap-2 text-slate-400">
                       <Inbox size={30} className="opacity-40" />
                       <span className="text-sm">No hay solicitudes de devolución.</span>

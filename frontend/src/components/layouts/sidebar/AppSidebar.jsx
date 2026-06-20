@@ -13,9 +13,12 @@ import {
   ShieldCheck,
   ChevronRight,
   House,
+  BarChart3,
+  Users,
+  KeyRound,
 } from "lucide-react";
 
-const sections = [
+const ALL_SECTIONS = [
   {
     label: "General",
     items: [
@@ -47,10 +50,28 @@ const sections = [
       { title: "Devoluciones", url: "/dashboard/admin/list/return",     icon: RotateCcw },
     ],
   },
+  {
+    label: "Análisis",
+    items: [
+      { title: "Reportes", url: "/dashboard/admin/reports", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Administración",
+    superAdminOnly: true,
+    items: [
+      { title: "Usuarios",  url: "/dashboard/admin/list/users",       icon: Users },
+      { title: "Permisos",  url: "/dashboard/admin/list/permissions", icon: KeyRound },
+    ],
+  },
 ];
 
 export default function AppSidebar({ open, setOpen }) {
   const location = useLocation();
+  const user     = JSON.parse(localStorage.getItem("user") || "null");
+  const isSuperAdmin = user?.role === "super_admin";
+
+  const sections = ALL_SECTIONS.filter((s) => !s.superAdminOnly || isSuperAdmin);
 
   return (
     <>
@@ -131,7 +152,10 @@ export default function AppSidebar({ open, setOpen }) {
             </div>
             <div className="leading-tight min-w-0">
               <p className="text-xs font-semibold text-slate-200 truncate">Administrador</p>
-              <p className="text-[10px] text-slate-500 truncate">Sesión activa</p>
+              <p className="text-[10px] text-slate-500 truncate flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                Sesión activa
+              </p>
             </div>
           </div>
         </div>

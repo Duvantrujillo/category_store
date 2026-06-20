@@ -21,9 +21,12 @@ import {
 } from "@/components/ui/dialog";
 
 import { useCreateRefund, useProcessRefund } from "../../hooks/useReturn";
+import { useHasPermission } from "@/lib/permissions";
 import { getPaymentMethods } from "../../api/returnApi";
 
 export default function RefundModal({ open, item, onClose, onRefresh }) {
+  const canCreate  = useHasPermission("refunds.create");
+  const canProcess = useHasPermission("refunds.process");
   const { submitCreate, loading: loadingCreate } = useCreateRefund();
 
   const {
@@ -110,7 +113,7 @@ export default function RefundModal({ open, item, onClose, onRefresh }) {
                 <Button variant="outline" onClick={onClose} disabled={loadingCreate}>
                   Cancelar
                 </Button>
-                <Button onClick={handleCreate} disabled={loadingCreate}>
+                <Button onClick={handleCreate} disabled={loadingCreate || !canCreate} title={!canCreate ? "Sin permiso para registrar reembolsos" : undefined}>
                   {loadingCreate ? "Creando..." : "Crear reembolso"}
                 </Button>
               </div>
@@ -169,7 +172,7 @@ export default function RefundModal({ open, item, onClose, onRefresh }) {
                 <Button variant="outline" onClick={onClose} disabled={loadingProcess}>
                   Cancelar
                 </Button>
-                <Button onClick={handleProcess} disabled={loadingProcess}>
+                <Button onClick={handleProcess} disabled={loadingProcess || !canProcess} title={!canProcess ? "Sin permiso para procesar reembolsos" : undefined}>
                   {loadingProcess ? "Procesando..." : "Marcar como pagado"}
                 </Button>
               </div>

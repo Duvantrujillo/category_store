@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import ProductEditDialog from "@/pages/dashboard/admin/product/Components/product-update/ProductEditDialog";
+import { useHasPermission } from "@/lib/permissions";
 
 const statusConfig = {
   ACTIVE:   { label: "Activo",   cls: "bg-green-50 text-green-700 border-green-200" },
@@ -12,6 +13,8 @@ const statusConfig = {
 };
 
 function ProductCard({ item, onDelete, onDetails, onRefresh }) {
+  const canUpdate = useHasPermission("products.update");
+  const canDelete = useHasPermission("products.delete");
   const { label, cls } = statusConfig[item.status] ?? { label: item.status, cls: "bg-slate-100 text-slate-600 border-slate-200" };
 
   return (
@@ -66,12 +69,14 @@ function ProductCard({ item, onDelete, onDetails, onRefresh }) {
         >
           <Eye className="h-3.5 w-3.5" />
         </Button>
-        <ProductEditDialog item={item} onRefresh={onRefresh} />
+        <ProductEditDialog item={item} onRefresh={onRefresh} disabled={!canUpdate} />
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8 text-rose-500 border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+          className="h-8 w-8 text-rose-500 border-rose-200 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40 disabled:pointer-events-none"
           onClick={() => onDelete(item.id)}
+          disabled={!canDelete}
+          title={!canDelete ? "Sin permiso para eliminar" : undefined}
         >
           <Trash className="h-3.5 w-3.5" />
         </Button>

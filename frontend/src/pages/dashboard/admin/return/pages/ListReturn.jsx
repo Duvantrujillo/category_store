@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-
+import { ShieldOff } from "lucide-react";
 import { useAllReturn } from "../hooks/useReturn";
+import { useHasPermission } from "@/lib/permissions";
 
 import ReturnTable from "../components/return-list/ReturnTable";
 import ReturnCreateDialog from "../components/return-create/ReturnCreateDialog";
@@ -11,7 +12,9 @@ import RefundModal from "../components/refund/RefundModal";
 const PAGE_SIZE = 15;
 
 const ListReturn = () => {
-  const { returns = [], refetch } = useAllReturn();
+  const canView   = useHasPermission("returns.view");
+  const canCreate = useHasPermission("returns.approve");
+  const { returns = [], refetch } = useAllReturn({ skip: !canView });
 
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(returns.length / PAGE_SIZE));
@@ -31,15 +34,19 @@ const ListReturn = () => {
   const handleRefund = (item) => { setSelected(item); setOpenRefund(true); };
   const handleClose  = (setter) => () => { setter(false); setSelected(null); };
 
-  return (
-    <div className="space-y-6 p-6">
+  if (!canView) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
+        <ShieldOff size={40} className="opacity-40" />
+        <p className="text-sm">No tienes permisos para visualizar esta sección.</p>
+      </div>
+    );
+  }
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Devoluciones</h1>
-          <p className="text-muted-foreground">Administra las solicitudes de devolución y reembolso.</p>
-        </div>
-        <ReturnCreateDialog onRefresh={refetch} />
+  return (
+    <div className="p-6 space-y-3">
+      <div className="flex justify-end">
+        <ReturnCreateDialog onRefresh={refetch} disabled={!canCreate} />
       </div>
 
       <ReturnTable

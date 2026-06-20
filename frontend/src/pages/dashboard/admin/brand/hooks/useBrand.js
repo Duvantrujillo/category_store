@@ -14,7 +14,7 @@ import {
    GET ALL BRANDS
 ========================================= */
 
-export const useAllBrand = () => {
+export const useAllBrand = ({ skip = false } = {}) => {
 
   const [brands, setBrands] = useState([]);
 
@@ -23,6 +23,7 @@ export const useAllBrand = () => {
   const [error, setError] = useState(null);
 
   const fetchBrands = useCallback(async () => {
+    if (skip) return;
 
     try {
 
@@ -53,7 +54,7 @@ export const useAllBrand = () => {
 
     }
 
-  }, []);
+  }, [skip]);
 
   useEffect(() => {
 

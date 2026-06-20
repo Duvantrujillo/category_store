@@ -20,6 +20,7 @@ import { useCreateAttribute } from "../../hooks/useAttribute";
 
 export default function AttributeCreateDialog({
   onRefresh,
+  disabled = false,
 }) {
 
   const [open, setOpen] = useState(false);
@@ -79,6 +80,7 @@ export default function AttributeCreateDialog({
       <Button
         onClick={() => setOpen(true)}
         className="gap-2"
+        disabled={disabled}
       >
 
         <Plus className="w-4 h-4" />

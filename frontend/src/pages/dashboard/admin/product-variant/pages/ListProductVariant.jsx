@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
+import { ShieldOff } from "lucide-react";
 import { useAllProductVariant, useSearchProductVariant } from "../hooks/useProductVariant";
 import { useAllAttributeValue } from "../../attribute-value/hooks/useAttributeValue";
 import { getAllProducts } from "@/api/productApi";
 import ProductVariantTable from "../components/product-variant-list/ProductVariantTable";
 import ProductVariantCreateDialog from "../components/product-variant-create/ProductVariantCreateDialog";
 import ProductVariantSearch from "../components/product-variant-search/ProductVariantSearch";
+import { useHasPermission } from "@/lib/permissions";
 
 const PAGE_SIZE = 15;
 
 function ProductVariantList() {
-  const { variants = [], refetch } = useAllProductVariant();
+  const canView   = useHasPermission("product-variants.view");
+  const canCreate = useHasPermission("product-variants.create");
+  const { variants = [], refetch } = useAllProductVariant({ skip: !canView });
   const { query, setQuery, results } = useSearchProductVariant();
-  const { attributeValues = [] } = useAllAttributeValue();
+  const { attributeValues = [] } = useAllAttributeValue({ skip: !canView });
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(variants.length / PAGE_SIZE));
@@ -19,24 +23,35 @@ function ProductVariantList() {
   const dataToShow = query.trim() ? results : paginated;
 
   useEffect(() => {
+    if (!canView) return;
     getAllProducts()
       .then((data) => setProducts(data.data || []))
       .catch(() => {});
-  }, []);
+  }, [canView]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  if (!canView) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
+        <ShieldOff size={40} className="opacity-40" />
+        <p className="text-sm">No tienes permisos para visualizar esta sección.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Variantes</h1>
-          <p className="text-muted-foreground">Administra las variantes de productos.</p>
-          <ProductVariantSearch query={query} setQuery={setQuery} resultsCount={results.length} />
-        </div>
-        <ProductVariantCreateDialog onRefresh={refetch} products={products} attributes={attributeValues} />
+    <div className="p-6 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <ProductVariantSearch query={query} setQuery={setQuery} resultsCount={results.length} />
+        <ProductVariantCreateDialog
+          onRefresh={refetch}
+          products={products}
+          attributes={attributeValues}
+          disabled={!canCreate}
+        />
       </div>
 
       <ProductVariantTable

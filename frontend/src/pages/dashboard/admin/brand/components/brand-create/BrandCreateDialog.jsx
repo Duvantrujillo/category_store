@@ -20,6 +20,7 @@ import { useCreateBrand } from "../../hooks/useBrand";
 
 export default function BrandCreateDialog({
   onRefresh,
+  disabled = false,
 }) {
 
   const [open, setOpen] = useState(false);
@@ -79,6 +80,7 @@ export default function BrandCreateDialog({
       <Button
         onClick={() => setOpen(true)}
         className="gap-2"
+        disabled={disabled}
       >
 
         <Plus className="w-4 h-4" />

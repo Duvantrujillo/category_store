@@ -354,7 +354,7 @@ export const useDeleteProduct = () => {
   };
 };
 
-export const useAllProduct = () => {
+export const useAllProduct = ({ skip = false } = {}) => {
   const [products, setProducts] = useState([]);
 
   const [loading, setLoading] = useState(false);
@@ -362,6 +362,7 @@ export const useAllProduct = () => {
   const [error, setError] = useState(null);
 
   const fetchProducts = useCallback(async () => {
+    if (skip) return;
     try {
       setLoading(true);
 
@@ -382,7 +383,7 @@ export const useAllProduct = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [skip]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
