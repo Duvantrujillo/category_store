@@ -1,4 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
+const { sendShipmentUpdatedEmail } = require("../../services/email.service");
+
 const prisma = new PrismaClient();
 
 const STATUS_ORDER = ["CREATED", "PREPARING", "SHIPPED", "DELIVERED", "RETURNED"];
@@ -55,6 +57,18 @@ const updateShipment = async (req, res) => {
       },
     });
 
+    // Email al cliente solo cuando cambia el estado
+    if (status) {
+      prisma.order.findUnique({
+        where: { id: updatedShipment.orderId },
+        select: { orderNumber: true, firstName: true, lastName: true, email: true, address: true, municipality: true, departament: true },
+      }).then((order) => {
+        if (order) sendShipmentUpdatedEmail(order, updatedShipment, status).catch((err) => {
+          console.error("Error enviando email SHIPMENT_UPDATED", err);
+        });
+      });
+    }
+
     return res.status(200).json({
       message: "Envío actualizado correctamente",
       shipment: updatedShipment,
@@ -103,4 +117,33 @@ const getShipmentHistory = async (req, res) => {
   }
 };
 
-module.exports = { updateShipment, allShipment, getShipmentHistory };
+const searchShipment = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+
+    if (!q) return res.status(200).json({ data: [] });
+
+    const shipments = await prisma.shipment.findMany({
+      where: {
+        OR: [
+          { trackingNumber: { contains: q } },
+          { order: { orderNumber: { contains: q } } },
+          { order: { firstName:   { contains: q } } },
+          { order: { lastName:    { contains: q } } },
+        ],
+      },
+      include: {
+        order: { select: { orderNumber: true, firstName: true, lastName: true } },
+      },
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.status(200).json({ data: shipments });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error al buscar" });
+  }
+};
+
+module.exports = { updateShipment, allShipment, getShipmentHistory, searchShipment };

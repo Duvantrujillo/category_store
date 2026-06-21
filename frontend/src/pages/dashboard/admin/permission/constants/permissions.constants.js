@@ -1,24 +1,23 @@
 import {
   LayoutGrid, Package, Layers, Award, Settings, List,
   FileText, ClipboardList, Truck, RotateCcw, CreditCard,
-  LayoutDashboard, BarChart2, KeyRound,
+  LayoutDashboard, BarChart2,
 } from 'lucide-react'
 
 export const MODULE_CONFIG = {
+  dashboard:           { label: 'Dashboard',                     icon: LayoutDashboard, color: 'fuchsia'},
   categories:          { label: 'Categorías',                    icon: LayoutGrid,    color: 'indigo'   },
-  products:            { label: 'Productos',                     icon: Package,       color: 'violet'   },
-  'product-variants':  { label: 'Variantes',                     icon: Layers,        color: 'purple'   },
   brands:              { label: 'Marcas',                        icon: Award,         color: 'rose'     },
   attributes:          { label: 'Atributos',                     icon: Settings,      color: 'sky'      },
   'attribute-values':  { label: 'Valores de atributo',           icon: List,          color: 'teal'     },
+  products:            { label: 'Productos',                     icon: Package,       color: 'violet'   },
+  'product-variants':  { label: 'Variantes',                     icon: Layers,        color: 'purple'   },
   forms:               { label: 'Formularios',                   icon: FileText,      color: 'emerald'  },
   orders:              { label: 'Órdenes y envíos (consulta)',   icon: ClipboardList, color: 'blue'     },
   shipments:           { label: 'Envíos (actualizar)',           icon: Truck,         color: 'cyan'     },
   returns:             { label: 'Devoluciones',                  icon: RotateCcw,     color: 'orange'   },
   refunds:             { label: 'Reembolsos',                    icon: CreditCard,    color: 'red'      },
-  dashboard:           { label: 'Dashboard',                     icon: LayoutDashboard, color: 'fuchsia'},
   reports:             { label: 'Reportes',                      icon: BarChart2,     color: 'green'    },
-  permissions:         { label: 'Permisos del sistema',          icon: KeyRound,      color: 'amber'    },
 }
 
 export const MODULE_COLORS = {

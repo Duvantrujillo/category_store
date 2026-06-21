@@ -1,14 +1,18 @@
-import { Trash } from "lucide-react";
+import { useState } from "react";
+import { Trash, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import ShippingDetailsDialog from "./ShippingDetailsDialog";
+import ShippingGuideDialog from "./ShippingGuideDialog";
 import ShippingEditDialog from "../shipping-update/ShippingEditDialog";
 import { useHasPermission } from "@/lib/permissions";
 
 function ShippingRow({ item, onDelete, onRefresh }) {
   const canUpdate = useHasPermission("forms.update");
   const canDelete = useHasPermission("forms.delete");
+  const [guideOpen, setGuideOpen] = useState(false);
   return (
+    <>
     <TableRow className="hover:bg-slate-50/80 transition-colors">
 
       {/* Cliente */}
@@ -37,6 +41,15 @@ function ShippingRow({ item, onDelete, onRefresh }) {
       <TableCell className="text-center px-4 py-3">
         <div className="flex items-center justify-center gap-1">
           <ShippingDetailsDialog item={item} />
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+            onClick={() => setGuideOpen(true)}
+            title="Ver guía de envío"
+          >
+            <Printer className="h-3.5 w-3.5" />
+          </Button>
           <ShippingEditDialog item={item} onRefresh={onRefresh} disabled={!canUpdate} />
           <Button
             size="icon"
@@ -52,6 +65,13 @@ function ShippingRow({ item, onDelete, onRefresh }) {
       </TableCell>
 
     </TableRow>
+
+    <ShippingGuideDialog
+      open={guideOpen}
+      item={item}
+      onClose={() => setGuideOpen(false)}
+    />
+    </>
   );
 }
 

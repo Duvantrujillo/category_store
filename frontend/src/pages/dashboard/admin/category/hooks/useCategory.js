@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import { activeCategory, allCategory, deleteCategory, updateCategory, createCategory } from "../api/categoryApi";
-import toast from "react-hot-toast";
+import { activeCategory, allCategory, deleteCategory, updateCategory, createCategory, searchCategory } from "../api/categoryApi";
+import { toast } from 'react-toastify';
 
 const EMPTY_FORM = {
   name: "",
@@ -41,7 +41,7 @@ export const useCreateCategory = () => {
     } catch (err) {
       const msg = err.response?.data?.message || "Error al crear categoría";
       setError(msg);
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       throw err;
     } finally {
       setLoading(false);
@@ -99,7 +99,7 @@ export const useUpdateCategory = () => {
     } catch (err) {
       const msg = err.response?.data?.message || "Error de conexión";
       setError(msg);
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       throw err;
     } finally {
       setLoading(false);
@@ -175,7 +175,7 @@ export const useDeleteCategory = () => {
     } catch (err) {
       const msg = err.response?.data?.message || "Error al eliminar categoría";
       setError(msg);
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       throw err;
     } finally {
       setLoading(false);
@@ -183,4 +183,33 @@ export const useDeleteCategory = () => {
   };
 
   return { submitDelete, loading, error };
+};
+
+export const useSearchCategory = (delay = 400) => {
+  const [query, setQuery]     = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); setLoading(false); return; }
+
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await searchCategory(query);
+        setResults(Array.isArray(res?.data) ? res.data : []);
+      } catch (err) {
+        setError(err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [query, delay]);
+
+  return { query, setQuery, results, loading, error };
 };

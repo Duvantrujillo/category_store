@@ -23,3 +23,8 @@ export const deleteFormResponse = async (id) => {
   const res = await apiClient.delete(`/form/delete/${id}`);
   return res.data;
 };
+
+export const searchFormResponse = async (q) => {
+  const res = await apiClient.get('/form/search', { params: { q } });
+  return res.data;
+};

@@ -20,7 +20,7 @@ export default function Admin() {
           <AppHeader onToggleSidebar={() => setOpen(!open)} />
         </div>
 
-        <main className="flex-1 px-4 py-6 md:p-6">
+        <main className="flex-1 px-4 pt-0 pb-6 md:px-6 md:pb-6">
           <Outlet />
         </main>
 

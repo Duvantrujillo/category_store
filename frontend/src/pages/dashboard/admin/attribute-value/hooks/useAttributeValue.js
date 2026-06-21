@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 
-import toast from "react-hot-toast";
+import { toast } from 'react-toastify';
 
 import {
   allAtributeValue,
   createAtributeValue,
   updateAtributeValue,
   deleteAtributeValue,
+  searchAttributeValue,
 } from "../api/attribute-value";
 
 /* =========================================
@@ -144,7 +145,7 @@ export const useCreateAttributeValue = () => {
 
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
 
@@ -247,7 +248,7 @@ export const useUpdateAttributeValue = () => {
 
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
 
@@ -313,7 +314,7 @@ export const useDeleteAttributeValue = () => {
 
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
 
@@ -331,4 +332,33 @@ export const useDeleteAttributeValue = () => {
     error,
     response,
   };
+};
+
+export const useSearchAttributeValue = (delay = 400) => {
+  const [query, setQuery]     = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); setLoading(false); return; }
+
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await searchAttributeValue(query);
+        setResults(Array.isArray(res?.data) ? res.data : []);
+      } catch (err) {
+        setError(err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [query, delay]);
+
+  return { query, setQuery, results, loading, error };
 };

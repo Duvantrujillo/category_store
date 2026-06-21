@@ -183,9 +183,32 @@ const allAttribute = async (req, res) => {
   }
 }
 
+const searchAttribute = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+
+    if (!q) return res.status(200).json({ data: [] });
+
+    const attributes = await prisma.attribute.findMany({
+      where: {
+        OR: [
+          { name: { contains: q } },
+          { slug: { contains: q } },
+        ],
+      },
+      take: 20,
+    });
+
+    return res.status(200).json({ data: attributes });
+  } catch (error) {
+    return res.status(500).json({ message: "Error al buscar" });
+  }
+};
+
 module.exports = {
   createAttribute,
   updateAttribute,
   deleteAttribute,
-  allAttribute
+  allAttribute,
+  searchAttribute,
 }

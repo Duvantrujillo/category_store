@@ -37,3 +37,8 @@ export const processRefund = async (refundId, method, reference) => {
   const res = await apiClient.post('/refund/process', { refundId, method, reference });
   return res.data;
 };
+
+export const searchReturn = async (q) => {
+  const res = await apiClient.get('/return-request/search', { params: { q } });
+  return res.data;
+};

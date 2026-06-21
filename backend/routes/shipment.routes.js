@@ -4,6 +4,7 @@ const shipmentController = require('../controllers/shipment/shipment.controller'
 const { requirePermission } = require('../middlewares/permission.middleware')
 
 router.get('/all',          requirePermission('orders.view'),      shipmentController.allShipment)
+router.get('/search',       requirePermission('orders.view'),      shipmentController.searchShipment)
 router.get('/:id/history',  requirePermission('orders.view'),      shipmentController.getShipmentHistory)
 router.put('/:id',          requirePermission('shipments.update'), shipmentController.updateShipment)
 

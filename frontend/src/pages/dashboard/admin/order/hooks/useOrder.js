@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 
-import toast from "react-hot-toast";
-
 import { allOrder, searchOrder, filterOrderByDate } from "../api/orderApi";
 
 
 
-export const useAllOrder = () => {
+export const useAllOrder = ({ skip = false } = {}) => {
   const [orders, setOrders] = useState([]);
 
   const [loading, setLoading] = useState(false);
@@ -40,8 +38,8 @@ export const useAllOrder = () => {
   }, []);
 
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    if (!skip) fetchOrders();
+  }, [fetchOrders, skip]);
 
   return {
     orders,

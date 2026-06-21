@@ -4,6 +4,7 @@ const attributeController = require('../controllers/attribute/attribute.controll
 const { requirePermission } = require('../middlewares/permission.middleware')
 
 router.get('/all',          requirePermission('attributes.view'),   attributeController.allAttribute)
+router.get('/search',       requirePermission('attributes.view'),   attributeController.searchAttribute)
 router.post('/create',      requirePermission('attributes.create'), attributeController.createAttribute)
 router.put('/update/:id',   requirePermission('attributes.update'), attributeController.updateAttribute)
 router.delete('/delete/:id',requirePermission('attributes.delete'), attributeController.deleteAttribute)

@@ -147,14 +147,14 @@ export default function AppSidebar({ open, setOpen }) {
         {/* FOOTER */}
         <div className="px-3 py-3 border-t border-slate-700/60">
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800/60">
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 text-xs font-bold">
-              A
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-linear-to-br from-indigo-500 to-indigo-700 text-white text-xs font-bold shrink-0 select-none">
+              {(user?.name ?? "A").split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("")}
             </div>
             <div className="leading-tight min-w-0">
-              <p className="text-xs font-semibold text-slate-200 truncate">Administrador</p>
+              <p className="text-xs font-semibold text-slate-200 truncate">{user?.name ?? "Administrador"}</p>
               <p className="text-[10px] text-slate-500 truncate flex items-center gap-1">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
-                Sesión activa
+                {user?.email ?? "Sesión activa"}
               </p>
             </div>
           </div>

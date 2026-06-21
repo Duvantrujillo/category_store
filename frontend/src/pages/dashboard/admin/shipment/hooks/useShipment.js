@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
-import toast from "react-hot-toast";
-import { allshipment, updateShipment, getShipmentHistory } from "../api/shipmentApi";
+import { toast } from 'react-toastify';
+import { allshipment, updateShipment, getShipmentHistory, searchShipment } from "../api/shipmentApi";
 
 export const useAllShipment = ({ skip = false } = {}) => {
   const [shipments, setShipments] = useState([]);
@@ -100,7 +100,7 @@ export const useUpdateShipment = () => {
     } catch (err) {
       const msg = err.response?.data?.message || "Error de conexión";
       setError(msg);
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       throw err;
     } finally {
       setLoading(false);
@@ -134,7 +134,7 @@ export const useShipmentHistory = () => {
       setHistory(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err);
-      toast.error("Error al cargar el historial");
+      if (!err._handled) toast.error("Error al cargar el historial");
     } finally {
       setLoading(false);
     }
@@ -149,4 +149,33 @@ export const useShipmentHistory = () => {
     fetchHistory,
     reset,
   };
+};
+
+export const useSearchShipment = (delay = 400) => {
+  const [query, setQuery]     = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); setLoading(false); return; }
+
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await searchShipment(query);
+        setResults(Array.isArray(res?.data) ? res.data : []);
+      } catch (err) {
+        setError(err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [query, delay]);
+
+  return { query, setQuery, results, loading, error };
 };

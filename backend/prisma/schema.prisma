@@ -171,8 +171,9 @@ model ProductVariant {
   product Product @relation(fields: [productId], references: [id])
   sku String? @unique
   barcode String?
-  price Decimal @db.Decimal(10,2)
-  stock Int @default(0)
+  price         Decimal @db.Decimal(10,2)
+  stock         Int     @default(0)
+  reservedStock Int     @default(0)
   isDefault Boolean @default(false)
   isActive Boolean @default(true)
   createdAt DateTime @default(now())
@@ -247,7 +248,8 @@ enum OrderStatus {
 }
 model Order {
   id Int @id @default(autoincrement())
-  orderNumber String @unique
+  orderNumber    String  @unique
+  idempotencyKey String? @unique
   userId Int?
   user User? @relation(fields: [userId], references: [id])
   firstName String

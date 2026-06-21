@@ -29,14 +29,14 @@ function Input({ error, ...props }) {
 
 export default function UserEditDialog({ user, onRefresh, disabled = false }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", roleId: "" });
+  const [form, setForm] = useState({ name: "", email: "", roleId: "", status: "" });
 
   const { submitUpdate, loading, errors, clearErrors } = useUpdateUser();
   const { roles, loading: rolesLoading } = useRoles();
 
   useEffect(() => {
     if (open && user) {
-      setForm({ name: user.name ?? "", email: user.email ?? "", roleId: String(user.role?.id ?? "") });
+      setForm({ name: user.name ?? "", email: user.email ?? "", roleId: String(user.role?.id ?? ""), status: user.status ?? "active" });
       clearErrors();
     }
   }, [open, user]);
@@ -46,7 +46,7 @@ export default function UserEditDialog({ user, onRefresh, disabled = false }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    submitUpdate(user.id, { name: form.name, email: form.email, roleId: form.roleId }, () => {
+    submitUpdate(user.id, { name: form.name, email: form.email, roleId: form.roleId, status: form.status }, () => {
       onRefresh?.();
       setOpen(false);
     });
@@ -110,6 +110,18 @@ export default function UserEditDialog({ user, onRefresh, disabled = false }) {
                     {r.name.charAt(0).toUpperCase() + r.name.slice(1)}
                   </option>
                 ))}
+              </select>
+            </Field>
+
+            <Field label="Estado">
+              <select
+                value={form.status}
+                onChange={(e) => handleChange("status", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:bg-white transition-colors appearance-none cursor-pointer"
+              >
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+                <option value="blocked">Bloqueado</option>
               </select>
             </Field>
 

@@ -221,9 +221,37 @@ const AllForm = async (req, res) => {
 
 
 
+const searchForm = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+
+    if (!q) return res.status(200).json({ data: [] });
+
+    const forms = await prisma.formResponse.findMany({
+      where: {
+        OR: [
+          { firstName:      { contains: q } },
+          { lastName:       { contains: q } },
+          { documentNumber: { contains: q } },
+          { phoneNumber:    { contains: q } },
+          { municipality:   { contains: q } },
+          { departament:    { contains: q } },
+        ],
+      },
+      take: 20,
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return res.status(200).json({ data: forms });
+  } catch (error) {
+    return res.status(500).json({ message: "Error al buscar" });
+  }
+};
+
 module.exports = {
     createForm,
     updateForm,
     deleteForm,
-    AllForm
+    AllForm,
+    searchForm,
 }

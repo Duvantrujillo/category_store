@@ -14,3 +14,8 @@ export const getShipmentHistory = async (id) => {
   const res = await apiClient.get(`/shipment/${id}/history`);
   return res.data;
 };
+
+export const searchShipment = async (q) => {
+  const res = await apiClient.get('/shipment/search', { params: { q } });
+  return res.data;
+};

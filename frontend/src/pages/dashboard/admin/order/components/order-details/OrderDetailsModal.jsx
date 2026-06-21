@@ -1,14 +1,8 @@
-import { Badge } from "@/components/ui/badge";
-
-import { Button } from "@/components/ui/button";
-
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
+  User, Hash, Mail, Phone, MapPin, FileText,
+  DollarSign, Receipt, Calendar, ClipboardList,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -17,274 +11,121 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const getStatusVariant = (status) => {
-  switch (status) {
-    case "PAID":
-      return "default";
-
-    case "PENDING":
-      return "secondary";
-
-    case "CANCELLED":
-      return "destructive";
-
-    case "REFUNDED":
-      return "outline";
-
-    default:
-      return "secondary";
-  }
+const STATUS_CONFIG = {
+  PAID:      { label: "Pagada",      cls: "bg-green-500/20 text-green-300 border-green-500/30" },
+  PENDING:   { label: "Pendiente",   cls: "bg-amber-500/20 text-amber-300 border-amber-500/30" },
+  CANCELLED: { label: "Cancelada",   cls: "bg-red-500/20 text-red-300 border-red-500/30" },
+  REFUNDED:  { label: "Reembolsada", cls: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
 };
 
-const getStatusLabel = (status) => {
-  switch (status) {
-    case "PAID":
-      return "Pagada";
+const fmtCOP = (n) => `$${Number(n ?? 0).toLocaleString("es-CO")}`;
 
-    case "PENDING":
-      return "Pendiente";
+const Field = ({ icon: Icon, label, value, iconCls = "bg-slate-100 text-slate-500" }) => (
+  <div className="flex items-start gap-3 py-2.5 border-b border-slate-100 last:border-0">
+    <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${iconCls}`}>
+      <Icon size={13} />
+    </div>
+    <div className="min-w-0 flex-1">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 leading-none mb-1">{label}</p>
+      <p className="text-sm text-slate-800 font-medium leading-snug">{value || <span className="text-slate-400 font-normal italic">Sin información</span>}</p>
+    </div>
+  </div>
+);
 
-    case "CANCELLED":
-      return "Cancelada";
+const Section = ({ title, children }) => (
+  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+      <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{title}</p>
+    </div>
+    <div className="px-4 py-1">
+      {children}
+    </div>
+  </div>
+);
 
-    case "REFUNDED":
-      return "Reembolsada";
-
-    default:
-      return status;
-  }
-};
-
-function OrderDetailsModal({
-  open,
-  order,
-  onClose,
-}) {
+function OrderDetailsModal({ open, order, onClose }) {
   if (!order) return null;
 
+  const { label: statusLabel, cls: statusCls } = STATUS_CONFIG[order.status] ?? { label: order.status, cls: "bg-slate-500/20 text-slate-300 border-slate-500/30" };
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onClose}
-    >
-      <DialogContent className="sm:max-w-5xl">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl p-0 overflow-hidden rounded-2xl">
 
-        <DialogHeader>
-
-          <div className="flex items-center justify-between">
-
-            <div>
-
-              <DialogTitle>
-                Orden {order.orderNumber}
-              </DialogTitle>
-
-              <DialogDescription>
-                Información completa del pedido.
-              </DialogDescription>
-
+        {/* Header */}
+        <div className="bg-linear-to-br from-slate-800 to-slate-900 px-6 py-5">
+          <DialogHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <DialogTitle className="text-white text-lg font-bold tracking-tight leading-none">
+                  Orden {order.orderNumber}
+                </DialogTitle>
+                <DialogDescription className="text-slate-400 text-sm mt-1">
+                  Información completa del pedido
+                </DialogDescription>
+              </div>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border shrink-0 ${statusCls}`}>
+                {statusLabel}
+              </span>
             </div>
+          </DialogHeader>
+        </div>
 
-            <Badge
-              variant={getStatusVariant(
-                order.status
-              )}
-            >
-              {getStatusLabel(
-                order.status
-              )}
-            </Badge>
+        {/* Body */}
+        <div className="px-6 py-5 max-h-[70vh] overflow-y-auto space-y-3 bg-slate-50">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+            {/* Cliente */}
+            <Section title="Cliente">
+              <Field icon={User}  label="Nombre"    value={`${order.firstName ?? ""} ${order.lastName ?? ""}`.trim()} iconCls="bg-indigo-50 text-indigo-500" />
+              <Field icon={Hash}  label="Documento" value={order.documentNumber} iconCls="bg-amber-50 text-amber-500" />
+              <Field icon={Mail}  label="Email"     value={order.email || "Sin correo"} iconCls="bg-sky-50 text-sky-500" />
+              <Field icon={Phone} label="Teléfono"  value={order.phoneNumber} iconCls="bg-green-50 text-green-500" />
+            </Section>
+
+            {/* Dirección */}
+            <Section title="Dirección de entrega">
+              <Field icon={MapPin}   label="Departamento"       value={order.departament} iconCls="bg-rose-50 text-rose-500" />
+              <Field icon={MapPin}   label="Municipio"          value={order.municipality} iconCls="bg-rose-50 text-rose-500" />
+              <Field icon={FileText} label="Dirección"          value={order.address} iconCls="bg-slate-100 text-slate-500" />
+              <Field icon={FileText} label="Detalles adicionales" value={order.additionalDetails || "—"} iconCls="bg-slate-100 text-slate-500" />
+            </Section>
 
           </div>
 
-        </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-        <div className="grid gap-4 md:grid-cols-2">
+            {/* Resumen financiero */}
+            <Section title="Resumen financiero">
+              <Field icon={DollarSign} label="Subtotal" value={fmtCOP(order.subtotal)} iconCls="bg-emerald-50 text-emerald-500" />
+              <div className="flex items-start gap-3 py-2.5">
+                <div className="p-1.5 rounded-lg shrink-0 mt-0.5 bg-emerald-100 text-emerald-600">
+                  <Receipt size={13} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 leading-none mb-1">Total</p>
+                  <p className="text-xl font-bold text-emerald-700 tabular-nums">{fmtCOP(order.total)}</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">{order.currency}</p>
+                </div>
+              </div>
+            </Section>
 
-          {/* CLIENTE */}
+            {/* Información del pedido */}
+            <Section title="Información del pedido">
+              <Field icon={ClipboardList} label="Número de orden" value={order.orderNumber} iconCls="bg-violet-50 text-violet-500" />
+              <Field icon={Calendar}      label="Fecha de creación" value={new Date(order.createdAt).toLocaleString("es-CO")} iconCls="bg-slate-100 text-slate-500" />
+            </Section>
 
-          <Card className="shadow-sm">
-
-            <CardHeader>
-
-              <CardTitle>
-                Cliente
-              </CardTitle>
-
-            </CardHeader>
-
-            <CardContent className="space-y-2">
-
-              <p>
-                <strong>Nombre:</strong>{" "}
-                {order.firstName}{" "}
-                {order.lastName}
-              </p>
-
-              <p>
-                <strong>Documento:</strong>{" "}
-                {order.documentNumber}
-              </p>
-
-              <p>
-                <strong>Email:</strong>{" "}
-                {order.email ||
-                  "Sin correo"}
-              </p>
-
-              <p>
-                <strong>Teléfono:</strong>{" "}
-                {order.phoneNumber}
-              </p>
-
-            </CardContent>
-
-          </Card>
-
-          {/* DIRECCIÓN */}
-
-          <Card className="shadow-sm">
-
-            <CardHeader>
-
-              <CardTitle>
-                Dirección de entrega
-              </CardTitle>
-
-            </CardHeader>
-
-            <CardContent className="space-y-2">
-
-              <p>
-                <strong>
-                  Departamento:
-                </strong>{" "}
-                {order.departament}
-              </p>
-
-              <p>
-                <strong>
-                  Municipio:
-                </strong>{" "}
-                {order.municipality}
-              </p>
-
-              <p>
-                <strong>
-                  Dirección:
-                </strong>{" "}
-                {order.address}
-              </p>
-
-              <p>
-                <strong>
-                  Detalles:
-                </strong>{" "}
-                {order.additionalDetails ||
-                  "N/A"}
-              </p>
-
-            </CardContent>
-
-          </Card>
-
-          {/* RESUMEN */}
-
-          <Card className="shadow-sm">
-
-            <CardHeader>
-
-              <CardTitle>
-                Resumen financiero
-              </CardTitle>
-
-            </CardHeader>
-
-            <CardContent className="space-y-2">
-
-              <p>
-                <strong>
-                  Subtotal:
-                </strong>{" "}
-                $
-                {Number(
-                  order.subtotal
-                ).toLocaleString(
-                  "es-CO"
-                )}
-              </p>
-
-              <p className="text-lg font-semibold">
-
-                <strong>
-                  Total:
-                </strong>{" "}
-                $
-                {Number(
-                  order.total
-                ).toLocaleString(
-                  "es-CO"
-                )}
-
-              </p>
-
-              <p>
-                <strong>
-                  Moneda:
-                </strong>{" "}
-                {order.currency}
-              </p>
-
-            </CardContent>
-
-          </Card>
-
-          {/* PEDIDO */}
-
-          <Card className="shadow-sm">
-
-            <CardHeader>
-
-              <CardTitle>
-                Información del pedido
-              </CardTitle>
-
-            </CardHeader>
-
-            <CardContent className="space-y-2">
-
-
-              <p>
-                <strong>Fecha:</strong>{" "}
-                {new Date(
-                  order.createdAt
-                ).toLocaleString(
-                  "es-CO"
-                )}
-              </p>
-
-              <p>
-                <strong>
-                  Número:
-                </strong>{" "}
-                {order.orderNumber}
-              </p>
-
-            </CardContent>
-
-          </Card>
+          </div>
 
         </div>
 
-        <div className="flex justify-end mt-6">
-
-          <Button
-            variant="outline"
-            onClick={onClose}
-          >
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-200 bg-white flex justify-end">
+          <Button variant="outline" onClick={onClose} className="rounded-xl">
             Cerrar
           </Button>
-
         </div>
 
       </DialogContent>

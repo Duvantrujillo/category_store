@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import toast from "react-hot-toast";
+import { toast } from 'react-toastify';
 
 import { createProductVariant, allProductVariant, updateProductVariant, deleteProductVariant, searchSkuBarcode} from "../api/product-variantApi";
 
@@ -44,7 +44,7 @@ export const useCreateProductVariant = () => {
 
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
 
@@ -306,7 +306,7 @@ export const useUpdateProductVariant = () => {
 
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
 
@@ -362,7 +362,7 @@ export const useDeleteProductVariant = () => {
 
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
 

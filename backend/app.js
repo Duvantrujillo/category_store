@@ -7,8 +7,8 @@ require('dotenv').config();
 const { authMiddleware } = require('./middlewares/auth.middleware');
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 /*
 |--------------------------------------------------------------------------
@@ -116,3 +116,16 @@ app.use('/permission',  permissionRouter)
 app.listen(process.env.PORT, () => {
   console.log(`Servidor corriendo`);
 });
+
+/*
+|--------------------------------------------------------------------------
+| CRON: LIBERAR RESERVAS DE STOCK EXPIRADAS
+| Cancela órdenes PENDING sin pago después de 30 minutos y libera reservedStock.
+| Sin esto, un usuario que abandona el pago bloquea el stock indefinidamente.
+|--------------------------------------------------------------------------
+*/
+const { releaseExpiredReservations } = require('./controllers/order/order.controller')
+const CLEANUP_INTERVAL_MS = 15 * 60 * 1000 // cada 15 minutos
+setInterval(() => {
+  releaseExpiredReservations().catch(err => console.error('Error en cleanup de reservas:', err))
+}, CLEANUP_INTERVAL_MS)

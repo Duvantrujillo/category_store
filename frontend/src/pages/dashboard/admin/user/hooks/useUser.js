@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from 'react-toastify';
 import { getAllUsers, getRoles, adminCreateUser, updateUserStatus, updateUser, resetUserPassword } from "../api/userApi";
 
 export const useAllUsers = ({ skip = false } = {}) => {
@@ -83,7 +83,7 @@ export const useCreateUser = () => {
       onSuccess?.();
     } catch (err) {
       const msg = err.response?.data?.message || "Error de conexión";
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       // Si el backend dice qué campo falló, lo marcamos
       if (msg.toLowerCase().includes("correo")) setErrors({ email: msg });
       else if (msg.toLowerCase().includes("contraseña")) setErrors({ password: msg });
@@ -108,7 +108,7 @@ export const useUpdateUserStatus = () => {
       toast.success(res.message || "Estado actualizado");
       onSuccess?.();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Error al actualizar estado");
+      if (!err._handled) toast.error(err.response?.data?.message || "Error al actualizar estado");
     } finally {
       setLoading(false);
     }
@@ -140,7 +140,7 @@ export const useUpdateUser = () => {
       onSuccess?.();
     } catch (err) {
       const msg = err.response?.data?.message || "Error de conexión";
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       if (msg.toLowerCase().includes("correo")) setErrors({ email: msg });
       else if (msg.toLowerCase().includes("nombre")) setErrors({ name: msg });
     } finally {
@@ -182,7 +182,7 @@ export const useResetPassword = () => {
       onSuccess?.();
     } catch (err) {
       const msg = err.response?.data?.message || "Error de conexión";
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       if (msg.toLowerCase().includes("contraseña")) setErrors({ newPassword: msg });
     } finally {
       setLoading(false);

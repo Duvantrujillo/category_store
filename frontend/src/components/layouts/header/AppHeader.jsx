@@ -1,23 +1,27 @@
 import { useState, useRef, useEffect } from "react";
-import { Menu, Search, ChevronDown, LogOut } from "lucide-react";
+import {
+  Menu, Search, ChevronDown, LogOut,
+  LayoutDashboard, Tag, Bookmark, SlidersHorizontal, Hash,
+  ClipboardList, Package, Boxes, ShoppingCart, Truck, RotateCcw, Users,
+} from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import NotificationPanel from "./NotificationPanel";
 import SearchModal from "./SearchModal";
 
 const routeTitles = {
-  "/dashboard/admin":                      { label: "Dashboard",     sub: "Panel de administración" },
-  "/dashboard/admin/list/category":        { label: "Categorías",    sub: "Gestión de categorías" },
-  "/dashboard/admin/list/brand":           { label: "Marcas",        sub: "Gestión de marcas" },
-  "/dashboard/admin/list/attibute":        { label: "Atributos",     sub: "Gestión de atributos" },
-  "/dashboard/admin/list/attibute-value":  { label: "Valores",       sub: "Gestión de valores" },
-  "/dashboard/admin/list/shipping":        { label: "Formularios",   sub: "Formularios de envío" },
-  "/dashboard/admin/list/product":         { label: "Productos",     sub: "Gestión de productos" },
-  "/dashboard/admin/list/product-variant": { label: "Variantes",     sub: "Variantes de producto" },
-  "/dashboard/admin/list/order":           { label: "Órdenes",       sub: "Gestión de pedidos" },
-  "/dashboard/admin/list/shipment":        { label: "Envíos",        sub: "Seguimiento de envíos" },
-  "/dashboard/admin/list/return":          { label: "Devoluciones",  sub: "Gestión de devoluciones" },
-  "/dashboard/admin/list/users":           { label: "Usuarios",      sub: "Gestión de usuarios" },
+  "/dashboard/admin":                      { label: "Dashboard",     sub: "Panel de administración", Icon: LayoutDashboard },
+  "/dashboard/admin/list/category":        { label: "Categorías",    sub: "Gestión de categorías",   Icon: Tag },
+  "/dashboard/admin/list/brand":           { label: "Marcas",        sub: "Gestión de marcas",        Icon: Bookmark },
+  "/dashboard/admin/list/attibute":        { label: "Atributos",     sub: "Gestión de atributos",     Icon: SlidersHorizontal },
+  "/dashboard/admin/list/attibute-value":  { label: "Valores",       sub: "Gestión de valores",       Icon: Hash },
+  "/dashboard/admin/list/shipping":        { label: "Formularios",   sub: "Formularios de envío",     Icon: ClipboardList },
+  "/dashboard/admin/list/product":         { label: "Productos",     sub: "Gestión de productos",     Icon: Package },
+  "/dashboard/admin/list/product-variant": { label: "Variantes",     sub: "Variantes de producto",    Icon: Boxes },
+  "/dashboard/admin/list/order":           { label: "Órdenes",       sub: "Gestión de pedidos",       Icon: ShoppingCart },
+  "/dashboard/admin/list/shipment":        { label: "Envíos",        sub: "Seguimiento de envíos",    Icon: Truck },
+  "/dashboard/admin/list/return":          { label: "Devoluciones",  sub: "Gestión de devoluciones",  Icon: RotateCcw },
+  "/dashboard/admin/list/users":           { label: "Usuarios",      sub: "Gestión de usuarios",      Icon: Users },
 };
 
 function getInitials(name = "") {
@@ -31,7 +35,7 @@ function getInitials(name = "") {
 export default function AppHeader({ onToggleSidebar }) {
   const location  = useLocation();
   const { logout } = useAuth();
-  const page = routeTitles[location.pathname] ?? { label: "Dashboard", sub: "Panel de administración" };
+  const page = routeTitles[location.pathname] ?? { label: "Dashboard", sub: "Panel de administración", Icon: LayoutDashboard };
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen, setSearchOpen]   = useState(false);
@@ -85,9 +89,8 @@ export default function AppHeader({ onToggleSidebar }) {
               <Menu size={20} />
             </button>
 
-            <div className="leading-tight">
-              <h1 className="text-sm font-bold text-slate-800 leading-none">{page.label}</h1>
-              <p className="text-[11px] text-slate-400 mt-0.5 leading-none hidden sm:block">{page.sub}</p>
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 shrink-0">
+              <page.Icon size={16} />
             </div>
           </div>
 
@@ -121,7 +124,7 @@ export default function AppHeader({ onToggleSidebar }) {
                 }`}
               >
                 {/* Avatar */}
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-xs font-bold shadow-sm shrink-0 select-none">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-linear-to-br from-indigo-500 to-indigo-700 text-white text-xs font-bold shadow-sm shrink-0 select-none">
                   {initials || "A"}
                 </div>
 
@@ -147,7 +150,7 @@ export default function AppHeader({ onToggleSidebar }) {
                   {/* Cabecera del dropdown */}
                   <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-sm font-bold shrink-0 select-none">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-full bg-linear-to-br from-indigo-500 to-indigo-700 text-white text-sm font-bold shrink-0 select-none">
                         {initials || "A"}
                       </div>
                       <div className="min-w-0">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ShieldOff } from "lucide-react";
 import { useAllOrder, useSearchOrder, useFilterOrderByDate } from "../hooks/useOrder";
 import OrderTable from "../components/order-list/OrderTable";
 import OrderSearch from "../components/order-search/OrderSearch";
@@ -6,11 +7,14 @@ import OrderDetailsModal from "../components/order-details/OrderDetailsModal";
 import OrderItemsModal from "../components/order-items/OrderItemsModal";
 import OrderPaymentModal from "../components/order-payment/OrderPaymentModal";
 import ShippingGuideModal from "../components/shipping-guide/ShippingGuideModal";
+import BulkShippingGuideButton from "../components/bulk-shipping-guide/BulkShippingGuideButton";
+import { useHasPermission } from "@/lib/permissions";
 
 const PAGE_SIZE = 15;
 
 const OrderList = () => {
-  const { orders = [] } = useAllOrder();
+  const canView = useHasPermission("orders.view");
+  const { orders = [] } = useAllOrder({ skip: !canView });
   const { query, setQuery, results: queryResults, loading: queryLoading } = useSearchOrder();
   const { dateFrom, setDateFrom, dateTo, setDateTo, results: dateResults, loading: dateLoading } = useFilterOrderByDate();
 
@@ -23,15 +27,24 @@ const OrderList = () => {
   const dataToShow = isTextActive ? queryResults : isDateActive ? dateResults : paginated;
   const totalToShow = isTextActive ? queryResults.length : isDateActive ? dateResults.length : orders.length;
 
+  const [selectedOrder, setSelectedOrder]         = useState(null);
+  const [openDetails, setOpenDetails]             = useState(false);
+  const [openItems, setOpenItems]                 = useState(false);
+  const [openPayment, setOpenPayment]             = useState(false);
+  const [openShippingGuide, setOpenShippingGuide] = useState(false);
+
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [openDetails, setOpenDetails]           = useState(false);
-  const [openItems, setOpenItems]               = useState(false);
-  const [openPayment, setOpenPayment]           = useState(false);
-  const [openShippingGuide, setOpenShippingGuide] = useState(false);
+  if (!canView) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
+        <ShieldOff size={40} className="opacity-40" />
+        <p className="text-sm">No tienes permisos para visualizar esta sección.</p>
+      </div>
+    );
+  }
 
   const handleOpenDetails       = (order) => { setSelectedOrder(order); setOpenDetails(true); };
   const handleOpenItems         = (order) => { setSelectedOrder(order); setOpenItems(true); };
@@ -39,19 +52,25 @@ const OrderList = () => {
   const handleOpenShippingGuide = (order) => { setSelectedOrder(order); setOpenShippingGuide(true); };
 
   return (
-    <div className="p-6 space-y-3">
-      <OrderSearch
-        query={query}
-        setQuery={setQuery}
-        queryResults={queryResults}
-        queryLoading={queryLoading}
-        dateFrom={dateFrom}
-        setDateFrom={setDateFrom}
-        dateTo={dateTo}
-        setDateTo={setDateTo}
-        dateResults={dateResults}
-        dateLoading={dateLoading}
-      />
+    <div className="px-6 pt-2 pb-6 space-y-3">
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1">
+          <OrderSearch
+            query={query}
+            setQuery={setQuery}
+            queryResults={queryResults}
+            queryLoading={queryLoading}
+            dateFrom={dateFrom}
+            setDateFrom={setDateFrom}
+            dateTo={dateTo}
+            setDateTo={setDateTo}
+            dateResults={dateResults}
+            dateLoading={dateLoading}
+          />
+        </div>
+        <BulkShippingGuideButton orders={orders} />
+      </div>
 
       <OrderTable
         orders={dataToShow}
@@ -69,6 +88,7 @@ const OrderList = () => {
       <OrderItemsModal     open={openItems}         order={selectedOrder} onClose={() => setOpenItems(false)} />
       <OrderPaymentModal   open={openPayment}       order={selectedOrder} onClose={() => setOpenPayment(false)} />
       <ShippingGuideModal  open={openShippingGuide} order={selectedOrder} onClose={() => setOpenShippingGuide(false)} />
+
     </div>
   );
 };

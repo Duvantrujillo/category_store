@@ -172,4 +172,27 @@ const activeCategory = async (req, res) => {
   }
 };
 
-module.exports = { createCategory, updateCategory, deleteCategory, activeCategory, allCategory };
+const searchCategory = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) return res.status(200).json({ data: [] });
+
+    const categories = await prisma.category.findMany({
+      where: {
+        OR: [
+          { name: { contains: q } },
+          { slug: { contains: q } },
+          { description: { contains: q } },
+        ],
+      },
+      include: { parent: true },
+      take: 20,
+    });
+
+    return res.status(200).json({ data: categories });
+  } catch (error) {
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
+module.exports = { createCategory, updateCategory, deleteCategory, activeCategory, allCategory, searchCategory };

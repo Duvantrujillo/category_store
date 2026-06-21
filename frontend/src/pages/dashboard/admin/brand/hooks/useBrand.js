@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import toast from "react-hot-toast";
+import { toast } from 'react-toastify';
 
 import {
   AllBrands,
@@ -169,7 +169,7 @@ export const useCreateBrand = () => {
 
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
 
@@ -295,7 +295,7 @@ export const useUpdateBrand = () => {
 
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
 
@@ -362,7 +362,7 @@ export const useDeleteBrand = () => {
 
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
 

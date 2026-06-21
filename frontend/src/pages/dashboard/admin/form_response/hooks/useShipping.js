@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import { getFormResponses, postFormResponses, updateFormResponse, deleteFormResponse } from "../api/shippingApi";
-import toast from "react-hot-toast";
+import { getFormResponses, postFormResponses, updateFormResponse, deleteFormResponse, searchFormResponse } from "../api/shippingApi";
+import { toast } from 'react-toastify';
 
 
 // ======================================================
@@ -79,7 +79,7 @@ export const useCreateShipping = () => {
       const msg = err.response?.data?.message || "Error de conexión";
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
     } finally {
@@ -140,7 +140,7 @@ const useUpdateShipping = () => {
       const msg = err.response?.data?.message || "Error de conexión";
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
     } finally {
@@ -178,7 +178,7 @@ export const useDeleteShipping = () => {
     } catch (err) {
       const msg = err.response?.data?.message || "Error al eliminar el registro";
       setError(msg);
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       throw err;
     } finally {
       setLoading(false);
@@ -193,3 +193,32 @@ export const useDeleteShipping = () => {
 };
 
 export default useUpdateShipping;
+
+export const useSearchShipping = (delay = 400) => {
+  const [query, setQuery]     = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); setLoading(false); return; }
+
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await searchFormResponse(query);
+        setResults(Array.isArray(res?.data) ? res.data : []);
+      } catch (err) {
+        setError(err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [query, delay]);
+
+  return { query, setQuery, results, loading, error };
+};

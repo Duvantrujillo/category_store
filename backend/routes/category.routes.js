@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const multer = require('multer')
 const categoryController = require('../controllers/category/category.controller')
+
 const { requirePermission } = require('../middlewares/permission.middleware')
 
 const storage = multer.diskStorage({
@@ -16,6 +17,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 
 router.get('/active',       requirePermission('categories.view'),   categoryController.activeCategory)
+router.get('/search',       requirePermission('categories.view'),   categoryController.searchCategory)
 router.get('/all',          requirePermission('categories.view'),   categoryController.allCategory)
 router.post('/create',      requirePermission('categories.create'), upload.single('image'), categoryController.createCategory)
 router.put('/update/:id',   requirePermission('categories.update'), upload.single('image'), categoryController.updateCategory)

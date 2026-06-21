@@ -1,5 +1,6 @@
 // backend/controllers/payment/webhook.controller.js
 
+const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { createShipment } = require("../../services/shipment.service");
@@ -10,93 +11,190 @@ const {
   checkStockNotifications
 } = require("../../services/notification.service");
 
+const EPAYCO_CUST_ID = process.env.EPAYCO_CUST_ID;
+const EPAYCO_P_KEY   = process.env.EPAYCO_P_KEY;
+
+const TERMINAL_STATUSES = ["APPROVED", "DECLINED", "VOIDED", "ERROR"];
+
+// --- Firma ePayco -----------------------------------------------------------
+// Fórmula oficial: MD5(cust_id ^ p_key ^ x_ref_payco ^ x_transaction_id ^ x_amount ^ x_currency_code)
+// x_amount debe tomarse como el string RAW del payload; no parsearlo antes de calcular el hash.
+// Referencia: https://docs.epayco.co/payments/checkout/confirmation
+function verifyEpaycoSignature(payload) {
+  if (!EPAYCO_CUST_ID || !EPAYCO_P_KEY) {
+    console.warn("EPAYCO_CUST_ID / EPAYCO_P_KEY no configurados — omitiendo validación de firma");
+    return true;
+  }
+
+  const { x_ref_payco, x_transaction_id, x_amount, x_currency_code, x_signature } = payload;
+
+  // MD5 = 32 caracteres hex. Rechazar cualquier cosa que no luzca como un hash válido.
+  if (!x_signature || !/^[0-9a-f]{32}$/i.test(x_signature)) return false;
+
+  const raw      = `${EPAYCO_CUST_ID}^${EPAYCO_P_KEY}^${x_ref_payco}^${x_transaction_id}^${x_amount}^${x_currency_code}`;
+  const computed = crypto.createHash('md5').update(raw).digest('hex'); // siempre 32 chars lowercase
+
+  // timingSafeEqual sobre los 16 bytes decodificados evita timing attacks.
+  // Normalizamos x_signature a lowercase antes de decodificar para cubrir respuestas uppercase.
+  const expectedBuf = Buffer.from(computed, 'hex');
+  const receivedBuf = Buffer.from(x_signature.toLowerCase(), 'hex');
+
+  return crypto.timingSafeEqual(expectedBuf, receivedBuf);
+}
+
+// --- Centinela de transacción ------------------------------------------------
+// Lanzarlo dentro de $transaction hace rollback sin ser un error de infraestructura.
+class WebhookAlreadyProcessed extends Error {
+  constructor() {
+    super("webhook_already_processed");
+    this.name = "WebhookAlreadyProcessed";
+  }
+}
+
+// ----------------------------------------------------------------------------
+
 const epaycoWebhook = async (req, res) => {
-  console.log("===============");
-  console.log("WEBHOOK RECIBIDO");
-  console.log(JSON.stringify(req.body, null, 2));
-  console.log("===============");
+  console.log(`WEBHOOK EPAYCO — ref: ${req.body?.x_id_factura} estado: ${req.body?.x_transaction_state}`);
 
   try {
     const payload = req.body;
 
-    const refPayco = payload.x_ref_payco;
+    // x_amount se conserva como string crudo para calcular la firma correctamente.
+    const refPayco        = payload.x_ref_payco;
     const transactionState = payload.x_transaction_state;
-    const amount = payload.x_amount;
+    const rawAmount        = payload.x_amount;
     const invoiceReference = payload.x_id_factura;
 
-    if (!invoiceReference || !transactionState || !amount || !refPayco) {
-      console.log("Payload incompleto:", { invoiceReference, transactionState, amount, refPayco });
+    if (!invoiceReference || !transactionState || !rawAmount || !refPayco) {
+      console.log("Payload incompleto:", { invoiceReference, transactionState, rawAmount, refPayco });
       return res.status(400).send("Payload incompleto");
     }
 
+    // 1. Validar firma ANTES de tocar la base de datos.
+    if (!verifyEpaycoSignature(payload)) {
+      console.warn("Firma ePayco inválida — ref:", invoiceReference);
+      return res.status(401).send("Firma inválida");
+    }
+
     const payment = await prisma.payment.findUnique({
-      where: {
-        reference: invoiceReference
-      }
+      where: { reference: invoiceReference }
     });
 
     if (!payment) {
-      console.log("Payment no encontrado:", invoiceReference);
-      return res.status(404).send("Payment no encontrado");
+      // 200 en lugar de 404: evita que ePayco deje de reintentar si el webhook
+      // llega antes de que el Payment exista en BD (ventana de timing muy estrecha).
+      console.warn("Payment no encontrado en webhook — ref:", invoiceReference);
+      return res.status(200).send("OK");
     }
 
+    // 2. Fast-path: evitar abrir una transacción si el pago ya terminó.
+    if (TERMINAL_STATUSES.includes(payment.status)) {
+      console.log(`Webhook ignorado — estado terminal: ${payment.status} (ref: ${invoiceReference})`);
+      return res.status(200).send("OK");
+    }
+
+    // 3. Validar monto — tolerancia de ±0.01 por redondeos de pasarela.
+    //    Aquí SÍ parseamos, pero solo para la comparación numérica, no para el hash.
+    const expectedAmount = parseFloat(payment.amount);
+    const receivedAmount = parseFloat(rawAmount);
+    if (Math.abs(expectedAmount - receivedAmount) > 0.01) {
+      console.warn(`Monto no coincide — esperado: ${expectedAmount}, recibido: ${receivedAmount} (ref: ${invoiceReference})`);
+      return res.status(400).send("Monto no coincide");
+    }
+
+    // Mapear estado ePayco → estados internos.
     let paymentStatus = "PENDING";
-    let orderStatus = "PENDING";
+    let orderStatus   = "PENDING";
 
-    if (transactionState === "Aceptada") {
-      paymentStatus = "APPROVED";
-      orderStatus = "PAID";
-    } else if (transactionState === "Rechazada") {
-      paymentStatus = "DECLINED";
-      orderStatus = "CANCELLED";
-    } else if (transactionState === "Fallida") {
-      paymentStatus = "ERROR";
-      orderStatus = "CANCELLED";
-    } else if (transactionState === "Pendiente") {
-      paymentStatus = "PENDING";
-      orderStatus = "PENDING";
+    if      (transactionState === "Aceptada")  { paymentStatus = "APPROVED"; orderStatus = "PAID";      }
+    else if (transactionState === "Rechazada") { paymentStatus = "DECLINED"; orderStatus = "CANCELLED"; }
+    else if (transactionState === "Fallida")   { paymentStatus = "ERROR";    orderStatus = "CANCELLED"; }
+    else if (transactionState === "Anulada")   { paymentStatus = "VOIDED";   orderStatus = "CANCELLED"; }
+    // "Pendiente" → permanece PENDING; cualquier otro estado desconocido también
+    // se trata como no-terminal para no liberar stock por error.
+    else if (transactionState !== "Pendiente") {
+      console.warn(`Estado ePayco desconocido ignorado: "${transactionState}" (ref: ${invoiceReference})`)
+      return res.status(200).send("OK")
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: paymentStatus,
-          amount: parseFloat(amount),
-          transactionId: String(refPayco)
-        }
-      });
+    // 4. Race condition — barrera atómica real.
+    //    updateMany con WHERE status='PENDING' es un compare-and-swap a nivel de BD:
+    //    solo el primer worker que llegue puede actualizar la fila;
+    //    los demás ven count=0 (PostgreSQL re-evalúa el WHERE tras adquirir el lock de fila).
+    //    Todo lo que es irreversible (stock, estado de orden) vive dentro de esta misma transacción.
+    try {
+      await prisma.$transaction(async (tx) => {
+        const claimed = await tx.payment.updateMany({
+          where: { id: payment.id, status: "PENDING" },
+          data: {
+            status:        paymentStatus,
+            amount:        receivedAmount,
+            transactionId: String(refPayco)
+          }
+        });
 
-      await tx.order.update({
-        where: { id: payment.orderId },
-        data: { status: orderStatus }
-      });
+        // 0 filas actualizadas → otro worker ganó la carrera o el estado ya cambió.
+        if (claimed.count === 0) throw new WebhookAlreadyProcessed();
 
-      if (paymentStatus === "APPROVED") {
+        await tx.order.update({
+          where: { id: payment.orderId },
+          data:  { status: orderStatus }
+        });
+
+        // 5. Descuento de stock — ocurre UNA SOLA VEZ dentro de la transacción atómica.
+        //    El gate es la propia transacción; no necesitamos volver a verificar el estado previo.
+        // Obtener ítems una sola vez para los dos posibles caminos
         const orderItems = await tx.orderItem.findMany({
-          where: { orderId: payment.orderId },
+          where:  { orderId: payment.orderId },
           select: { productVariantId: true, quantity: true }
         });
 
-        for (const item of orderItems) {
-          if (item.productVariantId) {
-            await tx.productVariant.update({
-              where: { id: item.productVariantId },
-              data: { stock: { decrement: item.quantity } }
-            });
+        if (paymentStatus === "APPROVED") {
+          // Pago confirmado: stock SIEMPRE se descuenta.
+          // GREATEST evita reservedStock negativo si la reserva se perdió
+          // (ej: órdenes pre-migración con reservedStock=0).
+          // Sin condición WHERE en reservedStock: el descuento de stock real
+          // no puede depender del estado de la reserva — el cliente ya pagó.
+          for (const item of orderItems) {
+            if (!item.productVariantId) continue
+            await tx.$executeRaw`
+              UPDATE ProductVariant
+              SET stock         = stock - ${item.quantity},
+                  reservedStock = GREATEST(reservedStock - ${item.quantity}, 0)
+              WHERE id = ${item.productVariantId}
+            `
+          }
+        } else {
+          // Pago rechazado o con error: liberar la reserva sin tocar el stock.
+          for (const item of orderItems) {
+            if (!item.productVariantId) continue
+            await tx.$executeRaw`
+              UPDATE ProductVariant
+              SET reservedStock = reservedStock - ${item.quantity}
+              WHERE id = ${item.productVariantId}
+                AND reservedStock >= ${item.quantity}
+            `
           }
         }
+      });
+    } catch (err) {
+      if (err instanceof WebhookAlreadyProcessed) {
+        console.log(`Webhook concurrente ignorado (ref: ${invoiceReference})`);
+        return res.status(200).send("OK");
       }
-    });
+      throw err;
+    }
 
     console.log("Orden y pago actualizados correctamente");
 
     const order = await prisma.order.findUnique({
-      where: { id: payment.orderId },
+      where:  { id: payment.orderId },
       select: { id: true, orderNumber: true }
     });
 
     if (paymentStatus === "APPROVED" && order) {
+      // 6. createShipment es ahora idempotente (captura P2002 internamente).
+      //    No necesitamos verificar la existencia aquí — la BD lo garantiza.
       createShipment(payment.orderId).catch((err) => {
         console.error("Error creando shipment para orden", payment.orderId, err);
       });
@@ -105,13 +203,16 @@ const epaycoWebhook = async (req, res) => {
         console.error("Error notificando ORDER_PAID", err);
       });
 
-      const variantIds = await prisma.orderItem.findMany({
-        where: { orderId: payment.orderId },
+      prisma.orderItem.findMany({
+        where:  { orderId: payment.orderId },
         select: { productVariantId: true }
-      }).then((items) => items.map((i) => i.productVariantId).filter(Boolean));
-
-      checkStockNotifications(variantIds).catch((err) => {
-        console.error("Error revisando stock notifications", err);
+      }).then((items) => {
+        const variantIds = items.map((i) => i.productVariantId).filter(Boolean);
+        checkStockNotifications(variantIds).catch((err) => {
+          console.error("Error revisando stock notifications", err);
+        });
+      }).catch((err) => {
+        console.error("Error obteniendo variants para stock check", err);
       });
     }
 
@@ -121,7 +222,7 @@ const epaycoWebhook = async (req, res) => {
       });
     }
 
-    if ((paymentStatus === "ERROR") && order) {
+    if (paymentStatus === "ERROR" && order) {
       notifyOrderCancelled(order).catch((err) => {
         console.error("Error notificando ORDER_CANCELLED", err);
       });
@@ -130,13 +231,9 @@ const epaycoWebhook = async (req, res) => {
     return res.status(200).send("OK");
 
   } catch (error) {
-    console.error("ERROR WEBHOOK EPAYCO");
-    console.error(error);
-
+    console.error("ERROR WEBHOOK EPAYCO", error);
     return res.status(500).send("Error interno");
   }
 };
 
-module.exports = {
-  epaycoWebhook
-};
+module.exports = { epaycoWebhook };

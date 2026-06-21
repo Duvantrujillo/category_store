@@ -19,3 +19,8 @@ export const deleteAtributeValue = async (id) => {
   const res = await apiClient.delete(`/attribute-values/delete/${id}`);
   return res.data;
 };
+
+export const searchAttributeValue = async (q) => {
+  const res = await apiClient.get('/attribute-values/search', { params: { q } });
+  return res.data;
+};

@@ -4,23 +4,35 @@ import { useAllBrand, useSearchBrand } from "../hooks/useBrand";
 import BrandTable from "../components/brand-list/BrandTable";
 import BrandCreateDialog from "../components/brand-create/BrandCreateDialog";
 import BrandSearch from "../components/brand-search/BrandSearch";
+import BrandStatusFilter from "../components/brand-filter/BrandStatusFilter";
 import { useHasPermission } from "@/lib/permissions";
 
 const PAGE_SIZE = 15;
+
+function applyFilter(list, statusFilter) {
+  if (statusFilter === "all")      return list;
+  if (statusFilter === "active")   return list.filter((i) => i.isActive === true);
+  if (statusFilter === "inactive") return list.filter((i) => i.isActive === false);
+  return list;
+}
 
 function BrandList() {
   const canView   = useHasPermission("brands.view");
   const canCreate = useHasPermission("brands.create");
   const { brands = [], refetch } = useAllBrand({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchBrand();
+  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(brands.length / PAGE_SIZE));
-  const paginated = brands.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const dataToShow = query.trim() ? results : paginated;
 
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
+  const filtered       = applyFilter(brands, statusFilter);
+  const totalPages     = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated      = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const searchFiltered = applyFilter(results, statusFilter);
+  const dataToShow     = query.trim() ? searchFiltered : paginated;
+  const displayTotal   = query.trim() ? 0 : filtered.length;
+
+  useEffect(() => { if (page > totalPages) setPage(1); }, [page, totalPages]);
+  useEffect(() => { setPage(1); }, [statusFilter, query]);
 
   if (!canView) {
     return (
@@ -32,15 +44,18 @@ function BrandList() {
   }
 
   return (
-    <div className="p-6 space-y-3">
+    <div className="px-6 pt-2 pb-6 space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <BrandSearch query={query} setQuery={setQuery} resultsCount={results.length} loading={loading} />
+        <div className="flex items-center gap-3">
+          <BrandSearch query={query} setQuery={setQuery} resultsCount={searchFiltered.length} loading={loading} />
+          <BrandStatusFilter value={statusFilter} onChange={setStatusFilter} />
+        </div>
         <BrandCreateDialog onRefresh={refetch} disabled={!canCreate} />
       </div>
 
       <BrandTable
         brands={dataToShow}
-        totalItems={query.trim() ? 0 : brands.length}
+        totalItems={displayTotal}
         page={page}
         pageSize={PAGE_SIZE}
         onPageChange={setPage}

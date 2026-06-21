@@ -1,15 +1,5 @@
-/**
- * requirePermission(permName)
- *
- * Middleware de fábrica que verifica que el usuario autenticado
- * tenga el permiso indicado.
- *
- * Reglas:
- *  - super_admin siempre pasa (tiene acceso total).
- *  - customer nunca accede a rutas de panel de administración.
- *  - Para cualquier otro rol se comprueba la lista de permisos
- *    cargada en req.user.permissions por authMiddleware.
- */
+const ADMIN_ROLES = ['admin', 'super_admin'];
+
 const requirePermission = (permName) => (req, res, next) => {
   const { role, permissions = [] } = req.user ?? {};
 
@@ -26,10 +16,16 @@ const requirePermission = (permName) => (req, res, next) => {
   });
 };
 
-// Exclusivo para rutas que solo puede ejecutar el super_admin
+// Permite acceso a admin y super_admin
+const requireAdmin = (req, res, next) => {
+  if (ADMIN_ROLES.includes(req.user?.role)) return next();
+  return res.status(403).json({ message: 'Acceso restringido al panel de administración.' });
+};
+
+// Exclusivo para super_admin
 const requireSuperAdmin = (req, res, next) => {
   if (req.user?.role === 'super_admin') return next();
   return res.status(403).json({ message: 'Acción reservada para el super administrador.' });
 };
 
-module.exports = { requirePermission, requireSuperAdmin };
+module.exports = { requirePermission, requireAdmin, requireSuperAdmin };

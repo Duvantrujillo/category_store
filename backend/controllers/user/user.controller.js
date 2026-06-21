@@ -93,10 +93,11 @@ const loginUser = async (req, res) => {
       throw new Error('JWT_SECRET no esta definido');
     }
 
+    const isPrivileged = ['admin', 'super_admin'].includes(userExist.role.name);
     const token = Jwt.sign(
       { id: userExist.id, email: userExist.email, role: userExist.role.name },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: isPrivileged ? '4h' : '7d' }
     );
 
     return res.status(200).json({
@@ -227,6 +228,7 @@ const updateUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    const targetId = Number(id);
 
     if (!VALID_STATUSES.includes(status)) {
       return res.status(400).json({
@@ -234,13 +236,24 @@ const updateUserStatus = async (req, res) => {
       });
     }
 
-    const user = await prisma.user.findUnique({ where: { id: Number(id) } });
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+    // Prevenir auto-bloqueo
+    if (targetId === req.user.id) {
+      return res.status(403).json({ message: 'No puedes modificar tu propio estado.' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: targetId },
+      include: { role: { select: { name: true } } },
+    });
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    // Proteger cuentas super_admin de ser modificadas
+    if (user.role.name === 'super_admin') {
+      return res.status(403).json({ message: 'No se puede modificar el estado de un super administrador.' });
     }
 
     const updated = await prisma.user.update({
-      where: { id: Number(id) },
+      where: { id: targetId },
       data: { status },
       select: { id: true, name: true, email: true, status: true },
     });
@@ -259,14 +272,23 @@ const updateUserStatus = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, roleId } = req.body;
+    const { name, email, roleId, status } = req.body;
+    const targetId = Number(id);
 
-    if (!name && !email && !roleId) {
+    if (!name && !email && !roleId && !status) {
       return res.status(400).json({ message: 'Debes enviar al menos un campo para actualizar' });
     }
 
-    const user = await prisma.user.findUnique({ where: { id: Number(id) } });
+    const user = await prisma.user.findUnique({
+      where: { id: targetId },
+      include: { role: { select: { name: true } } },
+    });
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    // Proteger cuentas super_admin de ser editadas
+    if (user.role.name === 'super_admin') {
+      return res.status(403).json({ message: 'No se pueden modificar los datos de un super administrador.' });
+    }
 
     const data = {};
 
@@ -282,7 +304,7 @@ const updateUser = async (req, res) => {
         return res.status(400).json({ message: 'Correo electrónico inválido' });
 
       const taken = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
-      if (taken && taken.id !== Number(id))
+      if (taken && taken.id !== targetId)
         return res.status(409).json({ message: 'El correo ya está en uso por otro usuario' });
 
       data.email = email.trim().toLowerCase();
@@ -291,11 +313,25 @@ const updateUser = async (req, res) => {
     if (roleId !== undefined) {
       const role = await prisma.role.findFirst({ where: { id: Number(roleId), status: true } });
       if (!role) return res.status(400).json({ message: 'Rol inválido o inactivo' });
+
+      // Prevenir escalada de privilegios: no se puede asignar super_admin desde aquí
+      if (role.name === 'super_admin') {
+        return res.status(403).json({ message: 'No se puede asignar el rol de super administrador.' });
+      }
+
       data.roleId = role.id;
     }
 
+    if (status !== undefined) {
+      if (!VALID_STATUSES.includes(status))
+        return res.status(400).json({ message: `Estado inválido. Valores permitidos: ${VALID_STATUSES.join(', ')}` });
+      if (targetId === req.user.id)
+        return res.status(403).json({ message: 'No puedes modificar tu propio estado.' });
+      data.status = status;
+    }
+
     const updated = await prisma.user.update({
-      where: { id: Number(id) },
+      where: { id: targetId },
       data,
       select: { id: true, name: true, email: true, status: true, role: { select: { id: true, name: true } } },
     });
@@ -324,8 +360,16 @@ const resetUserPassword = async (req, res) => {
     if (newPassword !== confirmPassword)
       return res.status(400).json({ message: 'Las contraseñas no coinciden' });
 
-    const user = await prisma.user.findUnique({ where: { id: Number(id) } });
+    const user = await prisma.user.findUnique({
+      where: { id: Number(id) },
+      include: { role: { select: { name: true } } },
+    });
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    // Proteger cuentas super_admin
+    if (user.role.name === 'super_admin') {
+      return res.status(403).json({ message: 'No se puede restablecer la contraseña de un super administrador.' });
+    }
 
     const hashed = await bcrypt.hash(newPassword, 10);
 

@@ -15,19 +15,19 @@ export function PermissionModule({ module, perms, checkedIds, canManage, onToggl
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
 
-      {/* Cabecera compacta */}
-      <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-slate-100">
-        <div className={`flex items-center justify-center w-7 h-7 rounded-lg shrink-0 ${colors.icon}`}>
-          <Icon size={14} />
+      {/* Cabecera */}
+      <div className="flex items-center gap-2 px-2.5 py-2 border-b border-slate-100">
+        <div className={`flex items-center justify-center w-6 h-6 rounded-md shrink-0 ${colors.icon}`}>
+          <Icon size={12} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-slate-700">{cfg.label}</span>
-            <span className="text-[10px] text-slate-400 font-medium">{count}/{permIds.length}</span>
+          <div className="flex items-center justify-between mb-0.5">
+            <span className="text-[11px] font-semibold text-slate-700 truncate">{cfg.label}</span>
+            <span className="text-[10px] text-slate-400 font-medium ml-1 shrink-0">{count}/{permIds.length}</span>
           </div>
           <PermissionProgressBar value={pct} color={cfg.color} />
         </div>
-        <div className="ml-2 shrink-0">
+        <div className="ml-1.5 shrink-0">
           <PermissionToggle
             checked={allOn}
             onChange={(v) => onToggleModule(permIds, v)}
@@ -37,25 +37,22 @@ export function PermissionModule({ module, perms, checkedIds, canManage, onToggl
         </div>
       </div>
 
-      {/* Grid de 2 columnas para los permisos */}
-      <div className="grid grid-cols-2">
-        {perms.map((perm, i) => {
+      {/* Lista de permisos en 1 columna */}
+      <div className="divide-y divide-slate-50">
+        {perms.map((perm) => {
           const on = checkedIds.has(perm.id)
-          const isLeftCol = i % 2 === 0
           return (
             <div
               key={perm.id}
               onClick={() => canManage && onToggle(perm.id)}
-              className={`flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 transition-colors
-                border-b border-slate-50 group
-                ${isLeftCol ? 'border-r border-slate-100' : ''}
+              className={`flex items-center gap-2 px-2.5 py-1 hover:bg-slate-50 transition-colors group
                 ${canManage ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
             >
               <div className="flex-1 min-w-0">
-                <p className={`text-xs font-medium leading-tight transition-colors ${on ? 'text-slate-800' : 'text-slate-400'}`}>
+                <p className={`text-[11px] font-medium leading-tight transition-colors ${on ? 'text-slate-800' : 'text-slate-400'}`}>
                   {perm.description}
                 </p>
-                <p className="text-[10px] text-slate-300 font-mono mt-0.5 group-hover:text-slate-400 transition-colors truncate">
+                <p className="text-[9px] text-slate-300 font-mono group-hover:text-slate-400 transition-colors truncate">
                   {perm.name}
                 </p>
               </div>

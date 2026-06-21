@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Inbox, ChevronDown, Users, ShieldCheck, UserCheck } from "lucide-react";
+import { Inbox, ChevronDown, Users, ShieldCheck, UserCheck, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell,
@@ -13,8 +13,9 @@ import UserResetPasswordDialog from "../user-reset-password/UserResetPasswordDia
 import { useHasPermission } from "@/lib/permissions";
 
 const ROLE_STYLE = {
-  admin:    "bg-indigo-50 text-indigo-700 border-indigo-200",
-  customer: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  admin:       "bg-indigo-50 text-indigo-700 border-indigo-200",
+  customer:    "bg-emerald-50 text-emerald-700 border-emerald-200",
+  super_admin: "bg-violet-50 text-violet-700 border-violet-200",
 };
 
 const STATUS_CONFIG = {
@@ -30,9 +31,10 @@ const STATUS_OPTIONS = [
 ];
 
 const ROLE_TABS = [
-  { key: "all",      label: "Todos",      icon: Users },
-  { key: "admin",    label: "Admin",      icon: ShieldCheck },
-  { key: "customer", label: "Clientes",   icon: UserCheck },
+  { key: "all",         label: "Todos",       icon: Users },
+  { key: "super_admin", label: "Super Admin",  icon: ShieldAlert },
+  { key: "admin",       label: "Admin",        icon: ShieldCheck },
+  { key: "customer",    label: "Clientes",     icon: UserCheck },
 ];
 
 function getInitials(name = "") {
@@ -117,9 +119,10 @@ function UserTable({ users, allUsers = [], totalItems, page, pageSize, onPageCha
   const canUpdate = useHasPermission("admins.update");
   // Los contadores se calculan sobre el total, no sobre la página actual
   const counts = useMemo(() => ({
-    all:      allUsers.length,
-    admin:    allUsers.filter((u) => u.role?.name === "admin").length,
-    customer: allUsers.filter((u) => u.role?.name === "customer").length,
+    all:         allUsers.length,
+    super_admin: allUsers.filter((u) => u.role?.name === "super_admin").length,
+    admin:       allUsers.filter((u) => u.role?.name === "admin").length,
+    customer:    allUsers.filter((u) => u.role?.name === "customer").length,
   }), [allUsers]);
 
   return (
@@ -247,7 +250,7 @@ function UserTable({ users, allUsers = [], totalItems, page, pageSize, onPageCha
           <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
             <Inbox size={36} strokeWidth={1.2} />
             <p className="text-sm">
-              {activeRole === "all" ? "No hay usuarios registrados" : `No hay usuarios con rol "${activeRole}"`}
+              {activeRole === "all" ? "No hay usuarios registrados" : `No hay usuarios con rol "${activeRole.replace("_", " ")}"`}
             </p>
           </div>
         )}

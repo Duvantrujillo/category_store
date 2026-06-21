@@ -1,62 +1,171 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import FormField from "../../components/ui/FormField";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
 
-function RegisterForm({
-  form,
-  handleChange,
-  handleSubmit,
-  loading,
-}) {
+function RegisterForm({ form, handleChange, handleSubmit, loading }) {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="min-h-screen flex">
 
-      <Card className="w-96">
+      {/* Panel izquierdo — branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-slate-900 via-indigo-950 to-slate-900 flex-col justify-between p-12 relative overflow-hidden">
 
-        <CardHeader>
-          <CardTitle>Registrar usuario</CardTitle>
-        </CardHeader>
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl" />
 
-        <CardContent>
+        {/* Logo */}
+        <div className="relative flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-900/60">
+            <ShieldCheck size={20} className="text-white" />
+          </div>
+          <div>
+            <p className="text-white font-bold text-base tracking-wide leading-none">Category Store</p>
+            <p className="text-indigo-400 text-[10px] font-medium uppercase tracking-widest mt-0.5">Admin Panel</p>
+          </div>
+        </div>
+
+        {/* Contenido central */}
+        <div className="relative space-y-5">
+          <div>
+            <h2 className="text-3xl font-bold text-white tracking-tight leading-snug">
+              Crea tu cuenta y<br />
+              <span className="text-indigo-400">empieza a gestionar</span>
+            </h2>
+            <p className="text-slate-400 text-sm mt-3 leading-relaxed max-w-xs">
+              Únete al panel de administración y toma el control de tu operación desde el primer día.
+            </p>
+          </div>
+
+          <ul className="space-y-3.5">
+            {[
+              "Acceso completo al panel admin",
+              "Gestión de productos y categorías",
+              "Reportes y métricas en tiempo real",
+              "Soporte para múltiples roles",
+            ].map((feat) => (
+              <li key={feat} className="flex items-center gap-2.5 text-sm text-slate-300">
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600/30 border border-indigo-500/40 shrink-0">
+                  <ArrowRight size={10} className="text-indigo-400" />
+                </span>
+                {feat}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="relative text-[11px] text-slate-600">
+          © {new Date().getFullYear()} Category Store. Todos los derechos reservados.
+        </p>
+      </div>
+
+      {/* Panel derecho — formulario */}
+      <div className="flex-1 flex items-center justify-center bg-slate-50 p-6">
+        <div className="w-full max-w-sm">
+
+          {/* Logo mobile */}
+          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-600 shadow-md shadow-indigo-200">
+              <ShieldCheck size={18} className="text-white" />
+            </div>
+            <p className="font-bold text-slate-800 text-base">Category Store</p>
+          </div>
+
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Crear cuenta</h1>
+            <p className="text-slate-500 text-sm mt-1.5">Completa los datos para registrarte</p>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
 
-            <FormField
-              label="Nombre"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-            />
+            {/* Nombre */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Nombre completo</label>
+              <div className="relative">
+                <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  name="name"
+                  type="text"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="Juan Pérez"
+                  required
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm"
+                />
+              </div>
+            </div>
 
-            <FormField
-              label="Email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-            />
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Correo electrónico</label>
+              <div className="relative">
+                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="admin@ejemplo.com"
+                  required
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm"
+                />
+              </div>
+            </div>
 
-            <FormField
-              label="Password"
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-            />
+            {/* Contraseña */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Contraseña</label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                  className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
 
+            {/* Botón */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-md bg-black text-white py-2 hover:bg-gray-800 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm shadow-indigo-200 mt-2"
             >
-              {loading ? "Cargando..." : "Registrar"}
+              {loading ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  Creando cuenta...
+                </>
+              ) : (
+                <>
+                  Crear cuenta
+                  <ArrowRight size={15} />
+                </>
+              )}
             </button>
 
           </form>
 
-        </CardContent>
+          <p className="text-center text-sm text-slate-500 mt-6">
+            ¿Ya tienes cuenta?{" "}
+            <Link to="/login" className="font-semibold text-indigo-600 hover:text-indigo-700 hover:underline transition-colors">
+              Iniciar sesión
+            </Link>
+          </p>
 
-      </Card>
-
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import toast from 'react-hot-toast'
+import { toast } from 'react-toastify'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL
@@ -27,7 +27,7 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('role')
 
       if (message) {
-        toast.error(message, { duration: 3000, id: 'auth-error' })
+        toast.error(message, { autoClose: 3000, toastId: 'auth-error' })
       }
 
       setTimeout(() => {
@@ -36,10 +36,14 @@ apiClient.interceptors.response.use(
     }
 
     if (status === 403) {
-      toast.error(message ?? 'No tienes permiso para realizar esta acción.', {
-        duration: 3000,
-        id: 'permission-error',
-      })
+      const isViewPermission = typeof message === 'string' && message.includes('.view')
+      if (!isViewPermission) {
+        toast.error(message ?? 'No tienes permiso para realizar esta acción.', {
+          autoClose: 3000,
+          toastId: 'permission-error',
+        })
+      }
+      error._handled = true
     }
 
     return Promise.reject(error)

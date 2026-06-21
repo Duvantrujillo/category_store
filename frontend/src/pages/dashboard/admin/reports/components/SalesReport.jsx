@@ -1,92 +1,154 @@
+import { useCallback } from "react";
+import { TrendingUp, DollarSign, Receipt, ShoppingBag } from "lucide-react";
+
 import { useSalesReport } from "../hooks/useReport";
-import ReportCard from "./ReportCard";
+import { downloadCsv }    from "../utils/csvExport";
+import ReportCard         from "./ReportCard";
+import ReportSection      from "./ReportSection";
 import { ReportLoader, ReportError } from "./ReportLoader";
+import VBarChart from "./charts/VBarChart";
+import HBar      from "./charts/HBar";
 
-const fmt = (n) => `$${Number(n).toLocaleString("es-CO")}`;
+const fmtCOP = (n) => `$${Number(n).toLocaleString("es-CO")}`;
 
-const STATUS_LABELS = { PAID: "Pagada", PENDING: "Pendiente", CANCELLED: "Cancelada", REFUNDED: "Reembolsada" };
-const STATUS_CLS    = { PAID: "text-green-600", PENDING: "text-amber-600", CANCELLED: "text-red-500", REFUNDED: "text-violet-600" };
+const STATUS_META = {
+  PAID:      { label: "Pagada",      color: "#10b981", badge: "bg-green-50  text-green-700  ring-green-200"  },
+  PENDING:   { label: "Pendiente",   color: "#f59e0b", badge: "bg-amber-50  text-amber-700  ring-amber-200"  },
+  CANCELLED: { label: "Cancelada",   color: "#f43f5e", badge: "bg-red-50    text-red-700    ring-red-200"    },
+  REFUNDED:  { label: "Reembolsada", color: "#8b5cf6", badge: "bg-violet-50 text-violet-700 ring-violet-200" },
+};
 
 function SalesReport({ filters }) {
   const { data, loading, error } = useSalesReport(filters);
+
+  const exportCsv = useCallback(() => {
+    if (!data) return;
+    downloadCsv("ventas.csv",
+      ["Orden", "Cliente", "Estado", "Total", "Fecha"],
+      data.records.map((o) => [
+        o.orderNumber,
+        `${o.firstName} ${o.lastName}`,
+        STATUS_META[o.status]?.label ?? o.status,
+        o.total,
+        new Date(o.createdAt).toLocaleDateString("es-CO"),
+      ])
+    );
+  }, [data]);
 
   if (loading) return <ReportLoader />;
   if (error)   return <ReportError message={error} />;
   if (!data)   return null;
 
+  const barData   = data.byStatus.map((s) => ({
+    label: STATUS_META[s.status]?.label ?? s.status,
+    value: s.count,
+    color: STATUS_META[s.status]?.color ?? "#94a3b8",
+  }));
+  const maxRev    = Math.max(...data.topProducts.map((p) => p.revenue), 1);
+
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <ReportCard title="Órdenes pagadas"   value={data.revenue.count}         colorClass="text-indigo-600" />
-        <ReportCard title="Ingresos totales"  value={fmt(data.revenue.total)}    colorClass="text-emerald-600" />
-        <ReportCard title="Ticket promedio"   value={fmt(data.revenue.average)}  colorClass="text-blue-600" />
+      {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <ReportCard
+          title="Órdenes pagadas"
+          value={data.revenue.count}
+          icon={Receipt}
+          colorClass="text-indigo-600"
+          accent="bg-indigo-400"
+        />
+        <ReportCard
+          title="Ingresos totales"
+          value={fmtCOP(data.revenue.total)}
+          icon={DollarSign}
+          colorClass="text-emerald-600"
+          accent="bg-emerald-400"
+        />
+        <ReportCard
+          title="Ticket promedio"
+          value={fmtCOP(data.revenue.average)}
+          icon={TrendingUp}
+          colorClass="text-blue-600"
+          accent="bg-blue-400"
+        />
       </div>
 
-      {/* Por estado */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">Órdenes por estado</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {data.byStatus.map((s) => (
-            <div key={s.status} className="text-center p-3 rounded-lg bg-slate-50 border border-slate-100">
-              <p className={`text-xl font-bold ${STATUS_CLS[s.status] ?? "text-slate-700"}`}>{s.count}</p>
-              <p className="text-xs text-slate-500">{STATUS_LABELS[s.status] ?? s.status}</p>
-              <p className="text-xs font-medium text-slate-400 mt-0.5">{fmt(s.total)}</p>
-            </div>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Gráfica de barras: órdenes por estado */}
+        <ReportSection title="Órdenes por estado" icon={ShoppingBag}>
+          <VBarChart data={barData} height={160} />
+          <div className="mt-4 space-y-2 pt-3 border-t border-slate-100">
+            {data.byStatus.map((s) => {
+              const meta = STATUS_META[s.status];
+              return (
+                <div key={s.status} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: meta?.color }} />
+                    <span className="text-slate-600">{meta?.label ?? s.status}</span>
+                    <span className="font-bold text-slate-800 tabular-nums">{s.count}</span>
+                  </div>
+                  <span className="font-semibold text-slate-500 tabular-nums">{fmtCOP(s.total)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </ReportSection>
+
+        {/* Top 10 productos por ingresos */}
+        <ReportSection title="Top 10 productos · ingresos" icon={TrendingUp}>
+          <div className="space-y-0.5">
+            {data.topProducts.map((p, i) => (
+              <HBar
+                key={p.name}
+                rank={i + 1}
+                label={p.name}
+                value={p.revenue}
+                max={maxRev}
+                displayValue={fmtCOP(p.revenue)}
+                color="#10b981"
+              />
+            ))}
+          </div>
+        </ReportSection>
       </div>
 
-      {/* Top productos por ingreso */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">Top 10 productos por ingresos</h3>
-        <div className="space-y-1">
-          {data.topProducts.map((p, i) => (
-            <div key={p.name} className="flex items-center justify-between text-sm py-2 border-b border-slate-50 last:border-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 w-5">{i + 1}</span>
-                <span className="font-medium text-slate-700">{p.name}</span>
-              </div>
-              <div className="flex items-center gap-5 text-xs text-slate-500">
-                <span>{p.quantity} uds.</span>
-                <span className="font-semibold text-emerald-600 w-28 text-right">{fmt(p.revenue)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Tabla de órdenes */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100">
-          <h3 className="text-sm font-semibold text-slate-700">Detalle de órdenes</h3>
-        </div>
+      {/* Tabla detalle órdenes */}
+      <ReportSection title="Detalle de órdenes" icon={Receipt} onExport={exportCsv} noPad>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+            <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-100">
               <tr>
-                {["Orden","Cliente","Estado","Total","Fecha"].map((h) => (
-                  <th key={h} className="text-left px-4 py-2.5 font-semibold">{h}</th>
+                {["Orden", "Cliente", "Estado", "Total", "Fecha"].map((h) => (
+                  <th key={h} className="text-left px-5 py-3 font-semibold whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody>
-              {data.records.map((o) => (
-                <tr key={o.id} className="border-t border-slate-50 hover:bg-slate-50/60 transition-colors">
-                  <td className="px-4 py-2.5 font-mono text-xs font-medium text-indigo-600">{o.orderNumber}</td>
-                  <td className="px-4 py-2.5 text-slate-700">{o.firstName} {o.lastName}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`text-xs font-medium ${STATUS_CLS[o.status] ?? "text-slate-500"}`}>
-                      {STATUS_LABELS[o.status] ?? o.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 font-semibold text-slate-800">{fmt(o.total)}</td>
-                  <td className="px-4 py-2.5 text-slate-400 text-xs">{new Date(o.createdAt).toLocaleDateString("es-CO")}</td>
-                </tr>
-              ))}
+            <tbody className="divide-y divide-slate-50">
+              {data.records.map((o) => {
+                const meta = STATUS_META[o.status];
+                return (
+                  <tr key={o.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-5 py-3 font-mono text-[11px] font-semibold text-indigo-600">{o.orderNumber}</td>
+                    <td className="px-5 py-3 text-slate-700 font-medium">{o.firstName} {o.lastName}</td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${meta?.badge ?? "bg-slate-50 text-slate-500 ring-slate-200"}`}>
+                        {meta?.label ?? o.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 font-semibold text-slate-800 tabular-nums">{fmtCOP(o.total)}</td>
+                    <td className="px-5 py-3 text-slate-400 text-xs tabular-nums">
+                      {new Date(o.createdAt).toLocaleDateString("es-CO")}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+          {data.records.length === 0 && (
+            <div className="text-center py-10 text-sm text-slate-400">Sin órdenes en el período seleccionado</div>
+          )}
         </div>
-      </div>
+      </ReportSection>
     </div>
   );
 }

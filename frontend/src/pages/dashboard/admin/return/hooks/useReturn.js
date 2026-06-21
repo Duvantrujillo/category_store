@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import toast from "react-hot-toast";
+import { toast } from 'react-toastify';
 import {
   allReturnRequests,
   createReturnRequest,
@@ -7,6 +7,7 @@ import {
   createReturnItems,
   createRefund,
   processRefund,
+  searchReturn,
 } from "../api/returnApi";
 
 /* =========================================
@@ -47,7 +48,7 @@ export const useCreateReturnRequest = () => {
     } catch (err) {
       const msg = err?.response?.data?.message || "Error de conexión";
       setError(msg);
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       throw err;
     } finally {
       setLoading(false);
@@ -132,7 +133,7 @@ export const useUpdateReturn = () => {
     } catch (err) {
       const msg = err.response?.data?.message || "Error de conexión";
       setError(msg);
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       throw err;
     } finally {
       setLoading(false);
@@ -160,7 +161,7 @@ export const useCreateRefund = () => {
     } catch (err) {
       const msg = err.response?.data?.message || "Error de conexión";
       setError(msg);
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       throw err;
     } finally {
       setLoading(false);
@@ -197,7 +198,7 @@ export const useProcessRefund = () => {
     } catch (err) {
       const msg = err.response?.data?.message || "Error de conexión";
       setError(msg);
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
       throw err;
     } finally {
       setLoading(false);
@@ -205,4 +206,33 @@ export const useProcessRefund = () => {
   };
 
   return { form, handleChange, resetForm, submitProcess, loading, error };
+};
+
+export const useSearchReturn = (delay = 400) => {
+  const [query, setQuery]     = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); setLoading(false); return; }
+
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await searchReturn(query);
+        setResults(Array.isArray(res?.data) ? res.data : []);
+      } catch (err) {
+        setError(err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [query, delay]);
+
+  return { query, setQuery, results, loading, error };
 };

@@ -28,3 +28,8 @@ export const deleteCategory = async (id) => {
   const res = await apiClient.delete(`/category/delete/${id}`);
   return res.data;
 };
+
+export const searchCategory = async (q) => {
+  const res = await apiClient.get('/category/search', { params: { q } });
+  return res.data;
+};

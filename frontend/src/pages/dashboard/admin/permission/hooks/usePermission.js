@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getRolesWithPermissions, updateRolePermissions } from '../api/permissionApi'
-import { toast } from 'sonner'
+import { toast } from 'react-toastify'
 
 export function useRolesWithPermissions({ skip = false } = {}) {
   const [data, setData]       = useState({ roles: [], permissions: [] })

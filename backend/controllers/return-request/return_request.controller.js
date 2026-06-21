@@ -156,8 +156,46 @@ const updateReturnRequest = async (req, res) => {
     }
 }
 
+const searchReturnRequest = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+
+    if (!q) return res.status(200).json({ data: [] });
+
+    const requests = await prisma.returnRequest.findMany({
+      where: {
+        OR: [
+          { reason: { contains: q } },
+          { order: { orderNumber: { contains: q } } },
+          { order: { firstName:   { contains: q } } },
+          { order: { lastName:    { contains: q } } },
+        ],
+      },
+      include: {
+        order: { select: { orderNumber: true, firstName: true, lastName: true, total: true } },
+        items: {
+          include: {
+            orderItem: { select: { productName: true, unitPrice: true, quantity: true } },
+          },
+        },
+        refunds:      { include: { processedBy: USER_SELECT } },
+        registeredBy: USER_SELECT,
+        approvedBy:   USER_SELECT,
+      },
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.status(200).json({ data: requests });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error al buscar" });
+  }
+};
+
 module.exports = {
     createreturnRequest,
     getAllReturnRequests,
     updateReturnRequest,
+    searchReturnRequest,
 }

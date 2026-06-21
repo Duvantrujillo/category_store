@@ -4,6 +4,7 @@ const returnRequestController = require('../controllers/return-request/return_re
 const { requirePermission } = require('../middlewares/permission.middleware')
 
 router.get('/all',    requirePermission('returns.view'),    returnRequestController.getAllReturnRequests)
+router.get('/search', requirePermission('returns.view'),    returnRequestController.searchReturnRequest)
 router.post('/create',                                      returnRequestController.createreturnRequest)
 router.put('/:id',    requirePermission('returns.approve'), returnRequestController.updateReturnRequest)
 

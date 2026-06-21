@@ -1,72 +1,179 @@
+import { useCallback } from "react";
+import { ShoppingCart, DollarSign, RotateCcw, RefreshCw, Package, ArrowRight } from "lucide-react";
+
 import { useSummaryReport } from "../hooks/useReport";
-import ReportCard from "./ReportCard";
+import { downloadCsv }      from "../utils/csvExport";
+import ReportCard            from "./ReportCard";
+import ReportSection         from "./ReportSection";
 import { ReportLoader, ReportError } from "./ReportLoader";
+import DonutChart from "./charts/DonutChart";
+import HBar       from "./charts/HBar";
 
-const fmt = (n) => `$${Number(n).toLocaleString("es-CO")}`;
+const fmtCOP = (n) => `$${Number(n).toLocaleString("es-CO")}`;
 
-const STATUS_LABELS = {
-  CREATED:   "Creado",
-  PREPARING: "Preparando",
-  SHIPPED:   "Enviado",
-  DELIVERED: "Entregado",
-  RETURNED:  "Devuelto",
-};
+const ORDER_SEGMENTS = [
+  { key: "paid",      label: "Pagadas",    color: "#10b981" },
+  { key: "cancelled", label: "Canceladas", color: "#f43f5e" },
+  { key: "other",     label: "Otras",      color: "#94a3b8" },
+];
+
+const SHIPMENT_PIPELINE = [
+  { status: "CREATED",   label: "Creado",     cls: "bg-slate-100 text-slate-600  border-slate-200" },
+  { status: "PREPARING", label: "Preparando", cls: "bg-amber-50  text-amber-700  border-amber-200" },
+  { status: "SHIPPED",   label: "Enviado",    cls: "bg-blue-50   text-blue-700   border-blue-200"  },
+  { status: "DELIVERED", label: "Entregado",  cls: "bg-green-50  text-green-700  border-green-200" },
+  { status: "RETURNED",  label: "Devuelto",   cls: "bg-red-50    text-red-700    border-red-200"   },
+];
 
 function SummaryReport({ filters }) {
   const { data, loading, error } = useSummaryReport(filters);
+
+  const exportCsv = useCallback(() => {
+    if (!data) return;
+    downloadCsv("resumen.csv",
+      ["Métrica", "Valor"],
+      [
+        ["Total órdenes",          data.orders.total],
+        ["Órdenes pagadas",        data.orders.paid],
+        ["Ingresos totales",       data.orders.revenue],
+        ["Órdenes canceladas",     data.orders.cancelled],
+        ["Devoluciones",           data.returns.total],
+        ["Devoluciones pendientes",data.returns.pending],
+        ["Reembolsos procesados",  data.refunds.processed],
+        ["Monto reembolsado",      data.refunds.processedAmount],
+      ]
+    );
+  }, [data]);
 
   if (loading) return <ReportLoader />;
   if (error)   return <ReportError message={error} />;
   if (!data)   return null;
 
+  const other = Math.max(0, data.orders.total - data.orders.paid - data.orders.cancelled);
+  const orderValues = { paid: data.orders.paid, cancelled: data.orders.cancelled, other };
+  const donutSegments = ORDER_SEGMENTS.map((s) => ({ ...s, value: orderValues[s.key] })).filter((s) => s.value > 0);
+
+  const maxQty = Math.max(...data.topProducts.map((p) => p.quantity), 1);
+
   return (
-    <div className="space-y-6">
-      {/* KPIs principales */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <ReportCard title="Total órdenes"   value={data.orders.total}   />
-        <ReportCard title="Órdenes pagadas" value={data.orders.paid}    colorClass="text-green-600" />
-        <ReportCard title="Ingresos totales" value={fmt(data.orders.revenue)} colorClass="text-emerald-600" />
-        <ReportCard title="Órdenes canceladas" value={data.orders.cancelled} colorClass="text-red-500" />
+    <div className="space-y-5">
+      {/* Botón export global */}
+      <div className="flex justify-end">
+        <button
+          onClick={exportCsv}
+          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 transition-colors px-3 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50"
+        >
+          <RefreshCw size={11} />
+          Exportar resumen CSV
+        </button>
       </div>
 
+      {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <ReportCard title="Devoluciones"        value={data.returns.total}               colorClass="text-amber-600" />
-        <ReportCard title="Devoluciones pendientes" value={data.returns.pending}         colorClass="text-orange-500" />
-        <ReportCard title="Reembolsos procesados"   value={data.refunds.processed}       colorClass="text-blue-600" />
-        <ReportCard title="Monto reembolsado"  value={fmt(data.refunds.processedAmount)} colorClass="text-violet-600" />
+        <ReportCard
+          title="Total órdenes"
+          value={data.orders.total}
+          sub={`${data.orders.paid} pagadas`}
+          icon={ShoppingCart}
+          colorClass="text-indigo-600"
+          accent="bg-indigo-400"
+        />
+        <ReportCard
+          title="Ingresos totales"
+          value={fmtCOP(data.orders.revenue)}
+          sub={`Ticket prom. ${fmtCOP(data.orders.total > 0 ? data.orders.revenue / data.orders.total : 0)}`}
+          icon={DollarSign}
+          colorClass="text-emerald-600"
+          accent="bg-emerald-400"
+        />
+        <ReportCard
+          title="Devoluciones"
+          value={data.returns.total}
+          sub={`${data.returns.pending} pendientes`}
+          icon={RotateCcw}
+          colorClass="text-amber-600"
+          accent="bg-amber-400"
+        />
+        <ReportCard
+          title="Reembolsado"
+          value={fmtCOP(data.refunds.processedAmount)}
+          sub={`${data.refunds.processed} procesados`}
+          icon={RefreshCw}
+          colorClass="text-violet-600"
+          accent="bg-violet-400"
+        />
       </div>
 
-      {/* Envíos por estado */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">Estado de envíos</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-          {data.shipments.map((s) => (
-            <div key={s.status} className="text-center p-2 rounded-lg bg-slate-50 border border-slate-100">
-              <p className="text-lg font-bold text-slate-800">{s.count}</p>
-              <p className="text-xs text-slate-500">{STATUS_LABELS[s.status] ?? s.status}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Distribución de órdenes - donut */}
+        <ReportSection title="Distribución de órdenes" icon={ShoppingCart}>
+          <div className="flex flex-col items-center gap-5 py-2">
+            <DonutChart
+              segments={donutSegments}
+              size={148}
+              thickness={20}
+              centerLabel={data.orders.total}
+              centerSub="órdenes"
+            />
+            <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center">
+              {donutSegments.map((s) => (
+                <div key={s.label} className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                  <span className="text-xs text-slate-500">{s.label}</span>
+                  <span className="text-xs font-bold text-slate-800 tabular-nums">{s.value}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        </ReportSection>
+
+        {/* Pipeline de envíos */}
+        <ReportSection title="Estado de envíos" icon={Package}>
+          <div className="space-y-2.5">
+            {SHIPMENT_PIPELINE.map((stage, i) => {
+              const found = data.shipments.find((s) => s.status === stage.status);
+              const count = found?.count ?? 0;
+              const total = data.shipments.reduce((acc, s) => acc + (s.count || 0), 0) || 1;
+              const pct   = Math.round((count / total) * 100);
+              return (
+                <div key={stage.status} className="space-y-1">
+                  <div className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg border ${stage.cls}`}>
+                    <div className="flex items-center gap-2">
+                      {i < 4 && <ArrowRight size={12} className="opacity-40" />}
+                      <span className="text-xs font-semibold">{stage.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-1 bg-black/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-current rounded-full opacity-40" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-sm font-bold tabular-nums w-6 text-right">{count}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </ReportSection>
       </div>
 
       {/* Top productos */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">Top 5 productos más vendidos</h3>
-        <div className="space-y-2">
-          {data.topProducts.map((p, i) => (
-            <div key={p.name} className="flex items-center justify-between text-sm py-1.5 border-b border-slate-50 last:border-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 w-4">{i + 1}</span>
-                <span className="font-medium text-slate-700">{p.name}</span>
-              </div>
-              <div className="flex items-center gap-4 text-xs text-slate-500">
-                <span>{p.quantity} uds.</span>
-                <span className="font-semibold text-emerald-600">{fmt(p.revenue)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {data.topProducts.length > 0 && (
+        <ReportSection title="Top 5 productos más vendidos" icon={Package}>
+          <div className="space-y-0.5">
+            {data.topProducts.map((p, i) => (
+              <HBar
+                key={p.name}
+                rank={i + 1}
+                label={p.name}
+                value={p.quantity}
+                max={maxQty}
+                displayValue={`${p.quantity} uds · ${fmtCOP(p.revenue)}`}
+                color="#6366f1"
+              />
+            ))}
+          </div>
+        </ReportSection>
+      )}
     </div>
   );
 }

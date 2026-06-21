@@ -90,7 +90,7 @@ export default function ListPermission() {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="px-4 pt-2 pb-4 space-y-4">
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">

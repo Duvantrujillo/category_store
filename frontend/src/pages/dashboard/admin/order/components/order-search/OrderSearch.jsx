@@ -1,5 +1,4 @@
 import { Search, X, RefreshCw } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 
@@ -29,37 +28,30 @@ function OrderSearch({
   const resultsCount = isTextActive ? queryResults.length : dateResults.length;
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <div className="relative w-full max-w-sm">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        <Input
+    <div className="flex items-center gap-3">
+
+      <div className="flex items-center gap-2 w-64 h-9 bg-white border border-slate-200 rounded-xl shadow-sm px-3 transition-all focus-within:border-indigo-300 focus-within:shadow-md focus-within:shadow-indigo-100/60">
+        <Search size={15} className="text-slate-400 shrink-0" />
+        <input
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
           placeholder="Buscar por orden, nombre, correo..."
-          className="pl-9 pr-9"
+          className="flex-1 bg-transparent text-sm outline-none text-slate-800 placeholder:text-slate-400 min-w-0"
         />
         {query && (
           <button
             onClick={() => setQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            className="text-slate-400 hover:text-slate-600 transition-colors shrink-0"
           >
-            <X size={14} />
+            <X size={13} />
           </button>
         )}
       </div>
 
       <div className="flex items-center gap-2">
-        <DatePicker
-          value={dateFrom}
-          onChange={handleDateFromChange}
-          placeholder="Desde"
-        />
+        <DatePicker value={dateFrom} onChange={handleDateFromChange} placeholder="Desde" />
         <span className="text-xs text-muted-foreground">—</span>
-        <DatePicker
-          value={dateTo}
-          onChange={handleDateToChange}
-          placeholder="Hasta"
-        />
+        <DatePicker value={dateTo} onChange={handleDateToChange} placeholder="Hasta" />
         {isDateActive && (
           <Button size="sm" variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); }} className="h-8">
             <RefreshCw size={13} className="mr-1.5" />
@@ -76,6 +68,7 @@ function OrderSearch({
       {loading && (
         <span className="text-xs text-muted-foreground whitespace-nowrap">Buscando...</span>
       )}
+
     </div>
   );
 }

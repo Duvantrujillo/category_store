@@ -1,5 +1,5 @@
 import { useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from 'react-toastify';
 import { useCallback, useEffect } from "react";
 import {
   createProduct,
@@ -129,7 +129,7 @@ export const useCreateProduct = () => {
 
       setError(msg);
 
-      toast.error(msg);
+      if (!err._handled) toast.error(msg);
 
       throw err;
     } finally {
@@ -280,7 +280,7 @@ export const useUpdateProduct = () => {
 
         setError(msg);
 
-        toast.error(msg);
+        if (!err._handled) toast.error(msg);
 
         throw err;
       } finally {
@@ -338,7 +338,7 @@ export const useDeleteProduct = () => {
 
         setError(msg);
 
-        toast.error(msg);
+        if (!err._handled) toast.error(msg);
 
         throw err;
       } finally {
