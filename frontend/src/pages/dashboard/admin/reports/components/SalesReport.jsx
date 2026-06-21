@@ -1,13 +1,15 @@
-import { useCallback } from "react";
+import { useState, useEffect } from "react";
 import { TrendingUp, DollarSign, Receipt, ShoppingBag } from "lucide-react";
 
 import { useSalesReport } from "../hooks/useReport";
-import { downloadCsv }    from "../utils/csvExport";
 import ReportCard         from "./ReportCard";
 import ReportSection      from "./ReportSection";
 import { ReportLoader, ReportError } from "./ReportLoader";
+import TablePagination    from "@/components/ui/TablePagination";
 import VBarChart from "./charts/VBarChart";
 import HBar      from "./charts/HBar";
+
+const PAGE_SIZE = 15;
 
 const fmtCOP = (n) => `$${Number(n).toLocaleString("es-CO")}`;
 
@@ -20,24 +22,15 @@ const STATUS_META = {
 
 function SalesReport({ filters }) {
   const { data, loading, error } = useSalesReport(filters);
-
-  const exportCsv = useCallback(() => {
-    if (!data) return;
-    downloadCsv("ventas.csv",
-      ["Orden", "Cliente", "Estado", "Total", "Fecha"],
-      data.records.map((o) => [
-        o.orderNumber,
-        `${o.firstName} ${o.lastName}`,
-        STATUS_META[o.status]?.label ?? o.status,
-        o.total,
-        new Date(o.createdAt).toLocaleDateString("es-CO"),
-      ])
-    );
-  }, [data]);
+  const [page, setPage] = useState(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setPage(1), [JSON.stringify(filters)]);
 
   if (loading) return <ReportLoader />;
   if (error)   return <ReportError message={error} />;
   if (!data)   return null;
+
+  const pagedRecords = data.records.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const barData   = data.byStatus.map((s) => ({
     label: STATUS_META[s.status]?.label ?? s.status,
@@ -113,7 +106,7 @@ function SalesReport({ filters }) {
       </div>
 
       {/* Tabla detalle órdenes */}
-      <ReportSection title="Detalle de órdenes" icon={Receipt} onExport={exportCsv} noPad>
+      <ReportSection title="Detalle de órdenes" icon={Receipt} noPad>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-100">
@@ -124,7 +117,7 @@ function SalesReport({ filters }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {data.records.map((o) => {
+              {pagedRecords.map((o) => {
                 const meta = STATUS_META[o.status];
                 return (
                   <tr key={o.id} className="hover:bg-slate-50/80 transition-colors">
@@ -148,6 +141,12 @@ function SalesReport({ filters }) {
             <div className="text-center py-10 text-sm text-slate-400">Sin órdenes en el período seleccionado</div>
           )}
         </div>
+        <TablePagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          totalItems={data.records.length}
+          onPageChange={setPage}
+        />
       </ReportSection>
     </div>
   );

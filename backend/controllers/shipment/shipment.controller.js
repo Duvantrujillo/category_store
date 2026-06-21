@@ -4,17 +4,70 @@ const { sendShipmentUpdatedEmail } = require("../../services/email.service");
 const prisma = new PrismaClient();
 
 const STATUS_ORDER = ["CREATED", "PREPARING", "SHIPPED", "DELIVERED", "RETURNED"];
-const USER_SELECT  = { select: { id: true, name: true, email: true } };
+const STATUS_LABEL = {
+  CREATED:   "Creado",
+  PREPARING: "En preparación",
+  SHIPPED:   "Enviado",
+  DELIVERED: "Entregado",
+  RETURNED:  "Devuelto",
+};
+const LOCKED_STATUSES = new Set(["DELIVERED", "RETURNED"]);
+const USER_SELECT = { select: { id: true, name: true, email: true } };
+
+function elapsedBusinessDays(from, to) {
+  let count = 0;
+  const current = new Date(from);
+  current.setHours(0, 0, 0, 0);
+  const end = new Date(to);
+  end.setHours(0, 0, 0, 0);
+  while (current < end) {
+    current.setDate(current.getDate() + 1);
+    const day = current.getDay();
+    if (day !== 0 && day !== 6) count++;
+  }
+  return count;
+}
 
 const updateShipment = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, carrier, trackingNumber, note, shippedAt, deliveredAt } = req.body;
 
+    if (trackingNumber !== undefined && trackingNumber !== null && trackingNumber !== "") {
+      if (!/^\d+$/.test(trackingNumber)) {
+        return res.status(400).json({ message: "El número de rastreo solo puede contener dígitos." });
+      }
+      if (trackingNumber.length > 35) {
+        return res.status(400).json({ message: "El número de rastreo no puede superar los 35 caracteres." });
+      }
+    }
+
+    if (note && note.length > 200) {
+      return res.status(400).json({ message: "La nota no puede superar los 200 caracteres." });
+    }
+
     const shipment = await prisma.shipment.findUnique({ where: { id: Number(id) } });
 
     if (!shipment) {
-      return res.status(404).json({ message: "Envío no encontrado" });
+      return res.status(404).json({ message: "Envío no encontrado." });
+    }
+
+    if (LOCKED_STATUSES.has(shipment.status)) {
+      let statusSetAt = shipment.deliveredAt || null;
+
+      if (!statusSetAt) {
+        const historyEntry = await prisma.shipmentHistory.findFirst({
+          where:   { shipmentId: Number(id), status: shipment.status },
+          orderBy: { createdAt: "asc" },
+        });
+        statusSetAt = historyEntry ? historyEntry.createdAt : shipment.updatedAt;
+      }
+
+      if (elapsedBusinessDays(statusSetAt, new Date()) >= 7) {
+        return res.status(403).json({
+          message: `El envío no puede modificarse. Han transcurrido más de 7 días hábiles desde que se marcó como "${STATUS_LABEL[shipment.status]}".`,
+        });
+      }
     }
 
     if (status) {
@@ -22,10 +75,18 @@ const updateShipment = async (req, res) => {
       const newIdx     = STATUS_ORDER.indexOf(status);
 
       if (newIdx === -1) {
-        return res.status(400).json({ message: `Estado "${status}" no es válido.` });
+        return res.status(400).json({ message: "El estado seleccionado no es válido." });
       }
-      if (newIdx <= currentIdx) {
-        return res.status(400).json({ message: `El estado "${status}" ya fue registrado.` });
+      if (newIdx !== currentIdx + 1) {
+        const siguiente = STATUS_ORDER[currentIdx + 1];
+        if (!siguiente) {
+          return res.status(400).json({
+            message: `El envío ya se encuentra en su estado final "${STATUS_LABEL[shipment.status]}" y no puede avanzar más.`,
+          });
+        }
+        return res.status(400).json({
+          message: `El siguiente estado requerido es "${STATUS_LABEL[siguiente]}". No es posible omitir pasos en el proceso de envío.`,
+        });
       }
     }
 

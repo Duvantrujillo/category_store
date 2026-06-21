@@ -1,13 +1,15 @@
-import { useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Wallet, DollarSign, CheckCircle, Users } from "lucide-react";
 
 import { useRefundsReport } from "../hooks/useReport";
-import { downloadCsv }      from "../utils/csvExport";
 import ReportCard            from "./ReportCard";
 import ReportSection         from "./ReportSection";
 import { ReportLoader, ReportError } from "./ReportLoader";
+import TablePagination       from "@/components/ui/TablePagination";
 import DonutChart from "./charts/DonutChart";
 import HBar       from "./charts/HBar";
+
+const PAGE_SIZE = 15;
 
 const fmtCOP = (n) => `$${Number(n).toLocaleString("es-CO")}`;
 
@@ -19,26 +21,15 @@ const STATUS_META = {
 
 function RefundsReport({ filters }) {
   const { data, loading, error } = useRefundsReport(filters);
-
-  const exportCsv = useCallback(() => {
-    if (!data) return;
-    downloadCsv("reembolsos.csv",
-      ["Orden", "Estado", "Monto", "Método", "Procesado por", "Fecha"],
-      data.records.map((r) => [
-        r.returnRequest?.order?.orderNumber ?? `#${r.returnRequestId}`,
-        STATUS_META[r.status]?.label ?? r.status,
-        r.amount,
-        r.method ?? "—",
-        r.processedBy?.name ?? "—",
-        new Date(r.createdAt).toLocaleDateString("es-CO"),
-      ])
-    );
-  }, [data]);
+  const [page, setPage] = useState(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setPage(1), [JSON.stringify(filters)]);
 
   if (loading) return <ReportLoader />;
   if (error)   return <ReportError message={error} />;
   if (!data)   return null;
 
+  const pagedRecords   = data.records.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const processedEntry = data.byStatus.find((s) => s.status === "PROCESSED");
   const donutSegments  = data.byStatus.map((s) => ({
     label: STATUS_META[s.status]?.label ?? s.status,
@@ -139,7 +130,7 @@ function RefundsReport({ filters }) {
       </div>
 
       {/* Tabla detalle */}
-      <ReportSection title="Detalle de reembolsos" icon={Wallet} onExport={exportCsv} noPad>
+      <ReportSection title="Detalle de reembolsos" icon={Wallet} noPad>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-100">
@@ -150,7 +141,7 @@ function RefundsReport({ filters }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {data.records.map((r) => {
+              {pagedRecords.map((r) => {
                 const meta = STATUS_META[r.status];
                 return (
                   <tr key={r.id} className="hover:bg-slate-50/80 transition-colors">
@@ -181,6 +172,12 @@ function RefundsReport({ filters }) {
             <div className="text-center py-10 text-sm text-slate-400">Sin reembolsos en el período seleccionado</div>
           )}
         </div>
+        <TablePagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          totalItems={data.records.length}
+          onPageChange={setPage}
+        />
       </ReportSection>
     </div>
   );

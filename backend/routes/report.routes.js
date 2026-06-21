@@ -5,6 +5,7 @@ const {
   getRefundsReport,
   getShipmentsReport,
   getSalesReport,
+  getDetailedReport,
 } = require('../controllers/report/report.controller')
 const { requirePermission } = require('../middlewares/permission.middleware')
 
@@ -15,5 +16,6 @@ router.get('/returns',   requirePermission('reports.view'), getReturnsReport)
 router.get('/refunds',   requirePermission('reports.view'), getRefundsReport)
 router.get('/shipments', requirePermission('reports.view'), getShipmentsReport)
 router.get('/sales',     requirePermission('reports.view'), getSalesReport)
+router.get('/detailed',  requirePermission('reports.view'), getDetailedReport)
 
 module.exports = router

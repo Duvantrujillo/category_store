@@ -5,13 +5,30 @@ const fs = require("fs");
 const path = require("path");
 
 
+const deleteUploadedFile = (file, folder = 'brand') => {
+    if (!file) return;
+    const filePath = path.join(__dirname, `../../uploads/${folder}`, file.filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+};
+
 const createBrand = async (req, res) => {
     try {
         const { name, description, isActive } = req.body
         const file = req.file
 
-        if (!name) {
-            return res.status(400).json({ message: 'Nombre requerido' })
+        if (!name || !name.trim()) {
+            deleteUploadedFile(file)
+            return res.status(400).json({ message: 'El nombre es obligatorio' })
+        }
+
+        if (name.trim().length > 25) {
+            deleteUploadedFile(file)
+            return res.status(400).json({ message: 'El nombre no puede superar 25 caracteres' })
+        }
+
+        if (description && description.length > 800) {
+            deleteUploadedFile(file)
+            return res.status(400).json({ message: 'La descripción no puede superar 800 caracteres' })
         }
 
         if (!file) {
@@ -25,17 +42,13 @@ const createBrand = async (req, res) => {
         })
 
         if (slugExist) {
+            deleteUploadedFile(file)
             return res.status(409).json({ message: 'El nombre ya existe' })
         }
 
-        // Convertir isActive a boolean
         let isActiveValue = isActive
-        if (typeof isActiveValue === "string") {
-            isActiveValue = isActiveValue === "true"
-        }
-        if (typeof isActiveValue !== "boolean") {
-            isActiveValue = false
-        }
+        if (typeof isActiveValue === "string") isActiveValue = isActiveValue === "true"
+        if (typeof isActiveValue !== "boolean") isActiveValue = false
 
         const logoUrl = `/uploads/brand/${file.filename}`
 
@@ -49,12 +62,10 @@ const createBrand = async (req, res) => {
             }
         })
 
-        return res.status(201).json({
-            message: 'Marca creada',
-            data: newBrand
-        })
+        return res.status(201).json({ message: 'Marca creada', data: newBrand })
 
     } catch (error) {
+        deleteUploadedFile(req.file)
         console.error('Error en createBrand:', error)
         return res.status(500).json({ message: 'Error interno' })
     }
@@ -67,88 +78,66 @@ const updateBrand = async (req, res) => {
         const file = req.file
 
         if (isNaN(formId)) {
+            deleteUploadedFile(file)
             return res.status(400).json({ message: "ID inválido" })
         }
 
-        const brandExist = await prisma.brand.findUnique({
-            where: { id: formId }
-        })
+        const brandExist = await prisma.brand.findUnique({ where: { id: formId } })
 
         if (!brandExist) {
+            deleteUploadedFile(file)
             return res.status(404).json({ message: "No encontrado" })
         }
 
-        if (!name) {
-            return res.status(400).json({ message: "Nombre requerido" })
+        if (!name || !name.trim()) {
+            deleteUploadedFile(file)
+            return res.status(400).json({ message: "El nombre es obligatorio" })
         }
 
-        // 🔹 slug
-        const customerSlug = slugify(name, {
-            lower: true,
-            strict: true
-        })
+        if (name.trim().length > 25) {
+            deleteUploadedFile(file)
+            return res.status(400).json({ message: "El nombre no puede superar 25 caracteres" })
+        }
+
+        if (description && description.length > 800) {
+            deleteUploadedFile(file)
+            return res.status(400).json({ message: "La descripción no puede superar 800 caracteres" })
+        }
+
+        const customerSlug = slugify(name, { lower: true, strict: true })
 
         const existSlug = await prisma.brand.findFirst({
-            where: {
-                slug: customerSlug,
-                NOT: { id: formId }
-            }
+            where: { slug: customerSlug, NOT: { id: formId } }
         })
 
         if (existSlug) {
+            deleteUploadedFile(file)
             return res.status(400).json({ message: "El nombre ya existe" })
         }
 
-        // 🔥 CONVERTIR BOOLEAN BIEN
         let isActiveValue = isActive
+        if (typeof isActiveValue === "string") isActiveValue = isActiveValue === "true"
+        if (typeof isActiveValue !== "boolean") isActiveValue = brandExist.isActive
 
-        if (typeof isActiveValue === "string") {
-            isActiveValue = isActiveValue === "true"
-        }
-
-        if (typeof isActiveValue !== "boolean") {
-            isActiveValue = brandExist.isActive // mantener valor anterior
-        }
-
-        // 🔥 LOGO OPCIONAL
         let logoUrl = brandExist.logoUrl
 
         if (file) {
+            if (brandExist.logoUrl) {
+                const oldImagePath = path.join(__dirname, "../../", brandExist.logoUrl)
+                if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath)
+            }
             logoUrl = `/uploads/brand/${file.filename}`
         }
 
-        if (file && brandExist.logoUrl) {
-
-            const oldImagePath = path.join(
-                __dirname,
-                "../../",
-                brandExist.logoUrl
-            );
-
-            if (fs.existsSync(oldImagePath)) {
-                fs.unlinkSync(oldImagePath);
-            }
-
-        }
-
-        // 🔥 UPDATE FINAL
         const updatedBrand = await prisma.brand.update({
             where: { id: formId },
-            data: {
-                name,
-                slug: customerSlug,
-                description,
-                logoUrl,
-                isActive: isActiveValue
-            }
+            data: { name, slug: customerSlug, description, logoUrl, isActive: isActiveValue }
         })
 
-        return res.status(200).json({
-            message: "Marca actualizada",
-            data: updatedBrand
-        })
+        return res.status(200).json({ message: "Marca actualizada", data: updatedBrand })
 
     } catch (error) {
+        deleteUploadedFile(req.file)
         console.error("Error en updateBrand:", error)
         return res.status(500).json({ message: "Error interno" })
     }

@@ -404,10 +404,166 @@ const getSalesReport = async (req, res) => {
   }
 }
 
+// GET /report/detailed
+// Reporte consolidado: ventas brutas - reembolsos = ingreso neto
+const getDetailedReport = async (req, res) => {
+  try {
+    const dateFilter = parseDateRange(req.query)
+
+    const orders = await prisma.order.findMany({
+      where: { ...dateFilter, status: { in: ['PAID', 'REFUNDED'] } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        orderNumber: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phoneNumber: true,
+        address: true,
+        municipality: true,
+        departament: true,
+        status: true,
+        total: true,
+        subtotal: true,
+        currency: true,
+        createdAt: true,
+        payment: {
+          select: { paymentMethod: true, provider: true, reference: true },
+        },
+        items: {
+          select: {
+            id: true,
+            productName: true,
+            quantity: true,
+            unitPrice: true,
+            subtotal: true,
+            returnItems: { select: { quantity: true } },
+          },
+        },
+        returns: {
+          select: {
+            id: true,
+            status: true,
+            resolution: true,
+            reason: true,
+            createdAt: true,
+            registeredBy: { select: { name: true, email: true } },
+            approvedBy:   { select: { name: true, email: true } },
+            refunds: { select: { status: true, amount: true, method: true } },
+            items: {
+              select: {
+                quantity: true,
+                orderItem: { select: { productName: true, unitPrice: true } },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    let totalGross          = 0
+    let totalRefunded       = 0
+    let totalReturnedItems  = 0
+    let totalReturnRequests = 0
+
+    const enrichedOrders = orders.map((order) => {
+      const gross = Number(order.total)
+
+      // Solo las devoluciones COMPLETADAS tienen efecto financiero real
+      const completedReturns = order.returns.filter((r) => r.status === 'COMPLETED')
+
+      const refundedForOrder = completedReturns
+        .flatMap((r) => r.refunds)
+        .filter((rf) => rf.status === 'PROCESSED')
+        .reduce((s, rf) => s + Number(rf.amount), 0)
+
+      const returnedItemsQty = completedReturns.reduce(
+        (s, r) => s + r.items.reduce((si, ri) => si + ri.quantity, 0),
+        0
+      )
+
+      totalGross          += gross
+      totalRefunded       += refundedForOrder
+      totalReturnedItems  += returnedItemsQty
+      totalReturnRequests += completedReturns.length
+
+      return {
+        id:                  order.id,
+        orderNumber:         order.orderNumber,
+        firstName:           order.firstName,
+        lastName:            order.lastName,
+        email:               order.email,
+        phoneNumber:         order.phoneNumber,
+        address:             order.address,
+        municipality:        order.municipality,
+        departament:         order.departament,
+        status:              order.status,
+        createdAt:           order.createdAt,
+        paymentMethod:       order.payment?.paymentMethod ?? null,
+        paymentProvider:     order.payment?.provider ?? null,
+        paymentReference:    order.payment?.reference ?? null,
+        grossTotal:          gross,
+        refundedAmount:      refundedForOrder,
+        netTotal:            gross - refundedForOrder,
+        returnedItemsQty,
+        returnRequestsCount: order.returns.length,
+        items: order.items.map((item) => {
+          const returnedQty      = item.returnItems.reduce((s, ri) => s + ri.quantity, 0)
+          const returnedSubtotal = returnedQty * Number(item.unitPrice)
+          return {
+            productName:      item.productName,
+            quantity:         item.quantity,
+            unitPrice:        Number(item.unitPrice),
+            subtotal:         Number(item.subtotal),
+            returnedQty,
+            returnedSubtotal,
+            netSubtotal:      Number(item.subtotal) - returnedSubtotal,
+          }
+        }),
+        returns: order.returns.map((r) => ({
+          status:        r.status,
+          resolution:    r.resolution,
+          reason:        r.reason,
+          createdAt:     r.createdAt,
+          registeredBy:  r.registeredBy,
+          approvedBy:    r.approvedBy,
+          refunds:       r.refunds.map((rf) => ({
+            status: rf.status,
+            amount: Number(rf.amount),
+            method: rf.method,
+          })),
+          items: r.items.map((ri) => ({
+            productName: ri.orderItem.productName,
+            unitPrice:   Number(ri.orderItem.unitPrice),
+            quantity:    ri.quantity,
+          })),
+        })),
+      }
+    })
+
+    return res.json({
+      summary: {
+        ordersCount:         orders.length,
+        grossRevenue:        totalGross,
+        totalReturnRequests,
+        totalReturnedItems,
+        refundedAmount:      totalRefunded,
+        netRevenue:          totalGross - totalRefunded,
+      },
+      orders: enrichedOrders,
+    })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: 'Error interno' })
+  }
+}
+
 module.exports = {
   getSummary,
   getReturnsReport,
   getRefundsReport,
   getShipmentsReport,
   getSalesReport,
+  getDetailedReport,
 }

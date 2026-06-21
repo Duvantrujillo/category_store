@@ -1,12 +1,14 @@
-import { useCallback } from "react";
+import { useState, useEffect } from "react";
 import { RotateCcw, Users, FileText } from "lucide-react";
 
 import { useReturnsReport } from "../hooks/useReport";
-import { downloadCsv }      from "../utils/csvExport";
 import ReportSection        from "./ReportSection";
 import { ReportLoader, ReportError } from "./ReportLoader";
+import TablePagination      from "@/components/ui/TablePagination";
 import DonutChart from "./charts/DonutChart";
 import HBar       from "./charts/HBar";
+
+const PAGE_SIZE = 15;
 
 const STATUS_META = {
   PENDING:   { label: "Pendiente",  color: "#f59e0b", badge: "bg-amber-50  text-amber-700  ring-amber-200",  card: "border-amber-200  bg-amber-50"  },
@@ -24,26 +26,15 @@ const RES_META = {
 
 function ReturnsReport({ filters }) {
   const { data, loading, error } = useReturnsReport(filters);
-
-  const exportCsv = useCallback(() => {
-    if (!data) return;
-    downloadCsv("devoluciones.csv",
-      ["Orden", "Estado", "Resolución", "Registrado por", "Aprobado por", "Fecha"],
-      data.records.map((r) => [
-        r.order?.orderNumber ?? "",
-        STATUS_META[r.status]?.label ?? r.status,
-        RES_META[r.resolution]?.label ?? (r.resolution ?? "—"),
-        r.registeredBy?.name ?? "—",
-        r.approvedBy?.name   ?? "—",
-        new Date(r.createdAt).toLocaleDateString("es-CO"),
-      ])
-    );
-  }, [data]);
+  const [page, setPage] = useState(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setPage(1), [JSON.stringify(filters)]);
 
   if (loading) return <ReportLoader />;
   if (error)   return <ReportError message={error} />;
   if (!data)   return null;
 
+  const pagedRecords  = data.records.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const totalByStatus = data.byStatus.reduce((s, x) => s + x.count, 0);
   const donutStatus   = data.byStatus.map((s) => ({
     label: STATUS_META[s.status]?.label ?? s.status,
@@ -141,7 +132,7 @@ function ReturnsReport({ filters }) {
       </div>
 
       {/* Tabla detalle */}
-      <ReportSection title="Detalle de solicitudes" icon={FileText} onExport={exportCsv} noPad>
+      <ReportSection title="Detalle de solicitudes" icon={FileText} noPad>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-100">
@@ -152,7 +143,7 @@ function ReturnsReport({ filters }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {data.records.map((r) => {
+              {pagedRecords.map((r) => {
                 const sMeta = STATUS_META[r.status];
                 const rMeta = RES_META[r.resolution];
                 return (
@@ -188,6 +179,12 @@ function ReturnsReport({ filters }) {
             <div className="text-center py-10 text-sm text-slate-400">Sin solicitudes en el período seleccionado</div>
           )}
         </div>
+        <TablePagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          totalItems={data.records.length}
+          onPageChange={setPage}
+        />
       </ReportSection>
     </div>
   );

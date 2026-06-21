@@ -10,6 +10,22 @@ const {
 const VALID_STATUSES    = ['PENDING', 'APPROVED', 'REJECTED', 'RECEIVED', 'COMPLETED']
 const VALID_RESOLUTIONS = ['REFUND', 'EXCHANGE', 'STORE_CREDIT']
 
+const STATUS_LABELS = {
+  PENDING:   'Pendiente',
+  RECEIVED:  'Recibida',
+  APPROVED:  'Aprobada',
+  REJECTED:  'Rechazada',
+  COMPLETED: 'Completada',
+}
+
+const VALID_TRANSITIONS = {
+  PENDING:   ['RECEIVED'],
+  RECEIVED:  ['APPROVED', 'REJECTED'],
+  APPROVED:  ['COMPLETED'],
+  REJECTED:  ['COMPLETED'],
+  COMPLETED: [],
+}
+
 const USER_SELECT = { select: { id: true, name: true, email: true } }
 
 const createreturnRequest = async (req, res) => {
@@ -29,8 +45,16 @@ const createreturnRequest = async (req, res) => {
             return res.status(400).json({ message: "Debes ingresar el motivo de la devolución" })
         }
 
+        if (reason.trim().length > 300) {
+            return res.status(400).json({ message: "El motivo no puede superar los 300 caracteres" })
+        }
+
         if (status && !VALID_STATUSES.includes(status)) {
             return res.status(400).json({ message: "Estado inválido" })
+        }
+
+        if (status && status !== 'PENDING') {
+            return res.status(400).json({ message: "Al crear, el estado se asigna automáticamente como Pendiente" })
         }
 
         const orderIdExist = await prisma.order.findUnique({
@@ -113,11 +137,38 @@ const updateReturnRequest = async (req, res) => {
         const { status, resolution, reason } = req.body
 
         const existing = await prisma.returnRequest.findUnique({
-            where: { id: Number(id) }
+            where: { id: Number(id) },
+            include: { refunds: { select: { id: true } } }
         })
 
         if (!existing) {
             return res.status(404).json({ message: "Solicitud no encontrada" })
+        }
+
+        if (existing.status === 'COMPLETED') {
+            return res.status(400).json({ message: "La solicitud ya está completada y no puede modificarse" })
+        }
+
+        if (resolution !== undefined && existing.resolution && resolution !== existing.resolution) {
+            return res.status(400).json({ message: "La resolución ya fue establecida y no puede modificarse" })
+        }
+
+        if (resolution !== undefined && existing.refunds?.length > 0 && resolution !== existing.resolution) {
+            return res.status(400).json({ message: "No se puede cambiar la resolución: ya existe un reembolso asociado a esta solicitud" })
+        }
+
+        if (status && status !== existing.status) {
+            if (!VALID_STATUSES.includes(status)) {
+                return res.status(400).json({ message: "Estado inválido" })
+            }
+            const allowed = VALID_TRANSITIONS[existing.status] ?? []
+            if (!allowed.includes(status)) {
+                const from = STATUS_LABELS[existing.status] ?? existing.status
+                const to   = STATUS_LABELS[status] ?? status
+                return res.status(400).json({
+                    message: `No se puede cambiar el estado de "${from}" a "${to}"`
+                })
+            }
         }
 
         const isApprovalAction = status === 'APPROVED' || status === 'REJECTED'

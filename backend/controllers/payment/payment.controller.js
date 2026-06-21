@@ -63,13 +63,13 @@ const createPayment = async (req, res) => {
 
 const getPaymentMethods = async (req, res) => {
     try {
-        const rows = await prisma.payment.findMany({
-            where: { paymentMethod: { not: null } },
-            select: { paymentMethod: true },
-            distinct: ['paymentMethod'],
+        const rows = await prisma.paymentMethod.findMany({
+            where: { isActive: true },
+            select: { name: true },
+            orderBy: { id: 'asc' },
         })
 
-        const methods = rows.map((r) => r.paymentMethod)
+        const methods = rows.map((r) => r.name)
 
         return res.status(200).json({ methods })
     } catch (error) {

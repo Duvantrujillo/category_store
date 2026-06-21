@@ -2,7 +2,7 @@ import { useState } from "react";
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import {
   BarChart3, Calendar, LayoutDashboard, TrendingUp,
-  RotateCcw, Wallet, Truck, ShieldOff,
+  RotateCcw, Wallet, Truck, ShieldOff, FileSpreadsheet,
 } from "lucide-react";
 import { Button }     from "@/components/ui/button";
 import { Label }      from "@/components/ui/label";
@@ -14,6 +14,7 @@ import SalesReport     from "../components/SalesReport";
 import ReturnsReport   from "../components/ReturnsReport";
 import RefundsReport   from "../components/RefundsReport";
 import ShipmentsReport from "../components/ShipmentsReport";
+import DetailedReport  from "../components/DetailedReport";
 
 const fmtDate = (d) => format(d, "yyyy-MM-dd");
 const now     = new Date();
@@ -28,11 +29,12 @@ const PRESETS = [
 ];
 
 const TABS = [
-  { key: "summary",   label: "Resumen",     icon: LayoutDashboard },
-  { key: "sales",     label: "Ventas",      icon: TrendingUp      },
-  { key: "returns",   label: "Devoluciones",icon: RotateCcw       },
-  { key: "refunds",   label: "Reembolsos",  icon: Wallet          },
-  { key: "shipments", label: "Envíos",      icon: Truck           },
+  { key: "summary",   label: "Resumen",     icon: LayoutDashboard  },
+  { key: "sales",     label: "Ventas",      icon: TrendingUp       },
+  { key: "returns",   label: "Devoluciones",icon: RotateCcw        },
+  { key: "refunds",   label: "Reembolsos",  icon: Wallet           },
+  { key: "shipments", label: "Envíos",      icon: Truck            },
+  { key: "detailed",  label: "Detallado",   icon: FileSpreadsheet  },
 ];
 
 function ReportsPage() {
@@ -161,6 +163,7 @@ function ReportsPage() {
         {activeTab === "returns"   && <ReturnsReport   filters={applied} />}
         {activeTab === "refunds"   && <RefundsReport   filters={applied} />}
         {activeTab === "shipments" && <ShipmentsReport filters={applied} />}
+        {activeTab === "detailed"  && <DetailedReport  filters={applied} />}
       </div>
     </div>
   );

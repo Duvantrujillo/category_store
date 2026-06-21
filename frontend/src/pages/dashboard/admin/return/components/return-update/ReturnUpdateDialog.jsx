@@ -74,6 +74,7 @@ export default function ReturnUpdateDialog({ open, item, onClose, onRefresh }) {
               onCancel={onClose}
               onSubmit={handleSubmit}
               existingItems={item?.items ?? []}
+              currentStatus={item?.status}
             />
           )
         )}

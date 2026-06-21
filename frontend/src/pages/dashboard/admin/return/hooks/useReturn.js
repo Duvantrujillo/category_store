@@ -123,7 +123,6 @@ export const useUpdateReturn = () => {
 
       const payload = {
         status: form.status || undefined,
-        resolution: form.resolution || null,
         reason: form.reason || null,
       };
 

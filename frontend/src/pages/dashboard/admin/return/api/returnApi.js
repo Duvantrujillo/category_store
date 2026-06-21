@@ -24,7 +24,7 @@ export const createReturnItems = async (returnRequestId, items) => {
 };
 
 export const getPaymentMethods = async () => {
-  const res = await apiClient.get('/payment/methods');
+  const res = await apiClient.get('/payment-method/all');
   return res.data;
 };
 

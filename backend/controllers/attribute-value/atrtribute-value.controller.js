@@ -8,13 +8,18 @@ const createAtribute_Value = async (req, res) => {
         const { value, attributeId, sortOrder } = req.body
 
 
+        if (!value || !value.trim()) {
+            return res.status(400).json({ message: "El nombre es obligatorio" })
+        }
+
+        if (value.trim().length > 20) {
+            return res.status(400).json({ message: "El nombre no puede superar 20 caracteres" })
+        }
+
         const customerSlug = slugify(value, {
             lower: true,
             strict: true
         })
-
-
-
 
         const slugExist = await prisma.attributeValue.findFirst({
             where: {
@@ -66,16 +71,23 @@ const updateAtribute_Value = async (req, res) => {
         const { value, slug, attributeId, sortOrder } = req.body
 
         if (isNaN(formId)) {
-            return res.status(400).json({ Messages: "ID inválido" }) // Unificado a Messages
+            return res.status(400).json({ Messages: "ID inválido" })
         }
 
         const idExist = await prisma.attributeValue.findFirst({
             where: { id: formId },
-
         })
 
         if (!idExist) {
-            return res.status(404).json({ Messages: "No encontrado" }) // Cambiado a 404 Not Found
+            return res.status(404).json({ Messages: "No encontrado" })
+        }
+
+        if (!value || !value.trim()) {
+            return res.status(400).json({ message: "El nombre es obligatorio" })
+        }
+
+        if (value.trim().length > 20) {
+            return res.status(400).json({ message: "El nombre no puede superar 20 caracteres" })
         }
 
         const customerSlug = slugify(value, {

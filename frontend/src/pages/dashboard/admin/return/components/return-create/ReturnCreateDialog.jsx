@@ -25,6 +25,20 @@ const INITIAL_FORM = {
   selectedItems: [],
 };
 
+function countBusinessDays(start, end) {
+  let count = 0;
+  const cur = new Date(start);
+  cur.setHours(0, 0, 0, 0);
+  const endDay = new Date(end);
+  endDay.setHours(0, 0, 0, 0);
+  while (cur <= endDay) {
+    const d = cur.getDay();
+    if (d !== 0 && d !== 6) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
+
 export default function ReturnCreateDialog({ onRefresh, disabled = false }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
@@ -33,14 +47,20 @@ export default function ReturnCreateDialog({ onRefresh, disabled = false }) {
 
   const { submitCreate, loading } = useCreateReturnRequest();
 
-  /* Cargar órdenes al abrir el dialog — filtra las que aún tienen items devolvibles */
+  /* Cargar órdenes al abrir — solo PAID dentro de 7 días hábiles con items devolvibles */
   useEffect(() => {
     if (!open) return;
     allOrder()
       .then((res) => {
         const raw = res?.orders ?? [];
-        // Para cada order item, calcula cuánto ya fue devuelto
+        const today = new Date();
         const filtered = raw
+          .filter((order) => {
+            if (order.status !== "PAID") return false;
+            const paymentDate = order.payment?.createdAt;
+            if (!paymentDate) return false;
+            return countBusinessDays(new Date(paymentDate), today) <= 7;
+          })
           .map((order) => ({
             ...order,
             items: order.items

@@ -4,16 +4,34 @@ const fs = require("fs");
 const path = require("path");
 const prisma = new PrismaClient();
 
+const deleteUploadedFile = (file) => {
+  if (!file) return;
+  const filePath = path.join(__dirname, "../../uploads/category", file.filename);
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+};
+
 const createCategory = async (req, res) => {
   try {
     const { parentId, name, description, isActive, sortOrder } = req.body;
     const file = req.file;
 
-    if (!name) {
-      return res.status(400).json({ error: "Nombre requerido" });
+    if (!name || !name.trim()) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ error: "El nombre es obligatorio" });
+    }
+
+    if (name.trim().length > 30) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ error: "El nombre no puede superar 30 caracteres" });
+    }
+
+    if (description && description.length > 1500) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ error: "La descripción no puede superar 1500 caracteres" });
     }
 
     if (isActive === undefined || sortOrder === undefined) {
+      deleteUploadedFile(file);
       return res.status(400).json({ error: "Campos incompletos" });
     }
 
@@ -21,6 +39,7 @@ const createCategory = async (req, res) => {
 
     const slugExist = await prisma.category.findUnique({ where: { slug: customerSlug } });
     if (slugExist) {
+      deleteUploadedFile(file);
       return res.status(400).json({ message: "El nombre ya existe" });
     }
 
@@ -44,6 +63,7 @@ const createCategory = async (req, res) => {
 
     return res.status(201).json({ message: "Categoría creada", data: result });
   } catch (error) {
+    deleteUploadedFile(req.file);
     console.error(error);
     return res.status(500).json({ error: "Error interno" });
   }
@@ -55,19 +75,41 @@ const updateCategory = async (req, res) => {
     const { parentId, name, description, isActive, sortOrder } = req.body;
     const file = req.file;
 
-    if (!formId) return res.status(400).json({ message: "ID requerido" });
+    if (!formId) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "ID requerido" });
+    }
 
-    if (!name) return res.status(400).json({ message: "Nombre requerido" });
+    if (!name || !name.trim()) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "El nombre es obligatorio" });
+    }
+
+    if (name.trim().length > 30) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "El nombre no puede superar 30 caracteres" });
+    }
+
+    if (description && description.length > 1500) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "La descripción no puede superar 1500 caracteres" });
+    }
 
     const categoryExist = await prisma.category.findUnique({ where: { id: formId } });
-    if (!categoryExist) return res.status(404).json({ message: "No encontrada" });
+    if (!categoryExist) {
+      deleteUploadedFile(file);
+      return res.status(404).json({ message: "No encontrada" });
+    }
 
     const customerSlug = slugify(name, { lower: true, strict: true });
 
     const slugExist = await prisma.category.findFirst({
       where: { slug: customerSlug, NOT: { id: formId } }
     });
-    if (slugExist) return res.status(400).json({ message: "El nombre ya existe" });
+    if (slugExist) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "El nombre ya existe" });
+    }
 
     let isActiveValue = isActive;
     if (typeof isActiveValue === "string") isActiveValue = isActiveValue === "true";
@@ -75,7 +117,6 @@ const updateCategory = async (req, res) => {
 
     let newImageUrl = undefined;
     if (file) {
-      // Eliminar imagen anterior
       if (categoryExist.imageUrl) {
         const oldPath = path.join(__dirname, "../../", categoryExist.imageUrl);
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
@@ -92,26 +133,13 @@ const updateCategory = async (req, res) => {
       sortOrder: Number(sortOrder) || 0,
     };
 
-    // imageUrl se incluye solo si ya está en el schema del cliente de Prisma
-    if (newImageUrl !== undefined) {
-      try { baseData.imageUrl = newImageUrl; } catch {}
-    }
+    if (newImageUrl !== undefined) baseData.imageUrl = newImageUrl;
 
-    let updated;
-    try {
-      updated = await prisma.category.update({ where: { id: formId }, data: baseData });
-    } catch (prismaErr) {
-      // Si falla por imageUrl (columna no migrada aún), reintenta sin ese campo
-      if (prismaErr.message?.includes('imageUrl')) {
-        const { imageUrl: _removed, ...safeData } = baseData;
-        updated = await prisma.category.update({ where: { id: formId }, data: safeData });
-      } else {
-        throw prismaErr;
-      }
-    }
+    const updated = await prisma.category.update({ where: { id: formId }, data: baseData });
 
     return res.status(200).json({ message: "Categoría actualizada", data: updated });
   } catch (error) {
+    deleteUploadedFile(req.file);
     console.error(error);
     if (error.code === 'P2002') return res.status(400).json({ message: "El nombre ya existe" });
     return res.status(500).json({ message: "Error interno" });

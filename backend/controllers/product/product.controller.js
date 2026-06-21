@@ -4,113 +4,102 @@ const slugify = require('slugify')
 const fs = require('fs');
 const path = require('path');
 
+const deleteUploadedFile = (file) => {
+  if (!file) return;
+  const filePath = path.join(__dirname, '../../uploads/product', file.filename);
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+};
+
+const deleteStoredImage = (imageUrl) => {
+  if (!imageUrl) return;
+  const filePath = path.join(__dirname, '../../', imageUrl);
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+};
+
 const createProduct = async (req, res) => {
   try {
-    const {
-      categoryId,
-      brandId,
-      name,
-      description,
-      status
-    } = req.body;
-
+    const { categoryId, brandId, name, description, status } = req.body;
     const file = req.file;
 
-    const categoryIdNumb = Number(categoryId);
-    const brandIdNumb = brandId ? Number(brandId) : null;
+    if (!name || !name.trim()) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "El nombre es obligatorio" });
+    }
 
-    if (!Number.isInteger(categoryIdNumb)) {
+    if (name.trim().length > 50) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "El nombre no puede superar 50 caracteres" });
+    }
+
+    if (description && description.length > 3000) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "La descripción no puede superar 3000 caracteres" });
+    }
+
+    if (!categoryId) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "La categoría es obligatoria" });
+    }
+
+    if (!brandId) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "La marca es obligatoria" });
+    }
+
+    const categoryIdNumb = Number(categoryId);
+    const brandIdNumb = Number(brandId);
+
+    if (!Number.isInteger(categoryIdNumb) || categoryIdNumb <= 0) {
+      deleteUploadedFile(file);
       return res.status(400).json({ message: "categoryId inválido" });
     }
 
-    if (!name) {
-      return res.status(400).json({ message: "Nombre requerido" });
+    if (!Number.isInteger(brandIdNumb) || brandIdNumb <= 0) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "brandId inválido" });
     }
 
-    const categoryExists = await prisma.category.findUnique({
-      where: { id: categoryIdNumb },
-    });
-
+    const categoryExists = await prisma.category.findUnique({ where: { id: categoryIdNumb } });
     if (!categoryExists) {
+      deleteUploadedFile(file);
       return res.status(400).json({ message: "Categoría no encontrada" });
     }
+
     const hasChildren = await prisma.category.findFirst({
-  where: {
-    parentId: categoryIdNumb,
-  },
-  select: { id: true },
-});
-
-if (hasChildren) {
-  return res.status(400).json({
-    message: "Solo se pueden asignar productos a categorías hija",
-  });
-}
-
-    if (brandIdNumb) {
-      const brandExists = await prisma.brand.findUnique({
-        where: { id: brandIdNumb },
-      });
-
-      if (!brandExists) {
-        return res.status(400).json({ message: "Marca no encontrada" });
-      }
+      where: { parentId: categoryIdNumb },
+      select: { id: true },
+    });
+    if (hasChildren) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "Solo se pueden asignar productos a categorías hija" });
     }
 
-    let brandName = '';
+    const brandExists = await prisma.brand.findUnique({ where: { id: brandIdNumb } });
+    if (!brandExists) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "Marca no encontrada" });
+    }
 
-if (brandIdNumb) {
-  const brand = await prisma.brand.findUnique({
-    where: { id: brandIdNumb },
-    select: { name: true }
-  });
+    const slugBase = `${name} ${brandExists.name}`.trim();
+    const slug = slugify(slugBase, { strict: true, lower: true });
 
-  brandName = brand?.name || '';
-}
+    const slugExist = await prisma.product.findUnique({ where: { slug } });
+    if (slugExist) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "El nombre ya existe" });
+    }
 
-const slugBase = `${name} ${brandName}`.trim();
-
-const slug = slugify(slugBase, {
-  strict: true,
-  lower: true
-});
-const slugExist = await prisma.product.findUnique({
-  where: {
-    slug: slug
-  }
-})
-
-if (slugExist) {
-  return res.status(400).json({
-    message: "El nombre ya existe"
-  })
-}
-    const mainImage = file
-      ? `/uploads/product/${file.filename}`
-      : null;
+    const mainImage = file ? `/uploads/product/${file.filename}` : null;
 
     const newProduct = await prisma.product.create({
-      data: {
-        categoryId: categoryIdNumb,
-        brandId: brandIdNumb,
-        name,
-        slug,
-        description,
-        mainImage,
-        status
-      },
+      data: { categoryId: categoryIdNumb, brandId: brandIdNumb, name, slug, description, mainImage, status },
     });
 
-    return res.status(201).json({
-      message: "Producto creado",
-      data: newProduct,
-    });
+    return res.status(201).json({ message: "Producto creado", data: newProduct });
   } catch (error) {
-    console.log("🔥 ERROR CREATE PRODUCT:", error);
-
-    return res.status(500).json({
-      message: "Error interno",
-    });
+    deleteUploadedFile(req.file);
+    console.error("Error en createProduct:", error);
+    return res.status(500).json({ message: "Error interno" });
   }
 };
 
@@ -123,113 +112,95 @@ const updateProduct = async (req, res) => {
     const file = req.file;
 
     if (isNaN(formId)) {
+      deleteUploadedFile(file);
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    const {
-      categoryId,
-      brandId,
-      name,
-      description,
-      status,
-    } = req.body;
+    const { categoryId, brandId, name, description, status } = req.body;
+
+    if (!name || !name.trim()) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "El nombre es obligatorio" });
+    }
+
+    if (name.trim().length > 50) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "El nombre no puede superar 50 caracteres" });
+    }
+
+    if (description && description.length > 3000) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "La descripción no puede superar 3000 caracteres" });
+    }
+
+    if (!categoryId) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "La categoría es obligatoria" });
+    }
+
+    if (!brandId) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "La marca es obligatoria" });
+    }
 
     const categoryIdNumb = Number(categoryId);
-    const brandIdNumb = brandId ? Number(brandId) : null;
+    const brandIdNumb = Number(brandId);
 
-    const productExist = await prisma.product.findUnique({
-      where: { id: formId },
-    });
+    if (!Number.isInteger(categoryIdNumb) || categoryIdNumb <= 0) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "categoryId inválido" });
+    }
 
+    if (!Number.isInteger(brandIdNumb) || brandIdNumb <= 0) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "brandId inválido" });
+    }
+
+    const productExist = await prisma.product.findUnique({ where: { id: formId } });
     if (!productExist) {
+      deleteUploadedFile(file);
       return res.status(404).json({ message: "No encontrado" });
     }
 
-    if (!Number.isInteger(categoryIdNumb) || !name) {
-      return res.status(400).json({ message: "Datos inválidos" });
-    }
-
-    const categoryExists = await prisma.category.findUnique({
-      where: { id: categoryIdNumb },
-    });
-
+    const categoryExists = await prisma.category.findUnique({ where: { id: categoryIdNumb } });
     if (!categoryExists) {
+      deleteUploadedFile(file);
       return res.status(400).json({ message: "Categoría no encontrada" });
     }
 
-    if (brandIdNumb) {
-      const brandExists = await prisma.brand.findUnique({
-        where: { id: brandIdNumb },
-      });
-
-      if (!brandExists) {
-        return res.status(400).json({ message: "Marca no encontrada" });
-      }
+    const brandExists = await prisma.brand.findUnique({ where: { id: brandIdNumb } });
+    if (!brandExists) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "Marca no encontrada" });
     }
 
-const brandToUse = brandIdNumb || productExist.brandId;
+    const slug = slugify(`${name} ${brandExists.name}`.trim(), { strict: true, lower: true });
 
-let brandName = '';
-
-if (brandToUse) {
-  const brand = await prisma.brand.findUnique({
-    where: { id: brandToUse },
-    select: { name: true }
-  });
-
-  brandName = brand?.name || '';
-}
-
-const slug = slugify(`${name} ${brandName}`.trim(), {
-  strict: true,
-  lower: true
-});
-
-
-const slugExist = await prisma.product.findFirst({
-  where: {
-    slug: slug,
-    NOT: {
-      id: formId
+    const slugExist = await prisma.product.findFirst({
+      where: { slug, NOT: { id: formId } },
+    });
+    if (slugExist) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "El nombre ya existe" });
     }
-  }
-})
-
-if (slugExist) {
-  return res.status(400).json({
-    message: "El nombre ya existe"
-  })
-}
 
     let mainImage = productExist.mainImage;
 
     if (file) {
+      deleteStoredImage(productExist.mainImage);
       mainImage = `/uploads/product/${file.filename}`;
     }
 
     const updatedProduct = await prisma.product.update({
       where: { id: formId },
-      data: {
-        categoryId: categoryIdNumb,
-        brandId: brandIdNumb,
-        name,
-        slug,
-        description,
-        mainImage,
-        status,
-      },
+      data: { categoryId: categoryIdNumb, brandId: brandIdNumb, name, slug, description, mainImage, status },
     });
 
-    return res.status(200).json({
-      message: "Producto actualizado",
-      data: updatedProduct,
-    });
+    return res.status(200).json({ message: "Producto actualizado", data: updatedProduct });
   } catch (error) {
-    console.log("🔥 UPDATE ERROR:", error);
-
-    return res.status(500).json({
-      message: "Error interno",
-    });
+    deleteUploadedFile(req.file);
+    console.error("Error en updateProduct:", error);
+    return res.status(500).json({ message: "Error interno" });
   }
 };
 

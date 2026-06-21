@@ -126,6 +126,16 @@ const updateForm = async (req, res) => {
             });
         }
 
+        const documentNumberNumb = Number(documentNumber)
+        if (isNaN(documentNumberNumb) || documentNumber.length > 10 || documentNumber.length < 4) {
+            return res.status(400).json({ message: "Documento inválido (4-10 dígitos)" })
+        }
+
+        const phoneNumberNumb = Number(phoneNumber)
+        if (isNaN(phoneNumberNumb) || phoneNumber.length > 10 || phoneNumber.length < 7) {
+            return res.status(400).json({ message: "Teléfono inválido (7-10 dígitos)" })
+        }
+
         // ======================
         // 4. Verificar existencia
         // ======================

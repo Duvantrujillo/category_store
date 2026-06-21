@@ -28,6 +28,7 @@ export default function ReturnSharedForm({
   orders = [],
   orderItems = [],
   existingItems = [],
+  currentStatus,
 }) {
   const isEdit = mode === "edit";
   const [step, setStep] = useState(1);
@@ -45,9 +46,10 @@ export default function ReturnSharedForm({
 
   const validateStep1 = () => {
     const e = {};
-    if (!isEdit && !form.orderId)       e.orderId    = "Debes seleccionar una orden";
-    if (!form.resolution)               e.resolution = "Debes seleccionar una resolución";
-    if (!form.reason?.trim())           e.reason     = "Debes ingresar el motivo de la devolución";
+    if (!isEdit && !form.orderId)            e.orderId    = "Debes seleccionar una orden";
+    if (!form.resolution)                    e.resolution = "Debes seleccionar una resolución";
+    if (!form.reason?.trim())                e.reason     = "Debes ingresar el motivo de la devolución";
+    else if (form.reason.trim().length > 300) e.reason    = "El motivo no puede superar los 300 caracteres";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -112,6 +114,7 @@ export default function ReturnSharedForm({
           handleChange={wrappedChange}
           orders={orders}
           errors={errors}
+          currentStatus={currentStatus}
         />
       )}
 

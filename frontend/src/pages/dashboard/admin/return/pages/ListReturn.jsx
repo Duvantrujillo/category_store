@@ -5,7 +5,7 @@ import { useHasPermission } from "@/lib/permissions";
 
 import ReturnTable from "../components/return-list/ReturnTable";
 import ReturnCreateDialog from "../components/return-create/ReturnCreateDialog";
-import ReturnItemsModal from "../components/return-detail/ReturnItemsModal";
+import ReturnDetailModal from "../components/return-detail/ReturnDetailModal";
 import ReturnUpdateDialog from "../components/return-update/ReturnUpdateDialog";
 import RefundModal from "../components/refund/RefundModal";
 import ReturnSearch from "../components/return-search/ReturnSearch";
@@ -59,12 +59,12 @@ const ListReturn = () => {
 
   useEffect(() => { setPage(1); }, [dateFrom, query]);
 
-  const [selected, setSelected]     = useState(null);
-  const [openItems, setOpenItems]   = useState(false);
-  const [openEdit, setOpenEdit]     = useState(false);
-  const [openRefund, setOpenRefund] = useState(false);
+  const [selected, setSelected]       = useState(null);
+  const [openDetail, setOpenDetail]   = useState(false);
+  const [openEdit, setOpenEdit]       = useState(false);
+  const [openRefund, setOpenRefund]   = useState(false);
 
-  const handleItems  = (item) => { setSelected(item); setOpenItems(true); };
+  const handleDetail = (item) => { setSelected(item); setOpenDetail(true); };
   const handleEdit   = (item) => { setSelected(item); setOpenEdit(true); };
   const handleRefund = (item) => { setSelected(item); setOpenRefund(true); };
   const handleClose  = (setter) => () => { setter(false); setSelected(null); };
@@ -100,12 +100,12 @@ const ListReturn = () => {
         page={page}
         pageSize={PAGE_SIZE}
         onPageChange={setPage}
-        onItems={handleItems}
+        onDetail={handleDetail}
         onEdit={handleEdit}
         onRefund={handleRefund}
       />
 
-      <ReturnItemsModal   open={openItems}  item={selected} onClose={handleClose(setOpenItems)} />
+      <ReturnDetailModal  open={openDetail} item={selected} onClose={handleClose(setOpenDetail)} />
       <ReturnUpdateDialog open={openEdit}   item={selected} onClose={handleClose(setOpenEdit)}   onRefresh={refetch} />
       <RefundModal        open={openRefund} item={selected} onClose={handleClose(setOpenRefund)} onRefresh={refetch} />
     </div>

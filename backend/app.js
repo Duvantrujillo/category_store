@@ -52,7 +52,8 @@ const dashboardRouter = require('./routes/dashboard.routes.js')
 const notificationRouter = require('./routes/notification.routes.js')
 const reportRouter       = require('./routes/report.routes.js')
 const searchRouter       = require('./routes/search.routes.js')
-const permissionRouter   = require('./routes/permission.routes.js')
+const permissionRouter       = require('./routes/permission.routes.js')
+const paymentMethodRouter    = require('./routes/payment-method.routes.js')
 
 /*
 |--------------------------------------------------------------------------
@@ -106,6 +107,7 @@ app.use('/notification',notificationRouter)
 app.use('/report',      reportRouter)
 app.use('/search',      searchRouter)
 app.use('/permission',  permissionRouter)
+app.use('/payment-method', paymentMethodRouter)
 
 /*
 |--------------------------------------------------------------------------

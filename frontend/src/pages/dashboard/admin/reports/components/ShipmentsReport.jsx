@@ -1,11 +1,13 @@
-import { useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Truck, Package, Users, ArrowRight } from "lucide-react";
 
 import { useShipmentsReport } from "../hooks/useReport";
-import { downloadCsv }        from "../utils/csvExport";
 import ReportSection          from "./ReportSection";
 import { ReportLoader, ReportError } from "./ReportLoader";
+import TablePagination        from "@/components/ui/TablePagination";
 import HBar from "./charts/HBar";
+
+const PAGE_SIZE = 15;
 
 const STATUS_META = {
   CREATED:   { label: "Creado",     color: "#94a3b8", badge: "bg-slate-100  text-slate-600  ring-slate-200",  cls: "border-slate-200  bg-slate-50"   },
@@ -19,27 +21,15 @@ const PIPELINE_ORDER = ["CREATED", "PREPARING", "SHIPPED", "DELIVERED", "RETURNE
 
 function ShipmentsReport({ filters }) {
   const { data, loading, error } = useShipmentsReport(filters);
-
-  const exportCsv = useCallback(() => {
-    if (!data) return;
-    downloadCsv("envios.csv",
-      ["Orden", "Cliente", "Estado", "Transportista", "Tracking", "Cambios de estado", "Fecha"],
-      data.records.map((s) => [
-        s.order?.orderNumber ?? "",
-        `${s.order?.firstName ?? ""} ${s.order?.lastName ?? ""}`.trim(),
-        STATUS_META[s.status]?.label ?? s.status,
-        s.carrier ?? "—",
-        s.trackingNumber ?? "—",
-        s.history?.length ?? 0,
-        new Date(s.createdAt).toLocaleDateString("es-CO"),
-      ])
-    );
-  }, [data]);
+  const [page, setPage] = useState(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setPage(1), [JSON.stringify(filters)]);
 
   if (loading) return <ReportLoader />;
   if (error)   return <ReportError message={error} />;
   if (!data)   return null;
 
+  const pagedRecords   = data.records.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const totalShipments = data.byStatus.reduce((s, x) => s + x.count, 0) || 1;
   const maxCarrier     = Math.max(...data.byCarrier.map((c) => c.count), 1);
 
@@ -47,26 +37,34 @@ function ShipmentsReport({ filters }) {
     <div className="space-y-5">
       {/* Pipeline visual */}
       <ReportSection title="Pipeline de envíos" icon={Package}>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          {PIPELINE_ORDER.map((status, i) => {
-            const meta  = STATUS_META[status];
-            const found = data.byStatus.find((s) => s.status === status);
-            const count = found?.count ?? 0;
-            const pct   = Math.round((count / totalShipments) * 100);
+        <div className="flex flex-col sm:flex-row sm:items-stretch gap-2">
+          {PIPELINE_ORDER.flatMap((status, i) => {
+            const meta   = STATUS_META[status];
+            const found  = data.byStatus.find((s) => s.status === status);
+            const count  = found?.count ?? 0;
+            const pct    = Math.round((count / totalShipments) * 100);
             const isLast = i === PIPELINE_ORDER.length - 1;
 
-            return (
-              <div key={status} className="flex sm:flex-col items-center gap-1.5 sm:gap-0 flex-1">
-                <div className={`flex flex-col items-center text-center rounded-xl border p-3 w-full ${meta?.cls ?? "border-slate-200 bg-slate-50"}`}>
-                  <span className="text-xs font-semibold">{meta?.label}</span>
-                  <span className="text-2xl font-bold tabular-nums mt-1">{count}</span>
-                  <span className="text-[10px] opacity-50 mt-0.5">{pct}%</span>
-                </div>
-                {!isLast && (
-                  <ArrowRight size={14} className="text-slate-300 shrink-0 sm:rotate-90 sm:my-1" />
-                )}
+            const box = (
+              <div
+                key={status}
+                className={`flex flex-col items-center text-center rounded-xl border p-3 flex-1 ${meta?.cls ?? "border-slate-200 bg-slate-50"}`}
+              >
+                <span className="text-xs font-semibold">{meta?.label}</span>
+                <span className="text-2xl font-bold tabular-nums mt-1">{count}</span>
+                <span className="text-[10px] opacity-50 mt-0.5">{pct}%</span>
               </div>
             );
+
+            if (isLast) return [box];
+            return [
+              box,
+              <ArrowRight
+                key={`arrow-${i}`}
+                size={14}
+                className="text-slate-300 shrink-0 self-center rotate-90 sm:rotate-0"
+              />,
+            ];
           })}
         </div>
       </ReportSection>
@@ -119,7 +117,7 @@ function ShipmentsReport({ filters }) {
       </div>
 
       {/* Tabla de envíos */}
-      <ReportSection title="Detalle de envíos" icon={Truck} onExport={exportCsv} noPad>
+      <ReportSection title="Detalle de envíos" icon={Truck} noPad>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-100">
@@ -130,7 +128,7 @@ function ShipmentsReport({ filters }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {data.records.map((s) => {
+              {pagedRecords.map((s) => {
                 const meta = STATUS_META[s.status];
                 return (
                   <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
@@ -168,6 +166,12 @@ function ShipmentsReport({ filters }) {
             <div className="text-center py-10 text-sm text-slate-400">Sin envíos en el período seleccionado</div>
           )}
         </div>
+        <TablePagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          totalItems={data.records.length}
+          onPageChange={setPage}
+        />
       </ReportSection>
     </div>
   );

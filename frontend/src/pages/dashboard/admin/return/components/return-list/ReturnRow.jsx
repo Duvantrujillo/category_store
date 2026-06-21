@@ -1,14 +1,14 @@
-import { Eye, Pencil, BadgeDollarSign } from "lucide-react";
+import { ClipboardList, Pencil, BadgeDollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { useHasPermission } from "@/lib/permissions";
 
 const statusConfig = {
-  PENDING:   { label: "Pendiente",   cls: "bg-amber-100 text-amber-700" },
-  APPROVED:  { label: "Aprobada",    cls: "bg-blue-100 text-blue-700" },
-  REJECTED:  { label: "Rechazada",   cls: "bg-red-100 text-red-700" },
-  RECEIVED:  { label: "Recibida",    cls: "bg-violet-100 text-violet-700" },
-  COMPLETED: { label: "Completada",  cls: "bg-green-100 text-green-700" },
+  PENDING:   { label: "Pendiente",  cls: "bg-amber-100 text-amber-700"   },
+  APPROVED:  { label: "Aprobada",   cls: "bg-blue-100 text-blue-700"     },
+  REJECTED:  { label: "Rechazada",  cls: "bg-red-100 text-red-700"       },
+  RECEIVED:  { label: "Recibida",   cls: "bg-violet-100 text-violet-700" },
+  COMPLETED: { label: "Completada", cls: "bg-green-100 text-green-700"   },
 };
 
 const resolutionLabel = {
@@ -19,11 +19,11 @@ const resolutionLabel = {
 
 const refundConfig = {
   PROCESSED: { label: "Pagado",    cls: "bg-green-100 text-green-700" },
-  FAILED:    { label: "Fallido",   cls: "bg-red-100 text-red-700" },
+  FAILED:    { label: "Fallido",   cls: "bg-red-100 text-red-700"    },
   PENDING:   { label: "Pendiente", cls: "bg-amber-100 text-amber-700" },
 };
 
-function ReturnRow({ item, onItems, onEdit, onRefund }) {
+function ReturnRow({ item, onDetail, onEdit, onRefund }) {
   const canApprove = useHasPermission("returns.approve");
   const order = item.order;
   const totalAmount = item.items.reduce(
@@ -31,7 +31,8 @@ function ReturnRow({ item, onItems, onEdit, onRefund }) {
     0
   );
   const refund = item.refunds?.[0];
-  const { label: statusLabel, cls: statusCls } = statusConfig[item.status] ?? { label: item.status, cls: "bg-slate-100 text-slate-700" };
+  const { label: statusLabel, cls: statusCls } =
+    statusConfig[item.status] ?? { label: item.status, cls: "bg-slate-100 text-slate-700" };
 
   return (
     <TableRow className="hover:bg-slate-50/80 transition-colors">
@@ -81,30 +82,6 @@ function ReturnRow({ item, onItems, onEdit, onRefund }) {
         )}
       </TableCell>
 
-      {/* Registrado por */}
-      <TableCell className="text-center px-4 py-3">
-        {item.registeredBy ? (
-          <div className="flex flex-col items-center">
-            <span className="text-xs font-medium text-slate-700">{item.registeredBy.name}</span>
-            <span className="text-[10px] text-slate-400">{item.registeredBy.email}</span>
-          </div>
-        ) : (
-          <span className="text-slate-300 text-xs">—</span>
-        )}
-      </TableCell>
-
-      {/* Aprobado por */}
-      <TableCell className="text-center px-4 py-3">
-        {item.approvedBy ? (
-          <div className="flex flex-col items-center">
-            <span className="text-xs font-medium text-slate-700">{item.approvedBy.name}</span>
-            <span className="text-[10px] text-slate-400">{item.approvedBy.email}</span>
-          </div>
-        ) : (
-          <span className="text-slate-300 text-xs">—</span>
-        )}
-      </TableCell>
-
       {/* Fecha */}
       <TableCell className="text-center px-4 py-3 text-slate-500 text-sm">
         {new Date(item.createdAt).toLocaleDateString("es-CO")}
@@ -113,34 +90,54 @@ function ReturnRow({ item, onItems, onEdit, onRefund }) {
       {/* Acciones */}
       <TableCell className="text-center px-4 py-3">
         <div className="flex justify-center gap-1.5">
+
+          {/* Detalles */}
           <Button
             size="icon"
             variant="outline"
             className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-            onClick={() => onItems(item)}
+            onClick={() => onDetail(item)}
+            title="Ver detalles completos"
           >
-            <Eye className="h-3.5 w-3.5" />
+            <ClipboardList className="h-3.5 w-3.5" />
           </Button>
+
+          {/* Editar */}
           <Button
             size="icon"
             variant="outline"
             className="h-8 w-8 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-40 disabled:pointer-events-none"
             onClick={() => onEdit(item)}
-            disabled={!canApprove}
-            title={!canApprove ? "Sin permiso para aprobar devoluciones" : undefined}
+            disabled={!canApprove || item.status === "COMPLETED"}
+            title={
+              !canApprove
+                ? "Sin permiso para aprobar devoluciones"
+                : item.status === "COMPLETED"
+                ? "La solicitud está completada y no puede editarse"
+                : undefined
+            }
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
+
+          {/* Reembolso */}
           <Button
             size="icon"
             variant="outline"
             className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 disabled:opacity-40 disabled:pointer-events-none"
             onClick={() => onRefund(item)}
-            disabled={!canApprove}
-            title={!canApprove ? "Sin permiso para procesar reembolso" : undefined}
+            disabled={!canApprove || item.resolution !== "REFUND"}
+            title={
+              !canApprove
+                ? "Sin permiso para procesar reembolso"
+                : item.resolution !== "REFUND"
+                ? "Esta solicitud no tiene resolución de reembolso"
+                : undefined
+            }
           >
             <BadgeDollarSign className="h-3.5 w-3.5" />
           </Button>
+
         </div>
       </TableCell>
 

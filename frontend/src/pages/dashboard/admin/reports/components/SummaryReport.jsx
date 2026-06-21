@@ -1,8 +1,6 @@
-import { useCallback } from "react";
-import { ShoppingCart, DollarSign, RotateCcw, RefreshCw, Package, ArrowRight } from "lucide-react";
+import { ShoppingCart, DollarSign, RotateCcw, Wallet, Package, ArrowRight } from "lucide-react";
 
 import { useSummaryReport } from "../hooks/useReport";
-import { downloadCsv }      from "../utils/csvExport";
 import ReportCard            from "./ReportCard";
 import ReportSection         from "./ReportSection";
 import { ReportLoader, ReportError } from "./ReportLoader";
@@ -28,23 +26,6 @@ const SHIPMENT_PIPELINE = [
 function SummaryReport({ filters }) {
   const { data, loading, error } = useSummaryReport(filters);
 
-  const exportCsv = useCallback(() => {
-    if (!data) return;
-    downloadCsv("resumen.csv",
-      ["Métrica", "Valor"],
-      [
-        ["Total órdenes",          data.orders.total],
-        ["Órdenes pagadas",        data.orders.paid],
-        ["Ingresos totales",       data.orders.revenue],
-        ["Órdenes canceladas",     data.orders.cancelled],
-        ["Devoluciones",           data.returns.total],
-        ["Devoluciones pendientes",data.returns.pending],
-        ["Reembolsos procesados",  data.refunds.processed],
-        ["Monto reembolsado",      data.refunds.processedAmount],
-      ]
-    );
-  }, [data]);
-
   if (loading) return <ReportLoader />;
   if (error)   return <ReportError message={error} />;
   if (!data)   return null;
@@ -57,17 +38,6 @@ function SummaryReport({ filters }) {
 
   return (
     <div className="space-y-5">
-      {/* Botón export global */}
-      <div className="flex justify-end">
-        <button
-          onClick={exportCsv}
-          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 transition-colors px-3 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50"
-        >
-          <RefreshCw size={11} />
-          Exportar resumen CSV
-        </button>
-      </div>
-
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <ReportCard
@@ -98,7 +68,7 @@ function SummaryReport({ filters }) {
           title="Reembolsado"
           value={fmtCOP(data.refunds.processedAmount)}
           sub={`${data.refunds.processed} procesados`}
-          icon={RefreshCw}
+          icon={Wallet}
           colorClass="text-violet-600"
           accent="bg-violet-400"
         />

@@ -37,7 +37,7 @@ export default function RefundModal({ open, item, onClose, onRefresh }) {
   useEffect(() => {
     if (!open) return;
     getPaymentMethods()
-      .then((res) => setPaymentMethods(res?.methods ?? []))
+      .then((res) => setPaymentMethods(Array.isArray(res?.methods) ? res.methods : []))
       .catch(() => setPaymentMethods([]));
   }, [open]);
 
@@ -134,7 +134,7 @@ export default function RefundModal({ open, item, onClose, onRefresh }) {
                       </SelectTrigger>
                       <SelectContent>
                         {paymentMethods.map((m) => (
-                          <SelectItem key={m} value={m}>{m}</SelectItem>
+                          <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -181,6 +181,7 @@ export default function RefundModal({ open, item, onClose, onRefresh }) {
                 <CheckCircle2 size={14} />
                 <p className="text-sm font-semibold">Reembolso completado</p>
               </div>
+              {refund.processedBy && <InfoRow label="Procesado por" value={refund.processedBy.name} />}
               {refund.method && <InfoRow label="Método" value={refund.method} />}
               {refund.reference && <InfoRow label="Referencia" value={refund.reference} mono />}
               {refund.paidAt && <InfoRow label="Fecha de pago" value={new Date(refund.paidAt).toLocaleString("es-CO")} />}

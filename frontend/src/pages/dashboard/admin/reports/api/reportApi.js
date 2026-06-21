@@ -14,3 +14,4 @@ export const fetchReturnsReport  = (f) => apiClient.get(`/report/returns${buildP
 export const fetchRefundsReport  = (f) => apiClient.get(`/report/refunds${buildParams(f)}`).then((r) => r.data);
 export const fetchShipmentsReport= (f) => apiClient.get(`/report/shipments${buildParams(f)}`).then((r) => r.data);
 export const fetchSalesReport    = (f) => apiClient.get(`/report/sales${buildParams(f)}`).then((r) => r.data);
+export const fetchDetailedReport = (f) => apiClient.get(`/report/detailed${buildParams(f)}`).then((r) => r.data);

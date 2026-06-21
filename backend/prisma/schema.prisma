@@ -313,7 +313,22 @@ model Payment {
 
 
 
-//Reembolsos y devoluciones 
+enum PaymentMethodType {
+  DIGITAL_WALLET
+  BANK_TRANSFER
+  CREDIT_CARD
+  INTERNATIONAL
+  CASH
+}
+
+model PaymentMethod {
+  id       Int               @id @default(autoincrement())
+  name     String
+  type     PaymentMethodType
+  isActive Boolean           @default(true)
+}
+
+//Reembolsos y devoluciones
 
 enum ReturnStatus {
   PENDING

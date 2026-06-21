@@ -13,11 +13,14 @@ const createAttribute = async (req, res) => {
 
 
 
-    if (!name) {
-      return res.status(400).json({
-        message: "Nombre requerido"
-      })
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "El nombre es obligatorio" })
     }
+
+    if (name.trim().length > 20) {
+      return res.status(400).json({ message: "El nombre no puede superar 20 caracteres" })
+    }
+
     const customerSlug = slugify(name, {
       lower: true,
       strict: true
@@ -77,12 +80,20 @@ const updateAttribute = async (req, res) => {
       return res.status(404).json({ message: "No encontrado" });
     }
 
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "El nombre es obligatorio" })
+    }
+
+    if (name.trim().length > 20) {
+      return res.status(400).json({ message: "El nombre no puede superar 20 caracteres" })
+    }
+
     const customerSlug = slugify(name, {
       lower: true,
       strict: true
     })
 
-    // 3️⃣ Verificar que el slug no exista en otro registro
+    // Verificar que el slug no exista en otro registro
     if (customerSlug) {
       const slugExist = await prisma.attribute.findFirst({
         where: {

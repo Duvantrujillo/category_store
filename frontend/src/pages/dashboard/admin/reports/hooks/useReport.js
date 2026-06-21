@@ -5,6 +5,7 @@ import {
   fetchRefundsReport,
   fetchShipmentsReport,
   fetchSalesReport,
+  fetchDetailedReport,
 } from "../api/reportApi";
 
 function useReportData(fetcher, filters) {
@@ -30,8 +31,9 @@ function useReportData(fetcher, filters) {
   return { data, loading, error, refetch: load };
 }
 
-export const useSummaryReport   = (f) => useReportData(fetchSummary,         f);
-export const useReturnsReport   = (f) => useReportData(fetchReturnsReport,   f);
-export const useRefundsReport   = (f) => useReportData(fetchRefundsReport,   f);
-export const useShipmentsReport = (f) => useReportData(fetchShipmentsReport, f);
-export const useSalesReport     = (f) => useReportData(fetchSalesReport,     f);
+export const useSummaryReport    = (f) => useReportData(fetchSummary,         f);
+export const useReturnsReport    = (f) => useReportData(fetchReturnsReport,   f);
+export const useRefundsReport    = (f) => useReportData(fetchRefundsReport,   f);
+export const useShipmentsReport  = (f) => useReportData(fetchShipmentsReport, f);
+export const useSalesReport      = (f) => useReportData(fetchSalesReport,     f);
+export const useDetailedReport   = (f) => useReportData(fetchDetailedReport,  f);
