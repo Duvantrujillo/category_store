@@ -299,10 +299,25 @@ const searchBrand = async (req, res) => {
   }
 };
 
+const getPublicBrands = async (req, res) => {
+  try {
+    const brands = await prisma.brand.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, slug: true, logoUrl: true },
+      orderBy: { name: "asc" },
+    });
+    return res.status(200).json({ data: brands });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
 module.exports = {
     createBrand,
     updateBrand,
     deleteBrand,
     allBrand,
-    searchBrand
+    searchBrand,
+    getPublicBrands,
 }

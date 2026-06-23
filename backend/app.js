@@ -66,11 +66,23 @@ const paymentMethodRouter    = require('./routes/payment-method.routes.js')
 // ePayco llama este endpoint sin token — debe ser completamente público
 app.use('/webhook', webhookRouter)
 
+// Carrito anónimo (visitantes sin cuenta)
+const publicCartRouter = require('./routes/cart-public.routes.js')
+app.use('/cart', publicCartRouter)
+
+// Detalle de variante individual (sin auth)
+const { getPublicVariantById } = require('./controllers/product-variant/product_variant.controller')
+app.get('/product-variant/public/:id', getPublicVariantById)
+
 // Rutas públicas (no requieren sesión)
 const PUBLIC_ROUTES = new Set([
   'POST /user/create',
   'POST /user/login',
   'POST /form/create',
+  'GET /product-variant/public',
+  'GET /category/public',
+  'GET /brand/public',
+  'GET /search/public',
 ])
 
 app.use((req, res, next) => {

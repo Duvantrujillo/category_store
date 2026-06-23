@@ -1,3 +1,13 @@
+@keyframes marqueeScroll {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-25%, 0, 0); }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
@@ -53,6 +63,16 @@
 body {
   margin: 0;
 }
+
+/* Scrollbar rosa */
+html {
+  scrollbar-color: #fda4af #fff1f2;
+  scrollbar-width: thin;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #fff1f2; }
+::-webkit-scrollbar-thumb { background: #fda4af; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #fb7185; }
 
 #root {
   width: 100%;

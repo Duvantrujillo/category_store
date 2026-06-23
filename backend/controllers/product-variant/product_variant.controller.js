@@ -490,10 +490,66 @@ const searchSkuBarcode = async (req, res) => {
   }
 };
 
+const getPublicVariants = async (req, res) => {
+  try {
+    const variants = await prisma.productVariant.findMany({
+      where: {
+        isActive: true,
+        product: { status: "ACTIVE" },
+      },
+      include: {
+        images: true,
+        attributes: {
+          include: {
+            attributeValue: {
+              include: { attribute: true },
+            },
+          },
+        },
+        product: {
+          include: {
+            brand: true,
+            category: true,
+          },
+        },
+      },
+      orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+    });
+
+    return res.status(200).json({ data: variants });
+  } catch (error) {
+    console.error("Error en getPublicVariants:", error);
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
+const getPublicVariantById = async (req, res) => {
+  try {
+    const { id } = req.params
+    const variant = await prisma.productVariant.findFirst({
+      where: { id: Number(id), isActive: true, product: { status: "ACTIVE" } },
+      include: {
+        images: true,
+        attributes: {
+          include: { attributeValue: { include: { attribute: true } } },
+        },
+        product: { include: { brand: true, category: true } },
+      },
+    })
+    if (!variant) return res.status(404).json({ message: "No encontrado" })
+    return res.json(variant)
+  } catch (error) {
+    console.error("Error en getPublicVariantById:", error)
+    return res.status(500).json({ message: "Error interno" })
+  }
+}
+
 module.exports = {
   createProductVariant,
   updateProductVariant,
   deleteProductVariant,
   allProductVariant,
-  searchSkuBarcode
+  searchSkuBarcode,
+  getPublicVariants,
+  getPublicVariantById,
 }

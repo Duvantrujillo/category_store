@@ -4,6 +4,7 @@ import { PermissionProvider } from './context/PermissionContext'
 import RegisterForm from './pages/auth/register/RegisterPages'
 import LoginForm from './pages/auth/login/LoginPage'
 import Home from "./pages/public/Home/Home"
+import ProductDetail from "./pages/public/ProductDetail/ProductDetail"
 import Admin from "./pages/dashboard/admin/Admin"
 import Customer from "./pages/dashboard/customer/Customer"
 import CreateShipping from './pages/dashboard/admin/form_response/pages/CreateShipping'
@@ -29,6 +30,7 @@ function App() {
     <Routes>
       {/* Rutas públicas */}
       <Route path="/" element={<Home />} />
+      <Route path="/producto/:id" element={<ProductDetail />} />
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/login" element={<LoginForm />} />
       <Route path="/create/shipping" element={<CreateShipping />} />

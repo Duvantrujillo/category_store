@@ -33,6 +33,7 @@ const handleUploadError = (err, req, res, next) => {
   next(err)
 }
 
+router.get('/public',       branchController.getPublicBrands)
 router.get('/all',          requirePermission('brands.view'),   branchController.allBrand)
 router.get('/search',       requirePermission('brands.view'),   branchController.searchBrand)
 router.post('/create',      requirePermission('brands.create'), upload.single('logo'), handleUploadError, branchController.createBrand)

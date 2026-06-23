@@ -17,22 +17,22 @@ const createCategory = async (req, res) => {
 
     if (!name || !name.trim()) {
       deleteUploadedFile(file);
-      return res.status(400).json({ error: "El nombre es obligatorio" });
+      return res.status(400).json({ message: "El nombre es obligatorio" });
     }
 
-    if (name.trim().length > 30) {
+    if (name.trim().length > 100) {
       deleteUploadedFile(file);
-      return res.status(400).json({ error: "El nombre no puede superar 30 caracteres" });
+      return res.status(400).json({ message: "El nombre no puede superar 30 caracteres" });
     }
 
     if (description && description.length > 1500) {
       deleteUploadedFile(file);
-      return res.status(400).json({ error: "La descripción no puede superar 1500 caracteres" });
+      return res.status(400).json({ message: "La descripción no puede superar 1500 caracteres" });
     }
 
     if (isActive === undefined || sortOrder === undefined) {
       deleteUploadedFile(file);
-      return res.status(400).json({ error: "Campos incompletos" });
+      return res.status(400).json({ message: "Campos incompletos" });
     }
 
     const customerSlug = slugify(name, { lower: true, strict: true });
@@ -85,7 +85,7 @@ const updateCategory = async (req, res) => {
       return res.status(400).json({ message: "El nombre es obligatorio" });
     }
 
-    if (name.trim().length > 30) {
+    if (name.trim().length > 100) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "El nombre no puede superar 30 caracteres" });
     }
@@ -223,4 +223,18 @@ const searchCategory = async (req, res) => {
   }
 };
 
-module.exports = { createCategory, updateCategory, deleteCategory, activeCategory, allCategory, searchCategory };
+const getPublicCategories = async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, slug: true, imageUrl: true, sortOrder: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    });
+    return res.status(200).json({ data: categories });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
+module.exports = { createCategory, updateCategory, deleteCategory, activeCategory, allCategory, searchCategory, getPublicCategories };

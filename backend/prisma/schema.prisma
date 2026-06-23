@@ -99,6 +99,7 @@ model Category{
  products Product[] 
  @@index([parentId])
  @@index([isActive,sortOrder])
+ @@index([isActive, name])
 }
 
 
@@ -126,6 +127,7 @@ model AttributeValue {
   productVariants ProductVariantAttribute[]
   @@unique([attributeId, value])
   @@index([attributeId])
+  @@index([value(length: 100)])
 }
 
 model Brand {
@@ -135,9 +137,10 @@ model Brand {
   description String?  @db.Text
   logoUrl     String?
   isActive    Boolean  @default(true)
-  products Product[] 
+  products Product[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  @@index([isActive, name])
 }
 
 enum ProductStatus {
@@ -162,6 +165,7 @@ model Product {
   @@index([categoryId])
   @@index([brandId])
   @@index([status])
+  @@index([status, name])
 }
 
 
@@ -185,6 +189,7 @@ model ProductVariant {
   @@index([productId])
   @@index([sku])
   @@index([barcode])
+  @@index([isActive, stock])
 }
 
 model ProductVariantAttribute {
