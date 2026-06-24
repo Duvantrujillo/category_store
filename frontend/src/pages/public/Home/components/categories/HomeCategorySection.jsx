@@ -47,15 +47,15 @@ export default function HomeCategorySection({ categories, loading, selected, onS
   if (!loading && categories.length === 0) return null;
 
   const arrowBase =
-    "flex absolute top-1/2 -translate-y-1/2 z-10 items-center justify-center w-9 h-9 rounded-full bg-white border border-rose-200 text-rose-400 shadow-md hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 transition-all duration-200";
+    "hidden sm:flex absolute top-1/2 -translate-y-1/2 z-10 items-center justify-center w-9 h-9 rounded-full bg-white border border-rose-200 text-rose-400 shadow-md hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 transition-all duration-200";
 
   return (
     <section className="mb-10 mt-1">
       {/* Título centrado */}
       <div className="flex justify-center mb-5">
         <h2
-          className="text-6xl italic text-rose-400 tracking-wide"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          className="text-8xl font-black"
+          style={{ color: "#4b5563", WebkitTextStroke: "1.5px #4b5563", letterSpacing: "0.1em" }}
         >
           Categorías
         </h2>

@@ -184,8 +184,9 @@ model ProductVariant {
   updatedAt DateTime @updatedAt
   attributes ProductVariantAttribute[]
    images ProductVariantImage[]
-   cartItems CartItem[]
-   orderItems OrderItem[]
+   cartItems    CartItem[]
+   orderItems   OrderItem[]
+   wishlistItems WishlistItem[]
   @@index([productId])
   @@index([sku])
   @@index([barcode])
@@ -227,6 +228,7 @@ model Cart {
   user User? @relation(fields: [userId],references: [id])
   status CartStatus @default(ACTIVE)
   items CartItem[]
+  wishlist Wishlist?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -243,6 +245,24 @@ model CartItem {
   @@index([cartId])
 }
 
+model Wishlist {
+  id        Int            @id @default(autoincrement())
+  cartId    Int            @unique
+  cart      Cart           @relation(fields: [cartId], references: [id])
+  items     WishlistItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model WishlistItem {
+  id               Int            @id @default(autoincrement())
+  wishlistId       Int
+  productVariantId Int
+  wishlist         Wishlist       @relation(fields: [wishlistId], references: [id])
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+  @@unique([wishlistId, productVariantId])
+  @@index([wishlistId])
+}
 
 enum OrderStatus {
    
@@ -532,4 +552,17 @@ model Notification {
 
   @@index([userId])
   @@index([userId, isRead])
+}
+
+model Banner {
+  id        Int      @id @default(autoincrement())
+  title     String
+  imageUrl  String
+  link      String?
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

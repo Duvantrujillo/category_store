@@ -21,6 +21,7 @@ import ReturnList from './pages/dashboard/admin/return/pages/ListReturn'
 import ReportsPage from './pages/dashboard/admin/reports/pages/ReportsPage'
 import ListUser from './pages/dashboard/admin/user/pages/ListUser'
 import ListPermission from './pages/dashboard/admin/permission/pages/ListPermission'
+import ListBanner from './pages/dashboard/admin/banner/page/ListBanner'
 import AdminHome from './pages/dashboard/admin/home/AdminHome'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -58,6 +59,7 @@ function App() {
         <Route path="reports" element={<ReportsPage />} />
         <Route path="list/users"       element={<ListUser />} />
         <Route path="list/permissions" element={<ListPermission />} />
+        <Route path="list/banner"      element={<ListBanner />} />
       </Route>
 
       {/* Panel de cliente */}

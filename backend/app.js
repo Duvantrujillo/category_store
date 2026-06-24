@@ -54,6 +54,7 @@ const reportRouter       = require('./routes/report.routes.js')
 const searchRouter       = require('./routes/search.routes.js')
 const permissionRouter       = require('./routes/permission.routes.js')
 const paymentMethodRouter    = require('./routes/payment-method.routes.js')
+const bannerRouter           = require('./routes/banner.routes.js')
 
 /*
 |--------------------------------------------------------------------------
@@ -70,6 +71,10 @@ app.use('/webhook', webhookRouter)
 const publicCartRouter = require('./routes/cart-public.routes.js')
 app.use('/cart', publicCartRouter)
 
+// Wishlist anónima — reutiliza el mismo UUID del carrito
+const publicWishlistRouter = require('./routes/wishlist-public.routes.js')
+app.use('/wishlist', publicWishlistRouter)
+
 // Detalle de variante individual (sin auth)
 const { getPublicVariantById } = require('./controllers/product-variant/product_variant.controller')
 app.get('/product-variant/public/:id', getPublicVariantById)
@@ -83,6 +88,7 @@ const PUBLIC_ROUTES = new Set([
   'GET /category/public',
   'GET /brand/public',
   'GET /search/public',
+  'GET /banner/public',
 ])
 
 app.use((req, res, next) => {
@@ -120,6 +126,7 @@ app.use('/report',      reportRouter)
 app.use('/search',      searchRouter)
 app.use('/permission',  permissionRouter)
 app.use('/payment-method', paymentMethodRouter)
+app.use('/banner',         bannerRouter)
 
 /*
 |--------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -25,9 +25,12 @@ export function usePublicCart() {
   const [cartItems, setCartItems]   = useState([]);
   const [cartUuid, setCartUuid]     = useState(() => localStorage.getItem("cart_uuid") ?? null);
   const [cartOpen, setCartOpen]     = useState(false);
+  const initRef                     = useRef(false);
 
-  // Inicializar carrito al montar
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
     async function init() {
       try {
         let uuid = localStorage.getItem("cart_uuid");
@@ -38,7 +41,6 @@ export function usePublicCart() {
             setCartItems(mapCart(cart));
             return;
           }
-          // El carrito ya no existe en el servidor — crear uno nuevo
           localStorage.removeItem("cart_uuid");
         }
 
@@ -146,6 +148,7 @@ export function usePublicCart() {
 
   return {
     cartItems,
+    cartUuid,
     cartOpen,
     setCartOpen,
     addToCart,

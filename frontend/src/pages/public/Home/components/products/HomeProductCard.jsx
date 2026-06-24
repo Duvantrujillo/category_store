@@ -25,7 +25,7 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
   return (
     <article
       onClick={() => navigate(`/producto/${variant.id}`)}
-      className="group flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-md hover:shadow-rose-100 transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100"
+      className="group flex flex-col h-full bg-white rounded-2xl shadow-sm hover:shadow-md hover:shadow-rose-100 transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100"
     >
       {/* ── Imagen ── */}
       <div className="relative overflow-hidden bg-gray-50" style={{ aspectRatio: "4/5" }}>
@@ -68,36 +68,39 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
       </div>
 
       {/* ── Info ── */}
-      <div className="flex flex-col px-3 pt-2.5 pb-3 flex-1 gap-1.5">
-        {/* Atributos en gris claro */}
-        {attrText && (
-          <p className="text-[11px] text-gray-400 leading-tight truncate">
-            {attrText}
+      <div className="flex flex-col px-2.5 pt-2 pb-2.5 flex-1">
+
+        {/* Parte superior: atributos + nombre */}
+        <div className="flex flex-col gap-0.5 flex-1">
+          {attrText && (
+            <p className="text-[10px] text-gray-400 leading-tight truncate">
+              {attrText}
+            </p>
+          )}
+          <h3 className="font-bold text-rose-500 text-xs leading-snug line-clamp-2 min-h-[2.5em]">
+            {product?.name ?? "—"}
+          </h3>
+        </div>
+
+        {/* Parte inferior: precio + botón — siempre al fondo */}
+        <div className="mt-2 flex flex-col gap-1.5">
+          <p className="text-base font-bold text-gray-800 leading-none">
+            ${Number(price).toLocaleString("es-CO")}{" "}
+            <span className="text-[10px] font-normal text-gray-400">COP</span>
           </p>
-        )}
 
-        {/* Nombre en rosa bold */}
-        <h3 className="font-bold text-rose-500 text-sm leading-snug line-clamp-2">
-          {product?.name ?? "—"}
-        </h3>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!outOfStock && !atLimit) onAddToCart?.(variant);
+            }}
+            disabled={outOfStock || atLimit}
+            className="w-full h-8 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-rose-400/80 hover:bg-rose-400/95 active:bg-rose-500 text-white"
+          >
+            {outOfStock ? "No disponible" : atLimit ? "Límite de stock" : "Agregar al carrito"}
+          </button>
+        </div>
 
-        {/* Precio */}
-        <p className="text-sm font-semibold text-gray-800 mt-0.5">
-          ${Number(price).toLocaleString("es-CO")}{" "}
-          <span className="text-xs font-normal text-gray-400">COP</span>
-        </p>
-
-        {/* Botón */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!outOfStock && !atLimit) onAddToCart?.(variant);
-          }}
-          disabled={outOfStock || atLimit}
-          className="mt-1 w-full h-9 rounded-lg text-[11px] font-bold tracking-widest uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white"
-        >
-          {outOfStock ? "No disponible" : atLimit ? "Límite de stock" : "Agregar al carrito"}
-        </button>
       </div>
     </article>
   );

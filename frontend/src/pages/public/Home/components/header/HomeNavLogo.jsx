@@ -7,11 +7,11 @@ export default function HomeNavLogo() {
       to="/"
       className="flex items-center gap-2.5 shrink-0 group select-none"
     >
-      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-rose-400 text-white shadow-sm group-hover:bg-rose-500 transition-colors">
+      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/25 text-white shadow-sm group-hover:bg-white/35 transition-colors">
         <Sparkles size={17} />
       </div>
-      <span className="hidden sm:block font-bold text-rose-900 text-[15px] tracking-tight leading-none">
-        Bloom<span className="text-rose-400">Beauty</span>
+      <span className="block font-bold italic text-white text-[15px] tracking-tight leading-none">
+        Wow<span className="text-white/75">Beauty</span>
       </span>
     </Link>
   );

@@ -11,16 +11,15 @@ import { useHomeCategories } from "./hooks/useHomeCategories";
 import { useHomeBrands } from "./hooks/useHomeBrands";
 import { useHomeProducts } from "./hooks/useHomeProducts";
 import { usePublicCart } from "./hooks/usePublicCart";
+import { usePublicWishlist } from "./hooks/usePublicWishlist";
 
 export default function Home() {
-  const [wishlistOpen, setWishlistOpen]   = useState(false);
-  const [wishlistItems, setWishlistItems] = useState([]);
-  const [search, setSearch]               = useState("");
+  const [search, setSearch]             = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  const { categories, loading: loadingCats }     = useHomeCategories();
-  const { brands }                               = useHomeBrands();
-  const { variants, loading: loadingVariants }   = useHomeProducts(search, selectedCategory);
+  const { categories, loading: loadingCats }   = useHomeCategories();
+  const { brands }                             = useHomeBrands();
+  const { variants, loading: loadingVariants } = useHomeProducts(search, selectedCategory);
 
   const {
     cartItems,
@@ -29,19 +28,20 @@ export default function Home() {
     addToCart,
     updateQty,
     removeFromCart,
+    cartUuid,
   } = usePublicCart();
+
+  const {
+    wishlistItems,
+    wishlistOpen,
+    setWishlistOpen,
+    toggleFavorite,
+    removeFromWishlist,
+  } = usePublicWishlist(cartUuid);
 
   const cartCount    = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const favoritedIds = new Set(wishlistItems.map((v) => v.id));
   const cartQtyById  = Object.fromEntries(cartItems.map((i) => [i.variant.id, i.quantity]));
-
-  function handleToggleFavorite(variant) {
-    setWishlistItems((prev) =>
-      prev.some((v) => v.id === variant.id)
-        ? prev.filter((v) => v.id !== variant.id)
-        : [...prev, variant]
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -68,8 +68,9 @@ export default function Home() {
           variants={variants}
           loading={loadingVariants}
           search={search}
+          selectedCategory={selectedCategory}
           onAddToCart={addToCart}
-          onToggleFavorite={handleToggleFavorite}
+          onToggleFavorite={toggleFavorite}
           favoritedIds={favoritedIds}
           cartQtyById={cartQtyById}
         />
@@ -81,7 +82,7 @@ export default function Home() {
         open={wishlistOpen}
         onClose={() => setWishlistOpen(false)}
         items={wishlistItems}
-        onRemove={(id) => setWishlistItems((p) => p.filter((v) => v.id !== id))}
+        onRemove={removeFromWishlist}
         onAddToCart={(variant) => { addToCart(variant); setWishlistOpen(false); }}
       />
 

@@ -39,8 +39,10 @@ function DatePicker({ value, onChange, placeholder = "Seleccionar fecha", classN
   };
 
   const handleClear = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     onChange("");
+    setOpen(false);
   };
 
   const displayLabel = selected
@@ -49,29 +51,34 @@ function DatePicker({ value, onChange, placeholder = "Seleccionar fecha", classN
 
   return (
     <div ref={ref} className={cn("relative", className)}>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => setOpen((o) => !o)}
-        className={cn(
-          "h-8 w-40 justify-start gap-2 pr-2 text-sm font-normal",
-          !selected && "text-slate-400"
-        )}
-      >
-        <CalendarIcon size={14} className="shrink-0 text-slate-400" />
-        <span className="flex-1 truncate text-left">{displayLabel}</span>
+      <div className="relative w-full">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setOpen((o) => !o)}
+          className={cn(
+            "h-9 w-full justify-start gap-2 text-sm font-normal",
+            selected ? "pr-8" : "pr-3",
+            !selected && "text-slate-400"
+          )}
+        >
+          <CalendarIcon size={14} className="shrink-0 text-slate-400" />
+          <span className="flex-1 truncate text-left">{displayLabel}</span>
+        </Button>
+
         {selected && (
-          <X
-            size={12}
-            className="shrink-0 text-slate-400 hover:text-slate-700"
-            onClick={handleClear}
-          />
+          <span
+            onMouseDown={handleClear}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
+          >
+            <X size={12} />
+          </span>
         )}
-      </Button>
+      </div>
 
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-1.5 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
+        <div className="absolute bottom-full left-0 z-50 mb-1.5 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
           <Calendar
             mode="single"
             selected={selected}

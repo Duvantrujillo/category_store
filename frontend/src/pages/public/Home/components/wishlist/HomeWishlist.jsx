@@ -1,4 +1,4 @@
-import { Heart } from "lucide-react";
+import { Heart, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -14,27 +14,29 @@ export default function HomeWishlist({ open, onClose, items, onRemove, onAddToCa
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-sm flex flex-col p-0 bg-white border-l border-rose-100"
+        className="w-full sm:max-w-sm flex flex-col p-0 bg-white border-l border-gray-100 shadow-2xl"
         showCloseButton={false}
       >
         {/* Header */}
-        <SheetHeader className="px-5 pt-5 pb-4 border-b border-rose-50">
+        <SheetHeader className="px-5 pt-5 pb-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
-            <SheetTitle className="flex items-center gap-2 text-rose-900 font-bold text-base">
-              <Heart size={18} className="text-rose-400 fill-rose-300" />
+            <SheetTitle className="flex items-center gap-2.5 text-gray-900 font-semibold text-sm tracking-tight">
+              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-rose-50">
+                <Heart size={14} className="text-rose-400 fill-rose-300" />
+              </div>
               Me encanta
               {items.length > 0 && (
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-500">
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
                   {items.length} {items.length === 1 ? "producto" : "productos"}
                 </span>
               )}
             </SheetTitle>
             <button
               onClick={onClose}
-              className="text-rose-300 hover:text-rose-500 transition-colors text-lg leading-none"
+              className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
               aria-label="Cerrar favoritos"
             >
-              ✕
+              <X size={15} />
             </button>
           </div>
         </SheetHeader>
@@ -57,8 +59,8 @@ export default function HomeWishlist({ open, onClose, items, onRemove, onAddToCa
 
         {/* Footer */}
         {items.length > 0 && (
-          <SheetFooter className="px-5 pt-4 pb-6 border-t border-rose-50">
-            <p className="text-xs text-rose-300 text-center w-full">
+          <SheetFooter className="px-5 pt-4 pb-6 border-t border-gray-100">
+            <p className="text-center text-[10px] text-gray-300 w-full">
               {items.length} {items.length === 1 ? "producto guardado" : "productos guardados"}
             </p>
           </SheetFooter>

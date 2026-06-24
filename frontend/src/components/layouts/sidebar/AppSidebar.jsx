@@ -16,6 +16,7 @@ import {
   BarChart3,
   Users,
   KeyRound,
+  Paintbrush,
 } from "lucide-react";
 
 const ALL_SECTIONS = [
@@ -48,6 +49,12 @@ const ALL_SECTIONS = [
       { title: "Órdenes",      url: "/dashboard/admin/list/order",      icon: ClipboardList },
       { title: "Envíos",       url: "/dashboard/admin/list/shipment",   icon: Truck },
       { title: "Devoluciones", url: "/dashboard/admin/list/return",     icon: RotateCcw },
+    ],
+  },
+  {
+    label: "Personalización",
+    items: [
+      { title: "Banners", url: "/dashboard/admin/list/banner", icon: Paintbrush },
     ],
   },
   {

@@ -64,6 +64,12 @@ const ALL_PERMISSIONS = [
   // Reportes
   { name: 'reports.view',            description: 'Ver reportes (ventas, envíos, devoluciones, reembolsos)' },
 
+  // Banners / Hero
+  { name: 'banners.view',            description: 'Ver banners del hero' },
+  { name: 'banners.create',          description: 'Crear banners del hero' },
+  { name: 'banners.update',          description: 'Editar banners del hero' },
+  { name: 'banners.delete',          description: 'Eliminar banners del hero' },
+
   // Permisos — gestión de roles (solo super_admin puede asignarlo)
   { name: 'permissions.manage',      description: 'Gestionar permisos de roles' },
 ];
@@ -81,6 +87,7 @@ const ADMIN_DEFAULT_PERMISSIONS = [
   'returns.view',
   'dashboard.view',
   'reports.view',
+  'banners.view',
 ];
 
 async function main() {

@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import apiClient from "@/lib/apiClient";
 
-const SLIDES = [
+const FALLBACK_SLIDES = [
   {
-    id: 1,
+    id: "f1",
+    type: "fallback",
     tag: "Nueva colección",
-    title: "Belleza que\nte inspira",
-    subtitle: "Descubre los labiales, bases y paletas que van a transformar tu look este temporada.",
+    title: "Belleza que te inspira",
+    subtitle: "Descubre los labiales, bases y paletas que van a transformar tu look esta temporada.",
     cta: "Ver colección",
     bg: "from-rose-100 via-pink-50 to-fuchsia-100",
     accent: "bg-rose-400",
@@ -17,9 +19,10 @@ const SLIDES = [
     emoji: "💄",
   },
   {
-    id: 2,
+    id: "f2",
+    type: "fallback",
     tag: "Tendencia",
-    title: "Glow natural\ntodo el día",
+    title: "Glow natural todo el día",
     subtitle: "Iluminadores, correctores y bases de larga duración para una piel radiante sin esfuerzo.",
     cta: "Explorar ahora",
     bg: "from-amber-50 via-rose-50 to-pink-100",
@@ -31,9 +34,10 @@ const SLIDES = [
     emoji: "✨",
   },
   {
-    id: 3,
+    id: "f3",
+    type: "fallback",
     tag: "Lo más amado",
-    title: "Cuida tu piel,\námate más",
+    title: "Cuida tu piel, ámate más",
     subtitle: "Rutinas de skincare con productos premium seleccionados especialmente para ti.",
     cta: "Descubrir",
     bg: "from-fuchsia-50 via-rose-50 to-pink-100",
@@ -46,10 +50,27 @@ const SLIDES = [
   },
 ];
 
+const API = import.meta.env.VITE_API_URL;
+
 export default function HomeHeroCarousel() {
-  const [current, setCurrent] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [slides, setSlides]       = useState(FALLBACK_SLIDES);
+  const [current, setCurrent]     = useState(0);
+  const [paused, setPaused]       = useState(false);
   const [animating, setAnimating] = useState(false);
+
+  useEffect(() => {
+    apiClient.get("/banner/public")
+      .then((res) => {
+        const data = res.data?.data ?? res.data ?? [];
+        if (Array.isArray(data) && data.length > 0) {
+          setSlides(data.map((b) => ({ ...b, type: "image" })));
+          setCurrent(0);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const count = slides.length;
 
   const goTo = useCallback((index) => {
     if (animating) return;
@@ -58,8 +79,8 @@ export default function HomeHeroCarousel() {
     setTimeout(() => setAnimating(false), 500);
   }, [animating]);
 
-  const prev = () => goTo((current - 1 + SLIDES.length) % SLIDES.length);
-  const next = useCallback(() => goTo((current + 1) % SLIDES.length), [current, goTo]);
+  const prev = () => goTo((current - 1 + count) % count);
+  const next = useCallback(() => goTo((current + 1) % count), [current, count, goTo]);
 
   useEffect(() => {
     if (paused) return;
@@ -67,99 +88,146 @@ export default function HomeHeroCarousel() {
     return () => clearInterval(id);
   }, [paused, next]);
 
-  const slide = SLIDES[current];
+  const slide = slides[current];
 
   return (
     <section
-      className="relative mb-0 overflow-hidden"
+      className="relative overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Slides */}
-      {SLIDES.map((s, i) => (
+      {/* ── FONDOS ── */}
+      {slides.map((s, i) => (
         <div
           key={s.id}
-          className={`absolute inset-0 bg-linear-to-br ${s.bg} transition-opacity duration-700 ease-in-out ${
+          className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
             i === current ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
-        />
+        >
+          {s.type === "image" ? (
+            <>
+              <img
+                src={`${API}${s.imageUrl}`}
+                alt={s.title}
+                className="w-full h-full object-cover object-center"
+                draggable={false}
+              />
+              {/* Gradiente: cubre de izquierda (texto) a derecha en desktop, de abajo a arriba en mobile */}
+              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent sm:bg-linear-to-r sm:from-black/60 sm:via-black/30 sm:to-transparent" />
+            </>
+          ) : (
+            <div className={`absolute inset-0 bg-linear-to-br ${s.bg}`} />
+          )}
+        </div>
       ))}
 
-      {/* Decorativos */}
-      <div className={`absolute -top-10 -right-10 w-64 h-64 rounded-full blur-3xl ${slide.deco1} transition-all duration-700`} />
-      <div className={`absolute bottom-0 -left-8 w-48 h-48 rounded-full blur-2xl ${slide.deco2} transition-all duration-700`} />
-      <div className={`absolute top-1/2 right-1/4 w-32 h-32 rounded-full blur-2xl ${slide.deco3} transition-all duration-700`} />
+      {/* Decorativos solo en fallback y solo en pantallas medianas+ */}
+      {slide.type === "fallback" && (
+        <>
+          <div className={`hidden sm:block absolute -top-10 -right-10 w-64 h-64 rounded-full blur-3xl ${slide.deco1} transition-all duration-700`} />
+          <div className={`hidden sm:block absolute bottom-0 -left-8 w-48 h-48 rounded-full blur-2xl ${slide.deco2} transition-all duration-700`} />
+          <div className={`hidden sm:block absolute top-1/2 right-1/4 w-32 h-32 rounded-full blur-2xl ${slide.deco3} transition-all duration-700`} />
+        </>
+      )}
 
-      {/* Contenido */}
-      <div className="relative z-10 min-h-[340px] sm:min-h-[400px] flex items-center px-8 sm:px-14 py-12">
+      {/* ── CONTENIDO ── */}
+      <div className="relative z-10 flex items-end sm:items-center min-h-60 sm:min-h-[380px] lg:min-h-[440px] px-5 sm:px-12 lg:px-16 pb-10 pt-8 sm:py-12">
         <div
           key={current}
-          className="flex flex-col gap-4 max-w-lg animate-[fadeSlideUp_0.55s_ease_forwards]"
-          style={{ animation: "fadeSlideUp 0.55s ease forwards" }}
+          className="flex flex-col gap-2.5 sm:gap-4 w-full sm:max-w-lg"
+          style={{ animation: "fadeSlideUp 0.5s ease forwards" }}
         >
-          {/* Tag */}
-          <span className={`self-start flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${slide.accent} text-white shadow-sm`}>
-            <Sparkles size={10} />
-            {slide.tag}
-          </span>
+          {slide.type === "fallback" ? (
+            <>
+              {/* Tag */}
+              <span className={`self-start flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full ${slide.accent} text-white shadow-sm`}>
+                <Sparkles size={9} />
+                {slide.tag}
+              </span>
 
-          {/* Título */}
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-rose-900 leading-tight whitespace-pre-line tracking-tight">
-            {slide.title}
-          </h1>
+              {/* Título */}
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-rose-900 leading-tight tracking-tight">
+                {slide.title}
+              </h1>
 
-          {/* Subtítulo */}
-          <p className="text-sm sm:text-base text-rose-700/70 leading-relaxed max-w-sm">
-            {slide.subtitle}
-          </p>
+              {/* Subtítulo — oculto en mobile muy pequeño */}
+              <p className="hidden xs:block sm:block text-xs sm:text-base text-rose-700/70 leading-relaxed max-w-xs sm:max-w-sm">
+                {slide.subtitle}
+              </p>
 
-          {/* CTA */}
-          <button className={`self-start mt-2 flex items-center gap-2 h-11 px-6 rounded-full ${slide.accent} hover:opacity-90 active:scale-95 text-white text-sm font-semibold tracking-wide transition-all shadow-md`}>
-            {slide.cta}
-            <ChevronRight size={16} />
-          </button>
-        </div>
+              {/* CTA */}
+              <button className={`self-start mt-1 sm:mt-2 flex items-center gap-2 h-9 sm:h-11 px-5 sm:px-6 rounded-full ${slide.accent} hover:opacity-90 active:scale-95 text-white text-xs sm:text-sm font-semibold tracking-wide transition-all shadow-md`}>
+                {slide.cta}
+                <ChevronRight size={14} />
+              </button>
 
-        {/* Emoji decorativo grande */}
-        <div className="absolute right-10 sm:right-16 top-1/2 -translate-y-1/2 text-7xl sm:text-9xl select-none opacity-30 sm:opacity-50 pointer-events-none">
-          {slide.emoji}
+              {/* Emoji — solo en pantallas ≥ sm para que no tape el texto */}
+              <div className="hidden sm:block absolute right-10 lg:right-16 top-1/2 -translate-y-1/2 text-8xl lg:text-9xl select-none opacity-40 pointer-events-none">
+                {slide.emoji}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Título del banner de imagen */}
+              {slide.title && (
+                <h1 className="text-xl sm:text-3xl lg:text-5xl font-bold text-white leading-tight tracking-tight drop-shadow-lg max-w-[260px] sm:max-w-lg">
+                  {slide.title}
+                </h1>
+              )}
+
+              {/* Botón CTA si hay link */}
+              {slide.link && (
+                <a
+                  href={slide.link}
+                  className="self-start mt-1 sm:mt-2 flex items-center gap-2 h-9 sm:h-11 px-5 sm:px-6 rounded-full bg-white/90 hover:bg-white active:scale-95 text-rose-600 text-xs sm:text-sm font-semibold tracking-wide transition-all shadow-md"
+                >
+                  Ver más
+                  <ChevronRight size={14} />
+                </a>
+              )}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Flecha izquierda */}
-      <button
-        onClick={prev}
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-9 h-9 rounded-full bg-white/70 backdrop-blur-sm text-rose-500 hover:bg-white hover:scale-110 transition-all shadow-sm border border-rose-100"
-        aria-label="Anterior"
-      >
-        <ChevronLeft size={18} />
-      </button>
+      {/* ── FLECHAS — solo visibles cuando hay más de 1 slide ── */}
+      {count > 1 && (
+        <>
+          <button
+            onClick={prev}
+            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-9 h-9 rounded-full bg-white/75 backdrop-blur-sm text-rose-500 hover:bg-white hover:scale-110 transition-all shadow-sm border border-white/60"
+            aria-label="Anterior"
+          >
+            <ChevronLeft size={18} />
+          </button>
 
-      {/* Flecha derecha */}
-      <button
-        onClick={next}
-        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-9 h-9 rounded-full bg-white/70 backdrop-blur-sm text-rose-500 hover:bg-white hover:scale-110 transition-all shadow-sm border border-rose-100"
-        aria-label="Siguiente"
-      >
-        <ChevronRight size={18} />
-      </button>
+          <button
+            onClick={next}
+            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-9 h-9 rounded-full bg-white/75 backdrop-blur-sm text-rose-500 hover:bg-white hover:scale-110 transition-all shadow-sm border border-white/60"
+            aria-label="Siguiente"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </>
+      )}
 
-      {/* Dots */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-        {SLIDES.map((s, i) => (
+      {/* ── DOTS — solo cuando hay más de 1 slide ── */}
+      {count > 1 && <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2">
+        {slides.map((s, i) => (
           <button
             key={s.id}
             onClick={() => goTo(i)}
             aria-label={`Ir a slide ${i + 1}`}
             className={`rounded-full transition-all duration-300 ${
               i === current
-                ? `w-6 h-2 ${s.dot}`
-                : "w-2 h-2 bg-rose-200 hover:bg-rose-300"
+                ? s.type === "image"
+                  ? "w-5 h-1.5 sm:w-6 sm:h-2 bg-white"
+                  : `w-5 h-1.5 sm:w-6 sm:h-2 ${s.dot}`
+                : "w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white/50 hover:bg-white/80"
             }`}
           />
         ))}
-      </div>
-
+      </div>}
     </section>
   );
 }

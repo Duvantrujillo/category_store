@@ -9,7 +9,7 @@ export default function HomeHeader({ cartCount = 0, onCartOpen, wishlistCount = 
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 h-16 bg-white/95 backdrop-blur-sm border-b border-rose-100 shadow-sm">
+    <header className="sticky top-0 z-40 h-16 bg-rose-300/75 backdrop-blur-sm border-b border-rose-400/20 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center h-full gap-4">
 
         <HomeNavLogo />
@@ -24,11 +24,7 @@ export default function HomeHeader({ cartCount = 0, onCartOpen, wishlistCount = 
           {/* Icono de búsqueda — solo en móvil */}
           <button
             onClick={() => setMobileSearchOpen(true)}
-            className={`sm:hidden flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
-              mobileSearchOpen
-                ? "bg-rose-100 text-rose-500"
-                : "text-rose-400 hover:bg-rose-50 hover:text-rose-500"
-            }`}
+            className="sm:hidden flex items-center justify-center w-10 h-10 rounded-xl text-white hover:bg-white/20 transition-colors"
             aria-label="Buscar"
           >
             <Search size={20} />

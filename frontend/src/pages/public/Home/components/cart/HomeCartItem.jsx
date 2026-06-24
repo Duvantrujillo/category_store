@@ -20,10 +20,10 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty }) {
   const subtotal = Number(price) * quantity;
 
   return (
-    <div className="flex gap-3 py-3.5 border-b border-rose-50 last:border-0">
+    <div className="flex gap-3 py-4 border-b border-gray-100 last:border-0">
 
       {/* Imagen */}
-      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-rose-50 shrink-0">
+      <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
         <img
           src={imgSrc}
           alt={product?.name}
@@ -35,22 +35,21 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty }) {
       <div className="flex flex-col gap-1 flex-1 min-w-0">
 
         {product?.brand?.name && (
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-pink-400">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-rose-400">
             {product.brand.name}
           </span>
         )}
 
-        <p className="text-xs font-semibold text-rose-900 line-clamp-2 leading-snug">
+        <p className="text-xs font-semibold text-gray-800 line-clamp-2 leading-snug">
           {product?.name}
         </p>
 
-        {/* Atributos */}
         {attributes?.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {attributes.map((a, i) => (
               <span
                 key={i}
-                className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-400 border border-rose-100"
+                className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500"
               >
                 {a.attributeValue?.value}
               </span>
@@ -59,29 +58,29 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty }) {
         )}
 
         {/* Cantidad + precio */}
-        <div className="flex items-center justify-between mt-1">
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between mt-1.5">
+          <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
             <button
               onClick={() => onUpdateQty(variant.id, quantity - 1)}
-              className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-50 text-rose-400 hover:bg-rose-100 transition-colors disabled:opacity-40"
+              className="flex items-center justify-center w-6 h-6 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-30"
               disabled={quantity <= 1}
             >
-              <Minus size={11} />
+              <Minus size={10} />
             </button>
-            <span className="text-xs font-semibold text-rose-800 w-5 text-center">
+            <span className="text-xs font-semibold text-gray-700 w-6 text-center border-x border-gray-200">
               {quantity}
             </span>
             <button
               onClick={() => onUpdateQty(variant.id, quantity + 1)}
               disabled={atLimit}
-              className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-50 text-rose-400 hover:bg-rose-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center justify-center w-6 h-6 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               title={atLimit ? `Máximo disponible: ${stock}` : undefined}
             >
-              <Plus size={11} />
+              <Plus size={10} />
             </button>
           </div>
 
-          <span className="text-sm font-bold text-rose-700">
+          <span className="text-sm font-bold text-gray-900">
             ${subtotal.toLocaleString("es-CO")}
           </span>
         </div>
@@ -90,10 +89,10 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty }) {
       {/* Eliminar */}
       <button
         onClick={() => onRemove(variant.id)}
-        className="self-start mt-0.5 flex items-center justify-center w-7 h-7 rounded-full text-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-colors shrink-0"
+        className="self-start mt-0.5 flex items-center justify-center w-6 h-6 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0"
         aria-label="Eliminar del carrito"
       >
-        <Trash2 size={13} />
+        <Trash2 size={12} />
       </button>
     </div>
   );
