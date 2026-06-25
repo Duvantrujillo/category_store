@@ -46,7 +46,8 @@ const handleUploadError = (err, req, res, next) => {
  * Rutas para variantes
  * upload.array('images', 5) -> permitimos hasta 5 imágenes
  */
-routes.get("/public",    productVariantController.getPublicVariants);
+routes.get("/public",        productVariantController.getPublicVariants);
+routes.get("/public/top-sellers", productVariantController.getTopSellers);
 routes.get("/all",       requirePermission('product-variants.view'),   productVariantController.allProductVariant);
 routes.get("/search",    requirePermission('product-variants.view'),   productVariantController.searchSkuBarcode);
 routes.post("/create",   requirePermission('product-variants.create'), upload.array('images', 5), handleUploadError, productVariantController.createProductVariant);

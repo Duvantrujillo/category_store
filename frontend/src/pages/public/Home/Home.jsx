@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import HomeHeader from "./components/header/HomeHeader";
 import HomeCategorySection from "./components/categories/HomeCategorySection";
 import HomeProductGrid from "./components/products/HomeProductGrid";
@@ -12,14 +13,17 @@ import { useHomeBrands } from "./hooks/useHomeBrands";
 import { useHomeProducts } from "./hooks/useHomeProducts";
 import { usePublicCart } from "./hooks/usePublicCart";
 import { usePublicWishlist } from "./hooks/usePublicWishlist";
+import { useTopSellers } from "./hooks/useTopSellers";
 
 export default function Home() {
+  const navigate = useNavigate();
   const [search, setSearch]             = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   const { categories, loading: loadingCats }   = useHomeCategories();
   const { brands }                             = useHomeBrands();
   const { variants, loading: loadingVariants } = useHomeProducts(search, selectedCategory);
+  const { topSellerIds }                       = useTopSellers();
 
   const {
     cartItems,
@@ -73,6 +77,7 @@ export default function Home() {
           onToggleFavorite={toggleFavorite}
           favoritedIds={favoritedIds}
           cartQtyById={cartQtyById}
+          topSellerIds={topSellerIds}
         />
       </main>
 
@@ -92,6 +97,7 @@ export default function Home() {
         items={cartItems}
         onRemove={removeFromCart}
         onUpdateQty={updateQty}
+        onCheckout={() => { setCartOpen(false); navigate("/checkout"); }}
       />
     </div>
   );

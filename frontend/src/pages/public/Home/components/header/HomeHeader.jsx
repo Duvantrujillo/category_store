@@ -27,7 +27,7 @@ export default function HomeHeader({ cartCount = 0, onCartOpen, wishlistCount = 
             className="sm:hidden flex items-center justify-center w-10 h-10 rounded-xl text-white hover:bg-white/20 transition-colors"
             aria-label="Buscar"
           >
-            <Search size={20} />
+            <Search size={20} strokeWidth={2.5} />
           </button>
 
           <HomeWishlistButton count={wishlistCount} onClick={onWishlistOpen} />

@@ -1,24 +1,9 @@
 import HomeProductCard from "./HomeProductCard";
-import HomeProductRow from "./HomeProductRow";
 import HomeProductSkeleton from "./HomeProductSkeleton";
 import HomeProductEmpty from "./HomeProductEmpty";
 
-const SKELETONS      = Array.from({ length: 6 });
-const CAROUSEL_MIN   = 6;  // a partir de este nro de productos → filas horizontales
-const GRID_LIMIT     = 15; // máx productos en grid plano
-const ROW_LIMIT      = 14; // máx productos por fila horizontal
-
-function groupByCategory(variants) {
-  const map = new Map();
-  variants.forEach((v) => {
-    const catId   = v.product?.category?.id   ?? 0;
-    const catName = v.product?.category?.name ?? "Otros";
-    if (!map.has(catId)) map.set(catId, { id: catId, name: catName, variants: [] });
-    map.get(catId).variants.push(v);
-  });
-  // Categorías con más productos primero
-  return [...map.values()].sort((a, b) => b.variants.length - a.variants.length);
-}
+const SKELETONS = Array.from({ length: 12 });
+const PAGE_SIZE = 12;
 
 export default function HomeProductGrid({
   variants,
@@ -29,20 +14,35 @@ export default function HomeProductGrid({
   onToggleFavorite,
   favoritedIds,
   cartQtyById,
+  topSellerIds,
 }) {
-  // Con búsqueda o filtro activo siempre mostramos grid plano
-  const isFiltering = !!search || !!selectedCategory;
-  const useCarousel = !isFiltering && variants.length >= CAROUSEL_MIN;
-  const groups      = useCarousel ? groupByCategory(variants) : [];
+  const firstGroup = variants.slice(0, PAGE_SIZE);
+  const restGroups = [];
+  for (let i = PAGE_SIZE; i < variants.length; i += PAGE_SIZE) {
+    restGroups.push(variants.slice(i, i + PAGE_SIZE));
+  }
 
-  const cardProps = { onAddToCart, onToggleFavorite, favoritedIds, cartQtyById };
+  const cardProps = { onAddToCart, onToggleFavorite, favoritedIds, cartQtyById, topSellerIds };
+
+  const renderCard = (v) => (
+    <HomeProductCard
+      key={v.id}
+      variant={v}
+      isFavorited={favoritedIds?.has(v.id)}
+      cartQty={cartQtyById?.[v.id] ?? 0}
+      {...cardProps}
+    />
+  );
 
   return (
     <section className="mt-2">
 
       {/* ── Encabezado ── */}
       <div className="flex items-baseline justify-between mb-5 px-4 sm:px-0">
-        <h2 className="text-base font-bold text-gray-900 tracking-tight">
+        <h2
+          className="text-4xl sm:text-7xl lg:text-9xl font-black"
+          style={{ color: "#4b5563", WebkitTextStroke: "1.5px #4b5563", letterSpacing: "0.1em" }}
+        >
           {search
             ? `Resultados para "${search}"`
             : selectedCategory
@@ -68,34 +68,27 @@ export default function HomeProductGrid({
         <HomeProductEmpty search={search} />
       )}
 
-      {/* ── Grid plano: pocos productos o con filtro activo ── */}
-      {!loading && variants.length > 0 && !useCarousel && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 px-4 sm:px-0">
-          {variants.slice(0, GRID_LIMIT).map((v) => (
-            <HomeProductCard
-              key={v.id}
-              variant={v}
-              isFavorited={favoritedIds?.has(v.id)}
-              cartQty={cartQtyById?.[v.id] ?? 0}
-              {...cardProps}
-            />
-          ))}
-        </div>
-      )}
+      {!loading && variants.length > 0 && (
+        <>
+          {/* ── Primeros 12: grid (2 cols mobile, 3 tablet, 4 desktop) ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 px-4 sm:px-0">
+            {firstGroup.map(renderCard)}
+          </div>
 
-      {/* ── Filas horizontales agrupadas por categoría ── */}
-      {!loading && useCarousel && (
-        <div>
-          {groups.map((group) => (
-            <HomeProductRow
-              key={group.id}
-              title={groups.length > 1 ? group.name : null}
-              count={group.variants.length}
-              variants={group.variants.slice(0, ROW_LIMIT)}
-              {...cardProps}
-            />
+          {/* ── Resto: filas horizontales con scroll (round-robin visual) ── */}
+          {restGroups.map((group, idx) => (
+            <div
+              key={idx}
+              className="flex gap-3 sm:gap-4 overflow-x-auto mt-6 pb-2 px-4 sm:px-0 scroll-smooth"
+            >
+              {group.map((v) => (
+                <div key={v.id} className="shrink-0 w-[46vw] sm:w-52 md:w-56">
+                  {renderCard(v)}
+                </div>
+              ))}
+            </div>
           ))}
-        </div>
+        </>
       )}
 
     </section>

@@ -106,7 +106,7 @@ export default function HomeNavSearch({ onSearch, mobileOpen, onMobileClose }) {
       {/* ── Barra fija en PC ── */}
       <form onSubmit={handleSubmit} className="flex-1 hidden sm:flex items-center justify-center">
         <div ref={wrapperRef} className="relative w-full max-w-sm">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-300 pointer-events-none" />
+          <Search size={15} strokeWidth={2.5} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-300 pointer-events-none" />
           <input
             type="text"
             value={value}
@@ -136,7 +136,7 @@ export default function HomeNavSearch({ onSearch, mobileOpen, onMobileClose }) {
           <div className="sm:hidden fixed top-16 left-0 right-0 z-50 bg-white border-b border-rose-100 shadow-lg px-4 py-3 animate-[fadeSlideUp_0.18s_ease_forwards]">
             <form onSubmit={handleSubmit} className="flex items-center gap-2">
               <div ref={mobileWrapperRef} className="relative flex-1">
-                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-300 pointer-events-none" />
+                <Search size={15} strokeWidth={2.5} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-300 pointer-events-none" />
                 <input
                   ref={mobileInputRef}
                   type="text"

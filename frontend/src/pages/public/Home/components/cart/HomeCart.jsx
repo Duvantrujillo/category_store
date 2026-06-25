@@ -40,7 +40,7 @@ function buildWhatsAppUrl(items) {
   return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-export default function HomeCart({ open, onClose, items, onRemove, onUpdateQty }) {
+export default function HomeCart({ open, onClose, items, onRemove, onUpdateQty, onCheckout }) {
   const total      = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
 
@@ -112,7 +112,10 @@ export default function HomeCart({ open, onClose, items, onRemove, onUpdateQty }
             </div>
 
             {/* CTA principal */}
-            <button className="w-full h-11 rounded-xl flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white text-xs font-bold tracking-widest uppercase transition-colors shadow-sm shadow-rose-200">
+            <button
+              onClick={onCheckout}
+              className="w-full h-11 rounded-xl flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white text-xs font-bold tracking-widest uppercase transition-colors shadow-sm shadow-rose-200"
+            >
               <ShoppingBag size={14} />
               Proceder al pago
             </button>

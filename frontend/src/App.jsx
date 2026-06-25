@@ -4,7 +4,9 @@ import { PermissionProvider } from './context/PermissionContext'
 import RegisterForm from './pages/auth/register/RegisterPages'
 import LoginForm from './pages/auth/login/LoginPage'
 import Home from "./pages/public/Home/Home"
-import ProductDetail from "./pages/public/ProductDetail/ProductDetail"
+import ProductDetail from "./pages/public/Home/components/detail/ProductDetail"
+import Checkout from "./pages/public/Checkout/Checkout"
+import CheckoutResponse from "./pages/public/Checkout/CheckoutResponse"
 import Admin from "./pages/dashboard/admin/Admin"
 import Customer from "./pages/dashboard/customer/Customer"
 import CreateShipping from './pages/dashboard/admin/form_response/pages/CreateShipping'
@@ -32,6 +34,8 @@ function App() {
       {/* Rutas públicas */}
       <Route path="/" element={<Home />} />
       <Route path="/producto/:id" element={<ProductDetail />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/checkout/respuesta" element={<CheckoutResponse />} />
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/login" element={<LoginForm />} />
       <Route path="/create/shipping" element={<CreateShipping />} />

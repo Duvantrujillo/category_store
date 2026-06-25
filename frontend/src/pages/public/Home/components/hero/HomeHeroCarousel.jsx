@@ -146,17 +146,23 @@ export default function HomeHeroCarousel() {
               </span>
 
               {/* Título */}
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-rose-900 leading-tight tracking-tight">
+              <h1
+                className="text-3xl sm:text-5xl lg:text-6xl font-bold text-rose-900 leading-tight"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic" }}
+              >
                 {slide.title}
               </h1>
 
               {/* Subtítulo — oculto en mobile muy pequeño */}
-              <p className="hidden xs:block sm:block text-xs sm:text-base text-rose-700/70 leading-relaxed max-w-xs sm:max-w-sm">
+              <p className="hidden xs:block sm:block text-xs sm:text-base text-gray-700/70 leading-relaxed max-w-xs sm:max-w-sm">
                 {slide.subtitle}
               </p>
 
               {/* CTA */}
-              <button className={`self-start mt-1 sm:mt-2 flex items-center gap-2 h-9 sm:h-11 px-5 sm:px-6 rounded-full ${slide.accent} hover:opacity-90 active:scale-95 text-white text-xs sm:text-sm font-semibold tracking-wide transition-all shadow-md`}>
+              <button
+                className="self-start mt-1 sm:mt-2 flex items-center gap-2 h-9 sm:h-11 px-5 sm:px-6 rounded-full bg-white/85 hover:bg-white/95 backdrop-blur-sm active:scale-95 text-gray-700 text-xs sm:text-sm tracking-widest transition-all border border-white/70 shadow-[0_4px_20px_rgba(0,0,0,0.15),0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_28px_rgba(0,0,0,0.2),0_2px_6px_rgba(0,0,0,0.1)]"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic", fontWeight: 600 }}
+              >
                 {slide.cta}
                 <ChevronRight size={14} />
               </button>
@@ -170,7 +176,10 @@ export default function HomeHeroCarousel() {
             <>
               {/* Título del banner de imagen */}
               {slide.title && (
-                <h1 className="text-xl sm:text-3xl lg:text-5xl font-bold text-white leading-tight tracking-tight drop-shadow-lg max-w-[260px] sm:max-w-lg">
+                <h1
+                  className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight drop-shadow-lg max-w-[260px] sm:max-w-lg"
+                  style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic" }}
+                >
                   {slide.title}
                 </h1>
               )}
@@ -179,7 +188,8 @@ export default function HomeHeroCarousel() {
               {slide.link && (
                 <a
                   href={slide.link}
-                  className="self-start mt-1 sm:mt-2 flex items-center gap-2 h-9 sm:h-11 px-5 sm:px-6 rounded-full bg-white/90 hover:bg-white active:scale-95 text-rose-600 text-xs sm:text-sm font-semibold tracking-wide transition-all shadow-md"
+                  className="self-start mt-1 sm:mt-2 flex items-center gap-2 h-9 sm:h-11 px-5 sm:px-6 rounded-full bg-white/85 hover:bg-white/95 backdrop-blur-sm active:scale-95 text-gray-700 text-xs sm:text-sm tracking-widest transition-all border border-white/70 shadow-[0_4px_20px_rgba(0,0,0,0.15),0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_28px_rgba(0,0,0,0.2),0_2px_6px_rgba(0,0,0,0.1)]"
+                  style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic", fontWeight: 600 }}
                 >
                   Ver más
                   <ChevronRight size={14} />

@@ -7,11 +7,11 @@ function BrandItem({ brand }) {
     : null;
 
   return (
-    <div className="flex items-center gap-2 px-4 shrink-0">
-      <span className="text-rose-200 text-base select-none">✦</span>
-      <div className="flex items-center gap-2.5">
+    <div className="flex items-center gap-3 px-4 shrink-0">
+      <span className="text-purple-300 text-[10px] select-none">◆</span>
+      <div className="flex items-center gap-3">
         {logoSrc && (
-          <div className="w-8 h-8 rounded-lg overflow-hidden bg-white border border-rose-100 shadow-sm flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-lg overflow-hidden bg-white border border-purple-100 shadow-sm flex items-center justify-center shrink-0">
             <img
               src={logoSrc}
               alt={brand.name}
@@ -20,7 +20,7 @@ function BrandItem({ brand }) {
             />
           </div>
         )}
-        <span className="text-sm font-semibold text-rose-800 whitespace-nowrap tracking-wide">
+        <span className="text-sm font-bold text-gray-700 whitespace-nowrap tracking-wide">
           {brand.name}
         </span>
       </div>
@@ -77,19 +77,19 @@ export default function HomeBrandMarquee({ brands }) {
   return (
     <section className="mb-0 mt-0">
       <div
-        className="relative overflow-hidden bg-rose-50/70 border-y border-rose-100 py-4"
+        className="relative overflow-hidden bg-purple-50/70 border-y border-purple-100 py-4"
         onMouseEnter={() => { pausedRef.current = true; }}
         onMouseLeave={() => { pausedRef.current = false; }}
       >
         {/* Fade izquierdo */}
         <div
           className="absolute left-0 top-0 bottom-0 w-20 z-10 pointer-events-none"
-          style={{ background: "linear-gradient(to right, #fff1f2 0%, transparent 100%)" }}
+          style={{ background: "linear-gradient(to right, #faf5ff 0%, transparent 100%)" }}
         />
         {/* Fade derecho */}
         <div
           className="absolute right-0 top-0 bottom-0 w-20 z-10 pointer-events-none"
-          style={{ background: "linear-gradient(to left, #fff1f2 0%, transparent 100%)" }}
+          style={{ background: "linear-gradient(to left, #faf5ff 0%, transparent 100%)" }}
         />
 
         {/* Pista: referencia oculta para medir una sola copia */}

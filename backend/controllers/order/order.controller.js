@@ -118,7 +118,8 @@ const createOrder = async (req, res) => {
             AND (stock - reservedStock) >= ${Number(item.quantity)}
         `
         if (Number(affected) === 0) {
-          throw new Error(`INSUFFICIENT_STOCK:${item.productVariantId}`)
+          const name = variantMap[item.productVariantId]?.product?.name ?? `variante ${item.productVariantId}`
+          throw new Error(`INSUFFICIENT_STOCK:${item.productVariantId}:${name}`) // name may contain colons
         }
       }
 
@@ -179,8 +180,13 @@ const createOrder = async (req, res) => {
       })
     }
     if (error.message?.startsWith('INSUFFICIENT_STOCK:')) {
-      const variantId = error.message.split(':')[1]
-      return res.status(409).json({ message: 'Stock insuficiente', productVariantId: Number(variantId) })
+      const parts = error.message.split(':')
+      const variantId = parts[1]
+      const productName = parts.slice(2).join(':')
+      return res.status(409).json({
+        message: `"${productName}" está agotado`,
+        productVariantId: Number(variantId)
+      })
     }
     // Dos requests simultáneas con la misma idempotencyKey: la primera ganó el
     // insert @unique, devolvemos la orden que ya existe.

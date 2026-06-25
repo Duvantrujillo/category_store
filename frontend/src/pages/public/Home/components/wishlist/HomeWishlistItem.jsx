@@ -1,4 +1,4 @@
-import { Trash2, ShoppingBag } from "lucide-react";
+import { Trash2, ShoppingBag, Plus } from "lucide-react";
 import noPhotos from "@/assets/icons/no-fotos.png";
 
 function getMainImage(images) {
@@ -17,10 +17,10 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart }) {
     : noPhotos;
 
   return (
-    <div className="flex gap-3 py-3.5 border-b border-rose-50 last:border-0">
+    <div className="flex gap-3 py-4 border-b border-rose-50 last:border-0">
 
       {/* Imagen */}
-      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-rose-50 shrink-0">
+      <div className="w-16 h-16 rounded-xl overflow-hidden bg-rose-50 border border-rose-100 shrink-0">
         <img
           src={imgSrc}
           alt={product?.name}
@@ -32,7 +32,7 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart }) {
       <div className="flex flex-col gap-1 flex-1 min-w-0">
 
         {product?.brand?.name && (
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-pink-400">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-pink-400">
             {product.brand.name}
           </span>
         )}
@@ -54,7 +54,8 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart }) {
           </div>
         )}
 
-        <div className="flex items-center justify-between mt-1">
+        {/* Precio + botón */}
+        <div className="flex items-center justify-between mt-1.5">
           <span className="text-sm font-bold text-rose-700">
             ${Number(price).toLocaleString("es-CO")}
           </span>
@@ -62,10 +63,15 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart }) {
           <button
             onClick={() => !outOfStock && onAddToCart(variant)}
             disabled={outOfStock}
-            className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-rose-400 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
+            title={outOfStock ? "Sin stock" : "Agregar al carrito"}
+            className="relative flex items-center justify-center w-8 h-8 rounded-full bg-rose-400 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors shadow-sm shadow-rose-200"
           >
-            <ShoppingBag size={10} />
-            {outOfStock ? "Sin stock" : "Al carrito"}
+            <ShoppingBag size={13} />
+            {!outOfStock && (
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center shadow-sm">
+                <Plus size={8} className="text-rose-500" strokeWidth={3} />
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -73,10 +79,10 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart }) {
       {/* Eliminar */}
       <button
         onClick={() => onRemove(variant.id)}
-        className="self-start mt-0.5 flex items-center justify-center w-7 h-7 rounded-full text-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-colors shrink-0"
+        className="self-start mt-0.5 flex items-center justify-center w-6 h-6 rounded-lg text-rose-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0"
         aria-label="Quitar de favoritos"
       >
-        <Trash2 size={13} />
+        <Trash2 size={12} />
       </button>
     </div>
   );

@@ -544,6 +544,33 @@ const getPublicVariantById = async (req, res) => {
   }
 }
 
+const getTopSellers = async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const grouped = await prisma.orderItem.groupBy({
+      by: ["productVariantId"],
+      where: {
+        order: {
+          createdAt: { gte: startOfMonth, lte: endOfMonth },
+          status: { in: ["PAID", "PENDING"] },
+        },
+      },
+      _sum: { quantity: true },
+      orderBy: { _sum: { quantity: "desc" } },
+      take: 3,
+    });
+
+    const ids = grouped.map((g) => g.productVariantId);
+    return res.status(200).json({ data: ids });
+  } catch (error) {
+    console.error("Error en getTopSellers:", error);
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
 module.exports = {
   createProductVariant,
   updateProductVariant,
@@ -552,4 +579,5 @@ module.exports = {
   searchSkuBarcode,
   getPublicVariants,
   getPublicVariantById,
+  getTopSellers,
 }

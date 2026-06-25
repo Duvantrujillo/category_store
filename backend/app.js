@@ -6,7 +6,17 @@ require('dotenv').config();
 
 const { authMiddleware } = require('./middlewares/auth.middleware');
 
-app.use(cors());
+// En producción: solo el frontend puede llamar al backend.
+// En desarrollo (sin FRONTEND_URL): acepta cualquier origen para no romper localhost.
+app.use(cors(
+  process.env.FRONTEND_URL
+    ? {
+        origin: process.env.FRONTEND_URL,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key'],
+      }
+    : {}
+));
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
@@ -84,6 +94,10 @@ const PUBLIC_ROUTES = new Set([
   'POST /user/create',
   'POST /user/login',
   'POST /form/create',
+  'POST /order/create',
+  'POST /payment/create',
+  'GET /payment/methods',
+  'GET /payment/verify',
   'GET /product-variant/public',
   'GET /category/public',
   'GET /brand/public',
