@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import HomeCategoryCard from "./HomeCategoryCard";
 
 function SkeletonCard() {
@@ -11,7 +11,7 @@ function SkeletonCard() {
   );
 }
 
-export default function HomeCategorySection({ categories, loading, selected, onSelect }) {
+export default function HomeCategorySection({ categories, loading, selected, onSelect, selectedParent, onBack }) {
   const scrollRef = useRef(null);
   const [showLeft,  setShowLeft]  = useState(false);
   const [showRight, setShowRight] = useState(false);
@@ -78,39 +78,86 @@ export default function HomeCategorySection({ categories, loading, selected, onS
           className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          {/* Botón "Todos" */}
-          <button
-            onClick={() => onSelect(null)}
-            className="group shrink-0 flex flex-col items-center gap-2.5 focus:outline-none w-48"
-          >
-            <div
-              className={`w-48 h-64 rounded-2xl flex items-center justify-center transition-all duration-300 text-4xl
-                ${selected === null
-                  ? "bg-rose-400 ring-2 ring-rose-400 ring-offset-2 shadow-lg shadow-rose-200/60"
-                  : "bg-rose-50 border border-rose-100 hover:border-rose-200 shadow-sm hover:shadow-md"
-                }`}
-            >
-              ✨
-            </div>
-            <span
-              className={`text-xs font-semibold transition-colors duration-200
-                ${selected === null ? "text-rose-500" : "text-rose-900 group-hover:text-rose-500"}`}
-            >
-              Todos
-            </span>
-          </button>
+          {selectedParent ? (
+            /* ── Vista hijos: botón volver + "Todos" del padre ── */
+            <>
+              {/* Botón volver */}
+              <button
+                onClick={onBack}
+                className="group shrink-0 flex flex-col items-center gap-2.5 focus:outline-none w-48"
+              >
+                <div className="w-48 h-64 rounded-2xl flex flex-col items-center justify-center gap-3 bg-gray-50 border border-gray-200 hover:border-rose-200 hover:bg-rose-50 shadow-sm hover:shadow-md transition-all duration-300">
+                  <ArrowLeft size={28} className="text-gray-400 group-hover:text-rose-400 transition-colors duration-200" />
+                  <span className="text-xs text-gray-400 group-hover:text-rose-400 font-semibold transition-colors duration-200 text-center leading-tight px-2">
+                    {selectedParent.name}
+                  </span>
+                </div>
+                <span className="text-xs font-semibold text-gray-400 group-hover:text-rose-400 transition-colors duration-200">
+                  Volver
+                </span>
+              </button>
 
-          {loading
-            ? Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
-            : categories.map((cat) => (
+              {/* Todos los productos del padre */}
+              <button
+                onClick={() => onSelect(null)}
+                className="group shrink-0 flex flex-col items-center gap-2.5 focus:outline-none w-48"
+              >
+                <div className={`w-48 h-64 rounded-2xl flex items-center justify-center transition-all duration-300 text-4xl
+                  ${selected === null
+                    ? "bg-rose-200 ring-2 ring-rose-200 ring-offset-2 shadow-md shadow-rose-100/50"
+                    : "bg-rose-50 border border-rose-100 hover:border-rose-200 shadow-sm hover:shadow-md"
+                  }`}
+                >
+                  ✨
+                </div>
+                <span className={`text-xs font-semibold transition-colors duration-200 ${selected === null ? "text-rose-500" : "text-rose-900 group-hover:text-rose-500"}`}>
+                  Todos
+                </span>
+              </button>
+
+              {/* Hijos */}
+              {categories.map((cat) => (
                 <HomeCategoryCard
                   key={cat.id}
                   category={cat}
                   selected={selected === cat.id}
-                  onClick={() => onSelect(selected === cat.id ? null : cat.id)}
+                  onClick={() => onSelect(cat.id)}
                 />
-              ))
-          }
+              ))}
+            </>
+          ) : (
+            /* ── Vista padres ── */
+            <>
+              <button
+                onClick={() => onSelect(null)}
+                className="group shrink-0 flex flex-col items-center gap-2.5 focus:outline-none w-48"
+              >
+                <div className={`w-48 h-64 rounded-2xl flex items-center justify-center transition-all duration-300 text-4xl
+                  ${selected === null
+                    ? "bg-rose-200 ring-2 ring-rose-200 ring-offset-2 shadow-md shadow-rose-100/50"
+                    : "bg-rose-50 border border-rose-100 hover:border-rose-200 shadow-sm hover:shadow-md"
+                  }`}
+                >
+                  ✨
+                </div>
+                <span className={`text-xs font-semibold transition-colors duration-200 ${selected === null ? "text-rose-500" : "text-rose-900 group-hover:text-rose-500"}`}>
+                  Todos
+                </span>
+              </button>
+
+              {loading
+                ? Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
+                : categories.map((cat) => (
+                    <HomeCategoryCard
+                      key={cat.id}
+                      category={cat}
+                      selected={selected === cat.id}
+                      onClick={() => onSelect(cat.id)}
+                    />
+                  ))
+              }
+            </>
+          )}
         </div>
 
         {/* Flecha derecha — solo cuando hay contenido a la derecha */}

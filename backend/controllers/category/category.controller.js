@@ -226,8 +226,15 @@ const searchCategory = async (req, res) => {
 const getPublicCategories = async (req, res) => {
   try {
     const categories = await prisma.category.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true, slug: true, imageUrl: true, sortOrder: true },
+      where: { isActive: true, parentId: null },
+      select: {
+        id: true, name: true, slug: true, imageUrl: true, sortOrder: true,
+        children: {
+          where: { isActive: true },
+          select: { id: true, name: true, slug: true, imageUrl: true, sortOrder: true },
+          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        },
+      },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     });
     return res.status(200).json({ data: categories });

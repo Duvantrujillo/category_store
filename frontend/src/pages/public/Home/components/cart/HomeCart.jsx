@@ -41,7 +41,7 @@ function buildWhatsAppUrl(items) {
 }
 
 export default function HomeCart({ open, onClose, items, onRemove, onUpdateQty, onCheckout }) {
-  const total      = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
+  const total = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
 
   function handleWhatsApp() {
@@ -100,7 +100,7 @@ export default function HomeCart({ open, onClose, items, onRemove, onUpdateQty, 
         {items.length > 0 && (
           <SheetFooter className="px-5 pt-4 pb-6 border-t border-gray-100 flex flex-col gap-3">
 
-            {/* Subtotal */}
+            {/* Total productos */}
             <div className="flex items-center justify-between w-full py-1">
               <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Total</span>
               <div className="flex items-baseline gap-1">

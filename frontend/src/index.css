@@ -64,15 +64,14 @@ body {
   margin: 0;
 }
 
-/* Scrollbar rosa */
-html {
+/* Scrollbar rosa — solo páginas públicas (html.public) */
+html.public {
   scrollbar-color: #fda4af #fff1f2;
-  scrollbar-width: thin;
 }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #fff1f2; }
-::-webkit-scrollbar-thumb { background: #fda4af; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #fb7185; }
+html.public::-webkit-scrollbar { width: 11px; }
+html.public::-webkit-scrollbar-track { background: #fff1f2; }
+html.public::-webkit-scrollbar-thumb { background: #fda4af; border-radius: 99px; }
+html.public::-webkit-scrollbar-thumb:hover { background: #fb7185; }
 
 #root {
   width: 100%;

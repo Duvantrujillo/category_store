@@ -3,15 +3,11 @@ const prisma = new PrismaClient()
 
 const VARIANT_INCLUDE = {
   product: {
-    include: { brand: true, category: true }
+    include: { brand: true }
   },
-  images: true,
+  images: { orderBy: { slot: "asc" }, take: 2 },
   attributes: {
-    include: {
-      attributeValue: {
-        include: { attribute: true }
-      }
-    }
+    include: { attributeValue: true }
   }
 }
 

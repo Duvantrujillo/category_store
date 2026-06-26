@@ -52,8 +52,8 @@ export function usePublicWishlist(cartUuid) {
         });
       }
       if (!res.ok) throw new Error("server error");
-      const updated = await fetchWishlist(uuid);
-      if (updated) setWishlistItems(mapWishlist(updated));
+      const updated = await res.json();
+      setWishlistItems(mapWishlist(updated));
     } catch {
       // Revertir optimistic update si el servidor falló
       setWishlistItems((prev) =>
@@ -69,11 +69,13 @@ export function usePublicWishlist(cartUuid) {
     setWishlistItems((prev) => prev.filter((v) => v.id !== variantId));
 
     try {
-      await fetch(`${API}/wishlist/public/${uuid}/items/${variantId}`, {
+      const res = await fetch(`${API}/wishlist/public/${uuid}/items/${variantId}`, {
         method: "DELETE",
       });
-      const updated = await fetchWishlist(uuid);
-      if (updated) setWishlistItems(mapWishlist(updated));
+      if (res.ok) {
+        const updated = await res.json();
+        setWishlistItems(mapWishlist(updated));
+      }
     } catch {}
   }, [cartUuid]);
 

@@ -26,16 +26,19 @@ import ListPermission from './pages/dashboard/admin/permission/pages/ListPermiss
 import ListBanner from './pages/dashboard/admin/banner/page/ListBanner'
 import AdminHome from './pages/dashboard/admin/home/AdminHome'
 import ProtectedRoute from './components/ProtectedRoute'
+import PublicLayout from './components/layouts/PublicLayout'
 
 function App() {
   return (
     <PermissionProvider>
     <Routes>
-      {/* Rutas públicas */}
-      <Route path="/" element={<Home />} />
-      <Route path="/producto/:id" element={<ProductDetail />} />
-      <Route path="/checkout" element={<Checkout />} />
-      <Route path="/checkout/respuesta" element={<CheckoutResponse />} />
+      {/* Rutas públicas — scrollbar rosa */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/producto/:id" element={<ProductDetail />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout/respuesta" element={<CheckoutResponse />} />
+      </Route>
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/login" element={<LoginForm />} />
       <Route path="/create/shipping" element={<CreateShipping />} />

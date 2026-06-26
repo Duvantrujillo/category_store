@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   ArrowLeft, ShoppingBag, Loader2, Package,
-  AlertCircle, CheckCircle2, Plus, Minus, Trash2,
+  AlertCircle, CheckCircle2, Plus, Minus, Trash2, Truck, ChevronDown,
+  User, MapPin,
 } from "lucide-react";
 import HomeHeader from "../Home/components/header/HomeHeader";
 import HomeFooter from "../Home/components/footer/HomeFooter";
@@ -12,9 +13,10 @@ import { usePublicCart } from "../Home/hooks/usePublicCart";
 import { usePublicWishlist } from "../Home/hooks/usePublicWishlist";
 import useCreateShippingLocations from "../../dashboard/admin/form_response/hooks/useCreateShippingLocations";
 
-const API         = import.meta.env.VITE_API_URL;
-const API_URL     = import.meta.env.VITE_API_URL;
-const EPAYCO_KEY  = import.meta.env.VITE_EPAYCO_PUBLIC_KEY;
+const API          = import.meta.env.VITE_API_URL;
+const API_URL      = import.meta.env.VITE_API_URL;
+const EPAYCO_KEY   = import.meta.env.VITE_EPAYCO_PUBLIC_KEY;
+const SHIPPING_COST = 11000;
 // URL pública (ngrok en dev, URL real en producción) para que ePayco llame al webhook
 const WEBHOOK_URL = import.meta.env.VITE_EPAYCO_WEBHOOK_URL || `${API}/webhook/create`;
 
@@ -186,10 +188,47 @@ function TextField({ name, value, onChange, error, multiline, inputMode, disable
   );
 }
 
+// ── Sección colapsable ────────────────────────────────────────────────────────
+
+function CollapsibleSection({ title, icon: Icon, open, onToggle, disabled, hasError, children }) {
+  return (
+    <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-colors ${hasError ? "border-rose-200" : "border-gray-100"}`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={disabled}
+        className="w-full flex items-center justify-between px-5 sm:px-6 py-4 hover:bg-gray-50/60 transition-colors disabled:cursor-default"
+      >
+        <div className="flex items-center gap-2.5">
+          {Icon && (
+            <div className={`flex items-center justify-center w-6 h-6 rounded-lg ${hasError ? "bg-rose-50" : "bg-rose-50"}`}>
+              <Icon size={13} className={hasError ? "text-rose-400" : "text-rose-400"} />
+            </div>
+          )}
+          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">{title}</span>
+          {hasError && <span className="text-[10px] text-rose-400 font-semibold">· Completa los campos requeridos</span>}
+        </div>
+        <ChevronDown
+          size={15}
+          className={`text-gray-300 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div className={`grid transition-all duration-300 ease-in-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className="overflow-hidden">
+          <div className="px-5 sm:px-6 pb-5 sm:pb-6 flex flex-col gap-4 border-t border-gray-50">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Resumen del pedido ────────────────────────────────────────────────────────
 
 function OrderSummary({ items, pendingPayment, epaycoContainerRef, onPay, loading, onUpdateQty, onRemove }) {
-  const total        = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
+  const subtotal      = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
+  const total         = items.length > 0 ? subtotal + SHIPPING_COST : 0;
   const hasStockIssue = items.some(({ variant, quantity }) => quantity > Number(variant.stock ?? 0));
 
   return (
@@ -291,9 +330,21 @@ function OrderSummary({ items, pendingPayment, epaycoContainerRef, onPay, loadin
           })}
         </div>
 
-        <div className="px-5 py-4 bg-gray-50/50 border-t border-gray-100">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total a pagar</span>
+        <div className="px-5 py-4 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-2">
+          {items.length > 0 && (
+            <>
+              <div className="flex items-center justify-between text-xs text-gray-400">
+                <span>Subtotal productos</span>
+                <span className="font-medium">${subtotal.toLocaleString("es-CO")}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-lime-600 font-medium">
+                <span className="flex items-center gap-1.5"><Truck size={11} />Envío</span>
+                <span>${SHIPPING_COST.toLocaleString("es-CO")}</span>
+              </div>
+            </>
+          )}
+          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Total a pagar</span>
             <div className="flex items-baseline gap-1">
               <span className="text-xs text-gray-400 font-medium">COP</span>
               <span className="text-xl font-bold text-gray-900">${total.toLocaleString("es-CO")}</span>
@@ -369,6 +420,8 @@ export default function Checkout() {
   });
   const [errors, setErrors]           = useState({});
   const [submitting, setSubmitting]   = useState(false);
+  const [openPersonal, setOpenPersonal] = useState(true);
+  const [openAddress,  setOpenAddress]  = useState(true);
   // pendingPayment se setea luego de crear la orden exitosamente
   const [pendingPayment, setPendingPayment] = useState(null);
 
@@ -381,8 +434,9 @@ export default function Checkout() {
     try { localStorage.setItem("checkout_form", JSON.stringify(form)); } catch { /* noop */ }
   }, [form, pendingPayment]);
 
-  const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
-  const total     = cartItems.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
+  const cartCount   = cartItems.reduce((s, i) => s + i.quantity, 0);
+  const cartSubtotal = cartItems.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
+  const total        = cartSubtotal + SHIPPING_COST;
 
   // Restaurar el departamento seleccionado cuando los datos de localidad cargan
   useEffect(() => {
@@ -551,10 +605,14 @@ export default function Checkout() {
           <div className="flex flex-col gap-6">
 
             {/* Información personal */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 flex flex-col gap-4">
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-                Información personal
-              </p>
+            <CollapsibleSection
+              title="Información personal"
+              icon={User}
+              open={openPersonal}
+              onToggle={() => !pendingPayment && setOpenPersonal((v) => !v)}
+              disabled={!!pendingPayment}
+              hasError={!!(errors.firstName || errors.lastName || errors.documentNumber || errors.phoneNumber || errors.email)}
+            >
               <div className="grid grid-cols-2 gap-3">
                 <TextField name="firstName"  value={form.firstName}  onChange={handleChange} error={errors.firstName}  disabled={!!pendingPayment} />
                 <TextField name="lastName"   value={form.lastName}   onChange={handleChange} error={errors.lastName}   disabled={!!pendingPayment} />
@@ -567,14 +625,17 @@ export default function Checkout() {
               </div>
               <TextField name="email" value={form.email} onChange={handleChange}
                 error={errors.email} inputMode="email" disabled={!!pendingPayment} />
-            </div>
+            </CollapsibleSection>
 
             {/* Dirección de entrega */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 flex flex-col gap-4">
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-                Dirección de entrega
-              </p>
-
+            <CollapsibleSection
+              title="Dirección de entrega"
+              icon={MapPin}
+              open={openAddress}
+              onToggle={() => !pendingPayment && setOpenAddress((v) => !v)}
+              disabled={!!pendingPayment}
+              hasError={!!(errors.departament || errors.municipality || errors.address)}
+            >
               {/* Departamento */}
               <div className="flex flex-col gap-1" data-field="departament">
                 <FieldLabel name="departament" />
@@ -633,7 +694,7 @@ export default function Checkout() {
 
               <TextField name="address"           value={form.address}           onChange={handleChange} error={errors.address}           disabled={!!pendingPayment} />
               <TextField name="additionalDetails" value={form.additionalDetails} onChange={handleChange} error={errors.additionalDetails} disabled={!!pendingPayment} multiline />
-            </div>
+            </CollapsibleSection>
           </div>
 
           {/* ── Resumen sticky ── */}

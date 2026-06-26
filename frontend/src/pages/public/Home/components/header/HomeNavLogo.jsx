@@ -1,10 +1,11 @@
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export default function HomeNavLogo() {
+export default function HomeNavLogo({ onClick }) {
   return (
     <Link
       to="/"
+      onClick={onClick}
       className="flex items-center gap-2.5 shrink-0 group select-none"
     >
       <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/25 text-white shadow-sm group-hover:bg-white/35 transition-colors">

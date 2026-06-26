@@ -3,9 +3,9 @@ const prisma = new PrismaClient()
 
 const createPayment = async (req, res) => {
     try {
-        const { orderId, provider, reference, transactionId, amount, currency, paymentMethod } = req.body;
+        const { orderId, provider, reference, transactionId, currency, paymentMethod } = req.body;
 
-        if (!orderId || !provider || !reference || !amount) {
+        if (!orderId || !provider || !reference) {
             return res.status(400).json({ message: "Campos requeridos" });
         }
 
@@ -14,6 +14,10 @@ const createPayment = async (req, res) => {
             return res.status(404).json({ message: "Orden no encontrada" });
         }
 
+        // El monto siempre se toma del total de la orden (incluye costo de envío).
+        // Nunca del cliente, para evitar manipulación.
+        const amount = Number(order.total);
+
         const payment = await prisma.payment.create({
             data: {
                 orderId,
@@ -21,7 +25,7 @@ const createPayment = async (req, res) => {
                 reference,
                 transactionId: transactionId || null,
                 amount,
-                currency: currency || "COP",
+                currency: currency || order.currency,
                 paymentMethod: paymentMethod || null,
                 status: "PENDING",
             }

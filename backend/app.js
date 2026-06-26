@@ -85,9 +85,17 @@ app.use('/cart', publicCartRouter)
 const publicWishlistRouter = require('./routes/wishlist-public.routes.js')
 app.use('/wishlist', publicWishlistRouter)
 
-// Detalle de variante individual (sin auth)
-const { getPublicVariantById } = require('./controllers/product-variant/product_variant.controller')
-app.get('/product-variant/public/:id', getPublicVariantById)
+// Rutas públicas de variantes — deben estar ANTES de /:id para no ser capturadas por ese patrón
+const {
+  getPublicVariantById,
+  getTopSellers,
+  getPublicSuggestions,
+  getRelatedVariants,
+} = require('./controllers/product-variant/product_variant.controller')
+app.get('/product-variant/public/top-sellers', getTopSellers)
+app.get('/product-variant/public/suggestions',  getPublicSuggestions)
+app.get('/product-variant/public/related',      getRelatedVariants)
+app.get('/product-variant/public/:id',          getPublicVariantById)
 
 // Rutas públicas (no requieren sesión)
 const PUBLIC_ROUTES = new Set([

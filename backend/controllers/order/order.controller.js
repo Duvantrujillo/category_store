@@ -6,6 +6,7 @@ const { notifyOrderCreated } = require('../../services/notification.service')
 // ── Constantes de negocio ──────────────────────────────────────────────────────
 const ALLOWED_CURRENCIES = new Set(['COP', 'USD'])
 const MAX_ITEMS_PER_ORDER = 50
+const SHIPPING_COST = 11000
 
 // ── createOrder ───────────────────────────────────────────────────────────────
 const createOrder = async (req, res) => {
@@ -127,6 +128,7 @@ const createOrder = async (req, res) => {
       const subtotal = items.reduce((acc, item) => {
         return acc + Number(variantMap[item.productVariantId].price) * Number(item.quantity)
       }, 0)
+      const total = subtotal + SHIPPING_COST
 
       // FIX 7 — IDEMPOTENCIA CONCURRENTE (blindaje total)
       // Si dos requests con la misma idempotencyKey llegan simultáneamente y
@@ -144,7 +146,8 @@ const createOrder = async (req, res) => {
           phoneNumber, departament, municipality, address,
           additionalDetails: additionalDetails || null,
           subtotal,
-          total: subtotal,
+          shippingCost: SHIPPING_COST,
+          total,
           currency: normalizedCurrency,
           items: {
             create: items.map(item => {

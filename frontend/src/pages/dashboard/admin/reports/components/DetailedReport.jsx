@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from "react";
 import {
   FileText, TrendingUp, TrendingDown, DollarSign,
-  RotateCcw, Wallet, Package, MapPin, Phone, Mail, CreditCard,
+  RotateCcw, Wallet, Package, MapPin, Phone, Mail, CreditCard, Truck,
 } from "lucide-react";
 
 import { useDetailedReport } from "../hooks/useReport";
@@ -54,6 +54,8 @@ function buildPdfHtml(data, period) {
       </td>
       <td>${fmtDate(o.createdAt)}</td>
       <td><span class="badge ${o.status === "PAID" ? "badge-green" : "badge-violet"}">${STATUS_LABEL[o.status] ?? o.status}</span></td>
+      <td class="tr muted">${fmtCOP(o.subtotal)}</td>
+      <td class="tr" style="color:#0369a1">${fmtCOP(o.shippingCost ?? 11000)}</td>
       <td class="tr">${fmtCOP(o.grossTotal)}</td>
       <td class="tc ${o.returnedItemsQty > 0 ? "amber" : "muted"}">${o.returnedItemsQty || "—"}</td>
       <td class="tr ${o.refundedAmount > 0 ? "red" : "muted"}">${o.refundedAmount > 0 ? "−" + fmtCOP(o.refundedAmount) : "—"}</td>
@@ -114,9 +116,9 @@ function buildPdfHtml(data, period) {
   .ph .meta{text-align:right;font-size:8px;opacity:.75;line-height:1.6}
 
   /* KPI row */
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
   .kpi{border-radius:6px;padding:11px 13px;color:#fff}
-  .kpi.ind{background:#4f46e5}.kpi.amb{background:#f59e0b}.kpi.red{background:#ef4444}.kpi.eme{background:#10b981;border:2px solid #059669}
+  .kpi.ind{background:#4f46e5}.kpi.sky{background:#0284c7}.kpi.amb{background:#f59e0b}.kpi.red{background:#ef4444}.kpi.eme{background:#10b981;border:2px solid #059669}
   .kpi .lbl{font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.82;margin-bottom:3px}
   .kpi .val{font-size:16px;font-weight:700;line-height:1.1}
   .kpi .sub{font-size:7px;opacity:.72;margin-top:3px}
@@ -188,6 +190,11 @@ function buildPdfHtml(data, period) {
     <div class="val">${escHtml(fmtCOP(summary.grossRevenue))}</div>
     <div class="sub">${summary.ordersCount} órdenes pagadas</div>
   </div>
+  <div class="kpi sky">
+    <div class="lbl">Total envíos</div>
+    <div class="val">${escHtml(fmtCOP(summary.totalShipping))}</div>
+    <div class="sub">${summary.ordersCount} envíos · $11.000 c/u</div>
+  </div>
   <div class="kpi amb">
     <div class="lbl">Devoluciones</div>
     <div class="val">${summary.totalReturnRequests}</div>
@@ -229,14 +236,16 @@ function buildPdfHtml(data, period) {
     <thead>
       <tr>
         <th>Orden</th><th>Cliente</th><th>Ubicación / Tel.</th><th>Fecha</th><th>Estado</th>
-        <th class="tr">Venta bruta</th><th class="tc">Unid. dev.</th>
-        <th class="tr">Reembolsado</th><th class="tr">Ingreso neto</th>
+        <th class="tr">Subtotal</th><th class="tr">Envío</th><th class="tr">Venta bruta</th>
+        <th class="tc">Unid. dev.</th><th class="tr">Reembolsado</th><th class="tr">Ingreso neto</th>
       </tr>
     </thead>
     <tbody>${orderRows}</tbody>
     <tfoot>
       <tr>
         <td colspan="5">TOTALES</td>
+        <td class="tr">—</td>
+        <td class="tr">${escHtml(fmtCOP(summary.totalShipping))}</td>
         <td class="tr">${escHtml(fmtCOP(summary.grossRevenue))}</td>
         <td class="tc">${summary.totalReturnedItems || "—"}</td>
         <td class="tr">${summary.refundedAmount > 0 ? "−" + escHtml(fmtCOP(summary.refundedAmount)) : "—"}</td>
@@ -364,7 +373,7 @@ export default function DetailedReport({ filters }) {
       </div>
 
       {/* ── KPIs ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <ReportCard
           title="Ventas brutas"
           value={fmtCOP(summary.grossRevenue)}
@@ -372,6 +381,14 @@ export default function DetailedReport({ filters }) {
           icon={TrendingUp}
           colorClass="text-indigo-600"
           accent="bg-indigo-400"
+        />
+        <ReportCard
+          title="Total envíos"
+          value={fmtCOP(summary.totalShipping)}
+          sub={`${summary.ordersCount} envíos`}
+          icon={Truck}
+          colorClass="text-sky-600"
+          accent="bg-sky-400"
         />
         <ReportCard
           title="Devoluciones"
@@ -440,7 +457,7 @@ export default function DetailedReport({ filters }) {
           <table className="w-full text-sm">
             <thead className="bg-slate-800 text-white text-[11px] uppercase tracking-wider">
               <tr>
-                {["Orden","Cliente","Dirección / Tel.","Pago","Fecha","Estado","Venta bruta","Unid. dev.","Reembolsado","Ingreso neto"].map((h) => (
+                {["Orden","Cliente","Dirección / Tel.","Pago","Fecha","Estado","Subtotal","Envío","Venta bruta","Unid. dev.","Reembolsado","Ingreso neto"].map((h) => (
                   <th key={h} className="text-left px-3 py-3 font-semibold whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -478,6 +495,8 @@ export default function DetailedReport({ filters }) {
                       {STATUS_LABEL[o.status] ?? o.status}
                     </span>
                   </td>
+                  <td className="px-3 py-3 text-right text-slate-500 tabular-nums whitespace-nowrap">{fmtCOP(o.subtotal)}</td>
+                  <td className="px-3 py-3 text-right text-sky-600 tabular-nums whitespace-nowrap">{fmtCOP(o.shippingCost ?? 11000)}</td>
                   <td className="px-3 py-3 text-right font-semibold text-slate-700 tabular-nums whitespace-nowrap">{fmtCOP(o.grossTotal)}</td>
                   <td className="px-3 py-3 text-center tabular-nums">
                     {o.returnedItemsQty > 0
@@ -501,6 +520,8 @@ export default function DetailedReport({ filters }) {
               <tfoot className="border-t-2 border-slate-800 bg-slate-800 text-white">
                 <tr>
                   <td colSpan={6} className="px-3 py-3 text-xs font-bold uppercase tracking-wider">Totales</td>
+                  <td className="px-3 py-3 text-right font-bold tabular-nums whitespace-nowrap text-slate-300">—</td>
+                  <td className="px-3 py-3 text-right font-bold tabular-nums whitespace-nowrap text-sky-300">{fmtCOP(summary.totalShipping)}</td>
                   <td className="px-3 py-3 text-right font-bold tabular-nums whitespace-nowrap">{fmtCOP(summary.grossRevenue)}</td>
                   <td className="px-3 py-3 text-center font-bold tabular-nums">{summary.totalReturnedItems || "—"}</td>
                   <td className="px-3 py-3 text-right font-bold tabular-nums whitespace-nowrap">

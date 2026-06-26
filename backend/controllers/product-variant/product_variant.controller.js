@@ -490,13 +490,56 @@ const searchSkuBarcode = async (req, res) => {
   }
 };
 
+// ── helpers de búsqueda ──────────────────────────────────────────────────────
+function normSearch(s) {
+  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+function stemES(word) {
+  if (word.length > 4 && word.endsWith("es")) return word.slice(0, -2);
+  if (word.length > 3 && word.endsWith("s"))  return word.slice(0, -1);
+  return word;
+}
+function buildSearchStems(query) {
+  return query.trim().split(/\s+/).filter(Boolean).map((w) => stemES(normSearch(w)));
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const getPublicVariants = async (req, res) => {
   try {
-    const variants = await prisma.productVariant.findMany({
-      where: {
-        isActive: true,
-        product: { status: "ACTIVE" },
+    const rawQ     = (req.query.q || "").trim();
+    const catParam = req.query.categoryIds;
+
+    // IDs de categorías (coma-separados)
+    let categoryIds = null;
+    if (catParam) {
+      const ids = catParam.split(",").map(Number).filter((id) => !isNaN(id) && id > 0);
+      if (ids.length) categoryIds = ids;
+    }
+
+    // Cada raíz de la búsqueda debe coincidir con al menos un campo
+    const stemConditions = rawQ
+      ? buildSearchStems(rawQ).map((s) => ({
+          OR: [
+            { product: { name:     { contains: s } } },
+            { product: { brand:    { name: { contains: s } } } },
+            { product: { category: { name: { contains: s } } } },
+            { sku: { contains: s } },
+            { attributes: { some: { attributeValue: { value: { contains: s } } } } },
+          ],
+        }))
+      : [];
+
+    const where = {
+      isActive: true,
+      product: {
+        status: "ACTIVE",
+        ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
       },
+      ...(stemConditions.length ? { AND: stemConditions } : {}),
+    };
+
+    const variants = await prisma.productVariant.findMany({
+      where,
       include: {
         images: true,
         attributes: {
@@ -571,6 +614,128 @@ const getTopSellers = async (req, res) => {
   }
 };
 
+const RELATED_INCLUDE = {
+  images: { orderBy: { slot: "asc" }, take: 2 },
+  attributes: {
+    include: { attributeValue: { include: { attribute: true } } },
+  },
+  product: { include: { brand: true, category: true } },
+};
+
+const getPublicSuggestions = async (req, res) => {
+  try {
+    const rawQ = (req.query.q || "").trim();
+    if (!rawQ || rawQ.length < 2) return res.status(200).json({ data: [] });
+
+    const stemConditions = buildSearchStems(rawQ).map((s) => ({
+      OR: [
+        { product: { name:     { contains: s } } },
+        { product: { brand:    { name: { contains: s } } } },
+        { product: { category: { name: { contains: s } } } },
+        { sku: { contains: s } },
+        { attributes: { some: { attributeValue: { value: { contains: s } } } } },
+      ],
+    }));
+
+    const variants = await prisma.productVariant.findMany({
+      where: {
+        isActive: true,
+        product: { status: "ACTIVE" },
+        AND: stemConditions,
+      },
+      select: {
+        id: true,
+        price: true,
+        images: {
+          select: { imageUrl: true, slot: true },
+          orderBy: { slot: "asc" },
+          take: 2,
+        },
+        product: {
+          select: {
+            name: true,
+            brand: { select: { name: true } },
+          },
+        },
+      },
+      take: 6,
+      orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+    });
+
+    return res.status(200).json({ data: variants });
+  } catch (error) {
+    console.error("Error en getPublicSuggestions:", error);
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
+const getRelatedVariants = async (req, res) => {
+  try {
+    const variantId = Number(req.query.variantId);
+    const limit     = Math.min(Number(req.query.limit || 24), 48);
+
+    if (!variantId || isNaN(variantId)) {
+      return res.status(400).json({ message: "variantId requerido" });
+    }
+
+    const current = await prisma.productVariant.findFirst({
+      where: { id: variantId },
+      select: { product: { select: { brandId: true, categoryId: true } } },
+    });
+
+    const brandId    = current?.product?.brandId    ?? null;
+    const categoryId = current?.product?.categoryId ?? null;
+
+    const brandCatOR = [
+      ...(brandId    ? [{ brandId }]    : []),
+      ...(categoryId ? [{ categoryId }] : []),
+    ];
+
+    // 1. Productos de la misma marca o categoría
+    const related = brandCatOR.length
+      ? await prisma.productVariant.findMany({
+          where: {
+            isActive: true,
+            NOT: { id: variantId },
+            product: { status: "ACTIVE", OR: brandCatOR },
+          },
+          include: RELATED_INCLUDE,
+          orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+        })
+      : [];
+
+    // Ordenar: marca (2 pts) > categoría (1 pt)
+    const score = (v) =>
+      (brandId    && v.product.brandId    === brandId    ? 2 : 0) +
+      (categoryId && v.product.categoryId === categoryId ? 1 : 0);
+    related.sort((a, b) => score(b) - score(a));
+
+    if (related.length >= limit) {
+      return res.status(200).json({ data: related.slice(0, limit) });
+    }
+
+    // 2. Rellenar con otros productos si faltan
+    const needed     = limit - related.length;
+    const excludeIds = [variantId, ...related.map((v) => v.id)];
+
+    const fillers = await prisma.productVariant.findMany({
+      where: {
+        isActive: true,
+        NOT: { id: { in: excludeIds } },
+        product: { status: "ACTIVE" },
+      },
+      include: RELATED_INCLUDE,
+      take: needed,
+      orderBy: [{ updatedAt: "desc" }],
+    });
+
+    return res.status(200).json({ data: [...related, ...fillers] });
+  } catch (error) {
+    console.error("Error en getRelatedVariants:", error);
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
 module.exports = {
   createProductVariant,
   updateProductVariant,
@@ -580,4 +745,6 @@ module.exports = {
   getPublicVariants,
   getPublicVariantById,
   getTopSellers,
+  getPublicSuggestions,
+  getRelatedVariants,
 }

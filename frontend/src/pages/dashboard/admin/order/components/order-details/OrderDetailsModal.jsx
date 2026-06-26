@@ -1,6 +1,6 @@
 import {
   User, Hash, Mail, Phone, MapPin, FileText,
-  DollarSign, Receipt, Calendar, ClipboardList,
+  DollarSign, Receipt, Calendar, ClipboardList, Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,13 +98,14 @@ function OrderDetailsModal({ open, order, onClose }) {
 
             {/* Resumen financiero */}
             <Section title="Resumen financiero">
-              <Field icon={DollarSign} label="Subtotal" value={fmtCOP(order.subtotal)} iconCls="bg-emerald-50 text-emerald-500" />
+              <Field icon={DollarSign} label="Subtotal productos" value={fmtCOP(order.subtotal)} iconCls="bg-emerald-50 text-emerald-500" />
+              <Field icon={Truck} label="Costo de envío" value={fmtCOP(order.shippingCost ?? 11000)} iconCls="bg-sky-50 text-sky-500" />
               <div className="flex items-start gap-3 py-2.5">
                 <div className="p-1.5 rounded-lg shrink-0 mt-0.5 bg-emerald-100 text-emerald-600">
                   <Receipt size={13} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 leading-none mb-1">Total</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 leading-none mb-1">Total cobrado</p>
                   <p className="text-xl font-bold text-emerald-700 tabular-nums">{fmtCOP(order.total)}</p>
                   <p className="text-[11px] text-slate-400 mt-0.5">{order.currency}</p>
                 </div>

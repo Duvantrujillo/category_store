@@ -111,7 +111,7 @@ function SalesReport({ filters }) {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-100">
               <tr>
-                {["Orden", "Cliente", "Estado", "Total", "Fecha"].map((h) => (
+                {["Orden", "Cliente", "Estado", "Subtotal", "Envío", "Total", "Fecha"].map((h) => (
                   <th key={h} className="text-left px-5 py-3 font-semibold whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -128,6 +128,8 @@ function SalesReport({ filters }) {
                         {meta?.label ?? o.status}
                       </span>
                     </td>
+                    <td className="px-5 py-3 text-slate-500 tabular-nums">{fmtCOP(o.subtotal)}</td>
+                    <td className="px-5 py-3 text-sky-600 tabular-nums">{fmtCOP(o.shippingCost ?? 11000)}</td>
                     <td className="px-5 py-3 font-semibold text-slate-800 tabular-nums">{fmtCOP(o.total)}</td>
                     <td className="px-5 py-3 text-slate-400 text-xs tabular-nums">
                       {new Date(o.createdAt).toLocaleDateString("es-CO")}

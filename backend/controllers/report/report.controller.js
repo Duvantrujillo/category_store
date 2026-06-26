@@ -348,6 +348,8 @@ const getSalesReport = async (req, res) => {
           firstName: true,
           lastName: true,
           status: true,
+          subtotal: true,
+          shippingCost: true,
           total: true,
           currency: true,
           createdAt: true,
@@ -424,8 +426,9 @@ const getDetailedReport = async (req, res) => {
         municipality: true,
         departament: true,
         status: true,
-        total: true,
         subtotal: true,
+        shippingCost: true,
+        total: true,
         currency: true,
         createdAt: true,
         payment: {
@@ -463,12 +466,14 @@ const getDetailedReport = async (req, res) => {
     })
 
     let totalGross          = 0
+    let totalShipping       = 0
     let totalRefunded       = 0
     let totalReturnedItems  = 0
     let totalReturnRequests = 0
 
     const enrichedOrders = orders.map((order) => {
-      const gross = Number(order.total)
+      const gross    = Number(order.total)
+      const shipping = Number(order.shippingCost ?? 0)
 
       // Solo las devoluciones COMPLETADAS tienen efecto financiero real
       const completedReturns = order.returns.filter((r) => r.status === 'COMPLETED')
@@ -484,6 +489,7 @@ const getDetailedReport = async (req, res) => {
       )
 
       totalGross          += gross
+      totalShipping       += shipping
       totalRefunded       += refundedForOrder
       totalReturnedItems  += returnedItemsQty
       totalReturnRequests += completedReturns.length
@@ -503,6 +509,8 @@ const getDetailedReport = async (req, res) => {
         paymentMethod:       order.payment?.paymentMethod ?? null,
         paymentProvider:     order.payment?.provider ?? null,
         paymentReference:    order.payment?.reference ?? null,
+        subtotal:            Number(order.subtotal ?? 0),
+        shippingCost:        shipping,
         grossTotal:          gross,
         refundedAmount:      refundedForOrder,
         netTotal:            gross - refundedForOrder,
@@ -546,6 +554,7 @@ const getDetailedReport = async (req, res) => {
       summary: {
         ordersCount:         orders.length,
         grossRevenue:        totalGross,
+        totalShipping,
         totalReturnRequests,
         totalReturnedItems,
         refundedAmount:      totalRefunded,

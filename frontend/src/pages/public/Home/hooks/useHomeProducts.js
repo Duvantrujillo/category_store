@@ -1,23 +1,31 @@
 import { useState, useEffect, useCallback } from "react";
 import apiClient from "@/lib/apiClient";
 
-async function fetchAllVariants() {
-  const res = await apiClient.get("/product-variant/public");
-  const data = res?.data?.data || res?.data || res;
-  return Array.isArray(data) ? data : [];
-}
-
-export function useHomeProducts(search = "", categoryId = null) {
+export function useHomeProducts(search = "", categoryIds = null) {
   const [variants, setVariants] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState(null);
 
-  const load = useCallback(async () => {
+  // Debounce: espera 350 ms tras el último tecleo antes de llamar al backend
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Serializar categoryIds para usarlo como dependencia estable
+  const catKey = categoryIds ? categoryIds.join(",") : "";
+
+  const load = useCallback(async (q, catIds) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchAllVariants();
-      setVariants(data);
+      const params = {};
+      if (q) params.q = q;
+      if (catIds?.length) params.categoryIds = catIds.join(",");
+      const res  = await apiClient.get("/product-variant/public", { params });
+      const data = res?.data?.data ?? res?.data ?? res;
+      setVariants(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err);
     } finally {
@@ -26,28 +34,10 @@ export function useHomeProducts(search = "", categoryId = null) {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load(debouncedSearch, categoryIds);
+    // catKey representa categoryIds de forma estable para la dependencia
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load, debouncedSearch, catKey]);
 
-  const q = search.toLowerCase().trim();
-
-  const filtered = variants.filter((v) => {
-    const matchesCategory = categoryId
-      ? v.product?.category?.id === categoryId
-      : true;
-
-    const matchesSearch = q
-      ? v.product?.name?.toLowerCase().includes(q) ||
-        v.product?.brand?.name?.toLowerCase().includes(q) ||
-        v.product?.category?.name?.toLowerCase().includes(q) ||
-        v.sku?.toLowerCase().includes(q) ||
-        v.attributes?.some((a) =>
-          a.attributeValue?.value?.toLowerCase().includes(q)
-        )
-      : true;
-
-    return matchesCategory && matchesSearch;
-  });
-
-  return { variants: filtered, loading, error };
+  return { variants, loading, error };
 }

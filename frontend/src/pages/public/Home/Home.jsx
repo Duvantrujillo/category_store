@@ -1,5 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+
+const SS_PARENT   = "home_sel_parent";
+const SS_CATEGORY = "home_sel_category";
+
+function readSession(key) {
+  try { const v = sessionStorage.getItem(key); return v ? JSON.parse(v) : null; } catch { return null; }
+}
+function writeSession(key, value) {
+  try {
+    if (value !== null && value !== undefined) sessionStorage.setItem(key, JSON.stringify(value));
+    else sessionStorage.removeItem(key);
+  } catch {}
+}
 import HomeHeader from "./components/header/HomeHeader";
 import HomeCategorySection from "./components/categories/HomeCategorySection";
 import HomeProductGrid from "./components/products/HomeProductGrid";
@@ -17,12 +30,63 @@ import { useTopSellers } from "./hooks/useTopSellers";
 
 export default function Home() {
   const navigate = useNavigate();
-  const [search, setSearch]             = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [search, setSearch]               = useState("");
+  const [selectedParent,   setSelectedParent]   = useState(() => readSession(SS_PARENT));
+  const [selectedCategory, setSelectedCategory] = useState(() => readSession(SS_CATEGORY));
 
-  const { categories, loading: loadingCats }   = useHomeCategories();
-  const { brands }                             = useHomeBrands();
-  const { variants, loading: loadingVariants } = useHomeProducts(search, selectedCategory);
+  // Persistir en sessionStorage cuando cambian
+  useEffect(() => { writeSession(SS_PARENT,   selectedParent);   }, [selectedParent]);
+  useEffect(() => { writeSession(SS_CATEGORY, selectedCategory); }, [selectedCategory]);
+
+  const { categories, loading: loadingCats } = useHomeCategories();
+  const { brands }                           = useHomeBrands();
+
+  // IDs para filtrar productos
+  const filterCategoryIds = selectedParent
+    ? selectedCategory
+      ? [selectedCategory]
+      : [selectedParent.id, ...(selectedParent.children || []).map((c) => c.id)]
+    : selectedCategory
+      ? [selectedCategory]   // padre sin hijos seleccionado
+      : null;                // sin filtro
+
+  const { variants, loading: loadingVariants } = useHomeProducts(search, filterCategoryIds);
+
+  // Lo que muestra el carrusel: padres o hijos del padre seleccionado
+  const displayCategories = selectedParent ? (selectedParent.children || []) : categories;
+
+  function handleCategorySelect(catId) {
+    // Botón "Todos"
+    if (catId === null) {
+      setSelectedCategory(null);
+      return;
+    }
+    if (!selectedParent) {
+      const cat = categories.find((c) => c.id === catId);
+      if (!cat) return;
+      if (cat.children && cat.children.length > 0) {
+        // tiene hijos → entrar en vista de hijos
+        setSelectedParent(cat);
+        setSelectedCategory(null);
+      } else {
+        // sin hijos → solo filtrar, quedar en vista padres
+        setSelectedCategory(catId === selectedCategory ? null : catId);
+      }
+    } else {
+      setSelectedCategory(catId === selectedCategory ? null : catId);
+    }
+  }
+
+  function handleBack() {
+    setSelectedParent(null);
+    setSelectedCategory(null);
+  }
+
+  function handleReset() {
+    setSelectedParent(null);
+    setSelectedCategory(null);
+    setSearch("");
+  }
   const { topSellerIds }                       = useTopSellers();
 
   const {
@@ -55,6 +119,7 @@ export default function Home() {
         wishlistCount={wishlistItems.length}
         onWishlistOpen={() => setWishlistOpen(true)}
         onSearch={setSearch}
+        onLogoClick={handleReset}
       />
 
       {/* Secciones full-width: sin contenedor lateral */}
@@ -63,10 +128,12 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <HomeCategorySection
-          categories={categories}
+          categories={displayCategories}
           loading={loadingCats}
           selected={selectedCategory}
-          onSelect={setSelectedCategory}
+          onSelect={handleCategorySelect}
+          selectedParent={selectedParent}
+          onBack={handleBack}
         />
         <HomeProductGrid
           variants={variants}
