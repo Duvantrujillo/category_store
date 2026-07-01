@@ -22,7 +22,6 @@ export default function ProductVariantEditDialog({
   item,
   onRefresh,
   attributes = [],
-  products = [],
   disabled = false,
 }) {
 
@@ -155,7 +154,7 @@ export default function ProductVariantEditDialog({
                 handleChange={handleChange}
                 loading={loading}
                 attributes={attributes}
-                products={products}
+                initialProduct={item?.product ?? null}
                 onCancel={() => setOpen(false)}
                 onSubmit={handleSubmit}
               />

@@ -54,7 +54,7 @@ export default function HomeCategorySection({ categories, loading, selected, onS
       {/* Título centrado */}
       <div className="flex justify-center mb-5">
         <h2
-          className="text-8xl font-black"
+          className="text-4xl sm:text-6xl lg:text-8xl font-black"
           style={{ color: "#4b5563", WebkitTextStroke: "1.5px #4b5563", letterSpacing: "0.1em" }}
         >
           Categorías
@@ -75,7 +75,7 @@ export default function HomeCategorySection({ categories, loading, selected, onS
 
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
+          className="flex gap-4 overflow-x-auto py-2 px-1 scroll-smooth"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {selectedParent ? (
@@ -100,19 +100,30 @@ export default function HomeCategorySection({ categories, loading, selected, onS
               {/* Todos los productos del padre */}
               <button
                 onClick={() => onSelect(null)}
-                className="group shrink-0 flex flex-col items-center gap-2.5 focus:outline-none w-48"
+                className="group shrink-0 focus:outline-none w-48"
               >
-                <div className={`w-48 h-64 rounded-2xl flex items-center justify-center transition-all duration-300 text-4xl
+                <div className={`relative w-48 h-64 rounded-2xl overflow-hidden transition-all duration-300
                   ${selected === null
-                    ? "bg-rose-200 ring-2 ring-rose-200 ring-offset-2 shadow-md shadow-rose-100/50"
-                    : "bg-rose-50 border border-rose-100 hover:border-rose-200 shadow-sm hover:shadow-md"
+                    ? "ring-2 ring-rose-400 ring-offset-2 shadow-lg shadow-rose-200/60"
+                    : "shadow-sm hover:shadow-lg hover:shadow-rose-200/50"
                   }`}
                 >
-                  ✨
+                  <div className="absolute inset-0 bg-linear-to-b from-rose-200 to-rose-400" />
+                  <div className="absolute inset-0 flex items-center justify-center pb-8 text-5xl">✨</div>
+                  <div className="absolute inset-0 bg-linear-to-t from-rose-600/50 via-transparent to-transparent" />
+                  {selected === null && (
+                    <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-rose-300 shadow-sm" />
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 px-3 pb-3.5 flex flex-col items-center">
+                    <span
+                      className="text-white text-sm font-semibold text-center leading-tight tracking-wide drop-shadow-sm"
+                      style={{ fontFamily: "system-ui, 'Segoe UI', sans-serif" }}
+                    >
+                      Todos
+                    </span>
+                    <span className="block h-[1.5px] bg-white mt-1.5 rounded-full transition-all duration-300 origin-center w-0 group-hover:w-full opacity-0 group-hover:opacity-100" />
+                  </div>
                 </div>
-                <span className={`text-xs font-semibold transition-colors duration-200 ${selected === null ? "text-rose-500" : "text-rose-900 group-hover:text-rose-500"}`}>
-                  Todos
-                </span>
               </button>
 
               {/* Hijos */}
@@ -130,19 +141,30 @@ export default function HomeCategorySection({ categories, loading, selected, onS
             <>
               <button
                 onClick={() => onSelect(null)}
-                className="group shrink-0 flex flex-col items-center gap-2.5 focus:outline-none w-48"
+                className="group shrink-0 focus:outline-none w-48"
               >
-                <div className={`w-48 h-64 rounded-2xl flex items-center justify-center transition-all duration-300 text-4xl
+                <div className={`relative w-48 h-64 rounded-2xl overflow-hidden transition-all duration-300
                   ${selected === null
-                    ? "bg-rose-200 ring-2 ring-rose-200 ring-offset-2 shadow-md shadow-rose-100/50"
-                    : "bg-rose-50 border border-rose-100 hover:border-rose-200 shadow-sm hover:shadow-md"
+                    ? "ring-2 ring-rose-400 ring-offset-2 shadow-lg shadow-rose-200/60"
+                    : "shadow-sm hover:shadow-lg hover:shadow-rose-200/50"
                   }`}
                 >
-                  ✨
+                  <div className="absolute inset-0 bg-linear-to-b from-rose-200 to-rose-400" />
+                  <div className="absolute inset-0 flex items-center justify-center pb-8 text-5xl">✨</div>
+                  <div className="absolute inset-0 bg-linear-to-t from-rose-600/50 via-transparent to-transparent" />
+                  {selected === null && (
+                    <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-rose-300 shadow-sm" />
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 px-3 pb-3.5 flex flex-col items-center">
+                    <span
+                      className="text-white text-sm font-semibold text-center leading-tight tracking-wide drop-shadow-sm"
+                      style={{ fontFamily: "system-ui, 'Segoe UI', sans-serif" }}
+                    >
+                      Todos
+                    </span>
+                    <span className="block h-[1.5px] bg-white mt-1.5 rounded-full transition-all duration-300 origin-center w-0 group-hover:w-full opacity-0 group-hover:opacity-100" />
+                  </div>
                 </div>
-                <span className={`text-xs font-semibold transition-colors duration-200 ${selected === null ? "text-rose-500" : "text-rose-900 group-hover:text-rose-500"}`}>
-                  Todos
-                </span>
               </button>
 
               {loading

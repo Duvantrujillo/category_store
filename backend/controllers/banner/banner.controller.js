@@ -34,7 +34,13 @@ const createBanner = async (req, res) => {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "Las fechas son obligatorias" });
     }
-    if (new Date(startDate) >= new Date(endDate)) {
+    const start = new Date(startDate);
+    const end   = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "Formato de fecha inválido" });
+    }
+    if (start >= end) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "La fecha de fin debe ser posterior a la de inicio" });
     }
@@ -97,7 +103,13 @@ const updateBanner = async (req, res) => {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "Las fechas son obligatorias" });
     }
-    if (new Date(startDate) >= new Date(endDate)) {
+    const start = new Date(startDate);
+    const end   = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "Formato de fecha inválido" });
+    }
+    if (start >= end) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "La fecha de fin debe ser posterior a la de inicio" });
     }

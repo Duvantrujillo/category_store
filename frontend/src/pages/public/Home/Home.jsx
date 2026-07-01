@@ -122,31 +122,35 @@ export default function Home() {
         onLogoClick={handleReset}
       />
 
-      {/* Secciones full-width: sin contenedor lateral */}
+      {/* Hero sin fondo especial */}
       <HomeHeroCarousel />
-      <HomeBrandMarquee brands={brands} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <HomeCategorySection
-          categories={displayCategories}
-          loading={loadingCats}
-          selected={selectedCategory}
-          onSelect={handleCategorySelect}
-          selectedParent={selectedParent}
-          onBack={handleBack}
-        />
-        <HomeProductGrid
-          variants={variants}
-          loading={loadingVariants}
-          search={search}
-          selectedCategory={selectedCategory}
-          onAddToCart={addToCart}
-          onToggleFavorite={toggleFavorite}
-          favoritedIds={favoritedIds}
-          cartQtyById={cartQtyById}
-          topSellerIds={topSellerIds}
-        />
-      </main>
+      {/* Desde marcas hacia abajo: fondo desvanecido */}
+      <div className="bg-linear-to-b from-rose-100/50 via-pink-50/25 to-white">
+        <HomeBrandMarquee brands={brands} />
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <HomeCategorySection
+            categories={displayCategories}
+            loading={loadingCats}
+            selected={selectedCategory}
+            onSelect={handleCategorySelect}
+            selectedParent={selectedParent}
+            onBack={handleBack}
+          />
+          <HomeProductGrid
+            variants={variants}
+            loading={loadingVariants}
+            search={search}
+            selectedCategory={selectedCategory}
+            onAddToCart={addToCart}
+            onToggleFavorite={toggleFavorite}
+            favoritedIds={favoritedIds}
+            cartQtyById={cartQtyById}
+            topSellerIds={topSellerIds}
+          />
+        </main>
+      </div>
 
       <HomeFooter />
 

@@ -18,7 +18,12 @@ const createRefund = async (req, res) => {
       include: {
         items: { include: { orderItem: true } },
         refunds: true,
-        order: { include: { payment: true } }
+        order: {
+          include: {
+            payment: true,
+            items: { select: { id: true, quantity: true } },
+          }
+        }
       }
     })
 
@@ -34,6 +39,10 @@ const createRefund = async (req, res) => {
       return res.status(400).json({ message: "Sin productos asociados" })
     }
 
+    if (returnRequest.status !== 'APPROVED') {
+      return res.status(400).json({ message: "Solo se puede reembolsar una solicitud aprobada" })
+    }
+
     if (returnRequest.refunds.length > 0) {
       return res.status(400).json({ message: "Reembolso ya registrado" })
     }
@@ -47,6 +56,35 @@ const createRefund = async (req, res) => {
       return res.status(400).json({ message: "Monto inválido" })
     }
 
+    // Verificar si este reembolso cubre el 100% de la orden
+    const alreadyRefundedQty = {}
+
+    const previousReturnRequests = await prisma.returnRequest.findMany({
+      where: {
+        orderId: returnRequest.orderId,
+        id: { not: Number(returnRequestId) },
+        refunds: { some: {} },
+      },
+      select: { items: { select: { orderItemId: true, quantity: true } } }
+    })
+
+    for (const rr of previousReturnRequests) {
+      for (const item of rr.items) {
+        alreadyRefundedQty[item.orderItemId] = (alreadyRefundedQty[item.orderItemId] || 0) + item.quantity
+      }
+    }
+
+    for (const item of returnRequest.items) {
+      alreadyRefundedQty[item.orderItemId] = (alreadyRefundedQty[item.orderItemId] || 0) + item.quantity
+    }
+
+    const orderItems = returnRequest.order.items
+    const isFullRefund = orderItems.length > 0 &&
+      orderItems.every(oi => (alreadyRefundedQty[oi.id] || 0) >= oi.quantity)
+
+    const shippingAmount = isFullRefund ? Number(returnRequest.order.shippingCost) : 0
+    if (isFullRefund) totalRefund += shippingAmount
+
     const refund = await prisma.refund.create({
       data: {
         returnRequestId: returnRequest.id,
@@ -57,7 +95,12 @@ const createRefund = async (req, res) => {
       }
     })
 
-    return res.status(201).json({ message: "Reembolso creado", refund })
+    return res.status(201).json({
+      message: "Reembolso creado",
+      refund,
+      includesShipping: isFullRefund,
+      shippingAmount,
+    })
 
   } catch (error) {
     console.error(error)

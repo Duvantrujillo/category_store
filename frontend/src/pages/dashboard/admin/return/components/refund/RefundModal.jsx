@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DollarSign, CheckCircle2, Clock, Loader2 } from "lucide-react";
+import { DollarSign, CheckCircle2, Clock, Loader2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -45,10 +45,12 @@ export default function RefundModal({ open, item, onClose, onRefresh }) {
   const hasRefund = !!refund;
   const isProcessed = refund?.status === "PROCESSED";
 
-  const totalAmount = item?.items?.reduce(
+  const itemsSubtotal = item?.items?.reduce(
     (sum, ri) => sum + Number(ri.orderItem.unitPrice) * ri.quantity,
     0
   ) ?? 0;
+  const shippingCost = item?.willIncludeShipping ? Number(item.shippingCost ?? 0) : 0;
+  const totalAmount = itemsSubtotal + shippingCost;
 
   const handleCreate = async () => {
     try { await submitCreate(item.id); onRefresh?.(); onClose(); } catch { /* hook maneja el toast */ }
@@ -79,7 +81,7 @@ export default function RefundModal({ open, item, onClose, onRefresh }) {
         <div className="px-6 py-5 space-y-4 bg-slate-50">
 
           {/* Banner de monto */}
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-center justify-between">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-emerald-100 text-emerald-600">
                 <DollarSign size={16} />
@@ -89,6 +91,18 @@ export default function RefundModal({ open, item, onClose, onRefresh }) {
                 <p className="text-xl font-bold text-emerald-800 tabular-nums leading-none mt-0.5">{fmtCOP(totalAmount)}</p>
               </div>
             </div>
+            {shippingCost > 0 && (
+              <div className="mt-3 pt-3 border-t border-emerald-200 space-y-1">
+                <div className="flex justify-between text-xs text-emerald-700">
+                  <span>Productos</span>
+                  <span className="tabular-nums">{fmtCOP(itemsSubtotal)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-emerald-700 items-center gap-1">
+                  <span className="flex items-center gap-1"><Truck size={11} />Envío (reembolso total)</span>
+                  <span className="tabular-nums">+{fmtCOP(shippingCost)}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Estado / formulario según caso */}

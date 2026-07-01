@@ -32,12 +32,12 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart }) {
       <div className="flex flex-col gap-1 flex-1 min-w-0">
 
         {product?.brand?.name && (
-          <span className="text-[10px] font-bold uppercase tracking-widest text-pink-400">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-rose-400">
             {product.brand.name}
           </span>
         )}
 
-        <p className="text-xs font-semibold text-rose-900 line-clamp-2 leading-snug">
+        <p className="text-xs font-semibold text-gray-800 line-clamp-2 leading-snug">
           {product?.name}
         </p>
 

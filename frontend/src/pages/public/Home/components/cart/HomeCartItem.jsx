@@ -62,21 +62,21 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty }) {
           <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
             <button
               onClick={() => onUpdateQty(variant.id, quantity - 1)}
-              className="flex items-center justify-center w-6 h-6 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-30"
+              className="flex items-center justify-center w-8 h-8 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-30"
               disabled={quantity <= 1}
             >
-              <Minus size={10} />
+              <Minus size={12} />
             </button>
-            <span className="text-xs font-semibold text-gray-700 w-6 text-center border-x border-gray-200">
+            <span className="text-xs font-semibold text-gray-700 w-7 text-center border-x border-gray-200">
               {quantity}
             </span>
             <button
               onClick={() => onUpdateQty(variant.id, quantity + 1)}
               disabled={atLimit}
-              className="flex items-center justify-center w-6 h-6 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center justify-center w-8 h-8 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               title={atLimit ? `Máximo disponible: ${stock}` : undefined}
             >
-              <Plus size={10} />
+              <Plus size={12} />
             </button>
           </div>
 
@@ -89,7 +89,7 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty }) {
       {/* Eliminar */}
       <button
         onClick={() => onRemove(variant.id)}
-        className="self-start mt-0.5 flex items-center justify-center w-6 h-6 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0"
+        className="self-start mt-0.5 flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0"
         aria-label="Eliminar del carrito"
       >
         <Trash2 size={12} />

@@ -65,7 +65,7 @@ const createCategory = async (req, res) => {
   } catch (error) {
     deleteUploadedFile(req.file);
     console.error(error);
-    return res.status(500).json({ error: "Error interno" });
+    return res.status(500).json({ message: "Error interno" });
   }
 };
 
@@ -166,7 +166,7 @@ const deleteCategory = async (req, res) => {
     return res.status(200).json({ message: "Categoría eliminada", data: deleted });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "Error interno" });
+    return res.status(500).json({ message: "Error interno" });
   }
 };
 
@@ -191,12 +191,12 @@ const activeCategory = async (req, res) => {
   try {
     const active = await prisma.category.findMany({
       include: { parent: true },
-      where: { isActive: true },
+      where: { isActive: true, children: { none: {} } },
       orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }]
     });
     return res.status(200).json({ data: active });
   } catch (error) {
-    return res.status(500).json({ error: "Error interno" });
+    return res.status(500).json({ message: "Error interno" });
   }
 };
 

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { ShieldOff } from "lucide-react";
 import { useAllProductVariant, useSearchProductVariant } from "../hooks/useProductVariant";
 import { useAllAttributeValue } from "../../attribute-value/hooks/useAttributeValue";
-import { getAllProducts } from "@/api/productApi";
 import ProductVariantTable from "../components/product-variant-list/ProductVariantTable";
 import ProductVariantCreateDialog from "../components/product-variant-create/ProductVariantCreateDialog";
 import ProductVariantSearch from "../components/product-variant-search/ProductVariantSearch";
@@ -25,7 +24,6 @@ function ProductVariantList() {
   const { variants = [], refetch } = useAllProductVariant({ skip: !canView });
   const { query, setQuery, results }  = useSearchProductVariant();
   const { attributeValues = [] } = useAllAttributeValue({ skip: !canView || !canViewAttrValues });
-  const [products, setProducts]       = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage]               = useState(1);
 
@@ -35,13 +33,6 @@ function ProductVariantList() {
   const searchFiltered = applyStatusFilter(results, statusFilter);
   const dataToShow    = query.trim() ? searchFiltered : paginated;
   const displayTotal  = query.trim() ? 0 : filtered.length;
-
-  useEffect(() => {
-    if (!canView) return;
-    getAllProducts()
-      .then((data) => setProducts(data.data || []))
-      .catch(() => {});
-  }, [canView]);
 
   useEffect(() => {
     if (page > totalPages) setPage(1);
@@ -72,7 +63,6 @@ function ProductVariantList() {
         </div>
         <ProductVariantCreateDialog
           onRefresh={refetch}
-          products={products}
           attributes={attributeValues}
           disabled={!canCreate}
         />
@@ -85,7 +75,6 @@ function ProductVariantList() {
         pageSize={PAGE_SIZE}
         onPageChange={setPage}
         onRefresh={refetch}
-        products={products}
         attributes={attributeValues}
       />
 

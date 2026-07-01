@@ -19,7 +19,6 @@ import { useCreateProductVariant } from "../../hooks/useProductVariant";
 export default function ProductVariantCreateDialog({
   onRefresh,
   productId,
-  products = [],
   attributes = [],
   disabled = false,
 }) {
@@ -134,7 +133,6 @@ export default function ProductVariantCreateDialog({
 
                 handleSubmit(fd);
               }}
-              products={products}
               attributes={attributes}
               productId={productId}
             />

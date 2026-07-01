@@ -8,7 +8,7 @@ import TablePagination from "@/components/ui/TablePagination";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function ProductVariantTable({ variants, totalItems, page, pageSize, onPageChange, onRefresh, products = [], attributes = [] }) {
+function ProductVariantTable({ variants, totalItems, page, pageSize, onPageChange, onRefresh, attributes = [] }) {
   const [deleteId, setDeleteId]           = useState(null);
   const [detailVariant, setDetailVariant] = useState(null);
 
@@ -41,7 +41,6 @@ function ProductVariantTable({ variants, totalItems, page, pageSize, onPageChang
                   onDelete={(id) => setDeleteId(id)}
                   onDetails={(v) => setDetailVariant(v)}
                   onRefresh={onRefresh}
-                  products={products}
                   attributes={attributes}
                 />
               ))}

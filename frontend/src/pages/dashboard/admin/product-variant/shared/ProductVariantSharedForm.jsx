@@ -20,7 +20,7 @@ export default function ProductVariantSharedForm({
     onCancel,
     onSubmit,
     attributes = [],
-    products = [],
+    initialProduct,
 }) {
     const isEdit = mode === "edit";
 
@@ -85,7 +85,7 @@ export default function ProductVariantSharedForm({
                 <BasicInfoSection
                     form={form}
                     handleChange={handleChange}
-                    products={products}
+                    initialProduct={initialProduct}
                 />
             )}
 

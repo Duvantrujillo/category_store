@@ -21,19 +21,6 @@ const createAtribute_Value = async (req, res) => {
             strict: true
         })
 
-        const slugExist = await prisma.attributeValue.findFirst({
-            where: {
-                slug: customerSlug
-            }
-        })
-
-        if (slugExist) {
-            return res.status(400).json({ Messages: "El nombre ya existe" })
-        }
-
-
-
-
         const attributeIdExist = await prisma.attribute.findUnique({
             where: {
                 id: attributeId
@@ -44,8 +31,13 @@ const createAtribute_Value = async (req, res) => {
             return res.status(400).json({ message: "Atributo no encontrado" })
         }
 
-
-
+        // Slug único dentro del mismo atributo (no global)
+        const slugExist = await prisma.attributeValue.findFirst({
+            where: { slug: customerSlug, attributeId: Number(attributeId) }
+        })
+        if (slugExist) {
+            return res.status(400).json({ message: "El nombre ya existe para este atributo" })
+        }
 
 
         const newAttributeValue = await prisma.attributeValue.create({
@@ -56,11 +48,11 @@ const createAtribute_Value = async (req, res) => {
             }
         })
 
-        return res.status(201).json({ Messages: "Valor creado", newAttributeValue })
+        return res.status(201).json({ message:"Valor creado", newAttributeValue })
 
     } catch (error) {
         console.error(error) // Recomendado para que puedas ver el error real en tu consola
-        return res.status(500).json({ Messages: "Error interno" })
+        return res.status(500).json({ message:"Error interno" })
     }
 }
 
@@ -71,7 +63,7 @@ const updateAtribute_Value = async (req, res) => {
         const { value, slug, attributeId, sortOrder } = req.body
 
         if (isNaN(formId)) {
-            return res.status(400).json({ Messages: "ID inválido" })
+            return res.status(400).json({ message:"ID inválido" })
         }
 
         const idExist = await prisma.attributeValue.findFirst({
@@ -79,7 +71,7 @@ const updateAtribute_Value = async (req, res) => {
         })
 
         if (!idExist) {
-            return res.status(404).json({ Messages: "No encontrado" })
+            return res.status(404).json({ message:"No encontrado" })
         }
 
         if (!value || !value.trim()) {
@@ -98,14 +90,13 @@ const updateAtribute_Value = async (req, res) => {
         const slugExist = await prisma.attributeValue.findFirst({
             where: {
                 slug: customerSlug,
-                NOT: {
-                    id: formId
-                }
+                attributeId: Number(attributeId),
+                NOT: { id: formId }
             }
         })
 
         if (slugExist) {
-            return res.status(400).json({ Messages: "El nombre ya existe" })
+            return res.status(400).json({ message: "El nombre ya existe para este atributo" })
         }
 
         const registerUpdate = await prisma.attributeValue.update({
@@ -117,11 +108,11 @@ const updateAtribute_Value = async (req, res) => {
             }
         })
 
-        return res.status(200).json({ Messages: "Valor actualizado", registerUpdate })
+        return res.status(200).json({ message:"Valor actualizado", registerUpdate })
 
     } catch (error) {
         console.error(error)
-        return res.status(500).json({ Messages: "Error interno" })
+        return res.status(500).json({ message:"Error interno" })
     }
 }
 
@@ -137,15 +128,14 @@ const deleteAtribute_Value = async (req, res) => {
             })
         }
 
-        const productExist = await prisma.product.findUnique({
-            where: {
-                id: id
-            }
+        const inUse = await prisma.productVariantAttribute.findFirst({
+            where: { attributeValueId: id },
+            select: { id: true },
         })
 
-        if (productExist) {
+        if (inUse) {
             return res.status(400).json({
-                message: "Tiene productos asociados"
+                message: "Tiene variantes de producto asociadas"
             })
         }
 

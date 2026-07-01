@@ -65,7 +65,7 @@ export default function HomeCart({ open, onClose, items, onRemove, onUpdateQty, 
               Mi carrito
               {totalUnits > 0 && (
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                  {totalUnits} {totalUnits === 1 ? "ítem" : "ítems"}
+                  {totalUnits} prod.
                 </span>
               )}
             </SheetTitle>

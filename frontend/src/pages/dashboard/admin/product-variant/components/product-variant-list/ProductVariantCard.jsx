@@ -6,7 +6,7 @@ import { Card, CardFooter } from "@/components/ui/card";
 import ProductVariantEditDialog from "@/pages/dashboard/admin/product-variant/components/product-variant-update/ProductVariantEditDialog";
 import { useHasPermission } from "@/lib/permissions";
 
-function ProductVariantCard({ item, onDelete, onDetails, onRefresh, products = [], attributes = [] }) {
+function ProductVariantCard({ item, onDelete, onDetails, onRefresh, attributes = [] }) {
   const canUpdate = useHasPermission("product-variants.update");
   const canDelete = useHasPermission("product-variants.delete");
   const firstImage = item.images?.[0]?.imageUrl
@@ -64,7 +64,7 @@ function ProductVariantCard({ item, onDelete, onDetails, onRefresh, products = [
         <Button variant="outline" size="icon" className="h-7 w-7 text-indigo-600 border-indigo-200 hover:bg-indigo-50" onClick={() => onDetails(item)}>
           <Eye className="h-3 w-3" />
         </Button>
-        <ProductVariantEditDialog item={item} onRefresh={onRefresh} products={products} attributes={attributes} disabled={!canUpdate} />
+        <ProductVariantEditDialog item={item} onRefresh={onRefresh} attributes={attributes} disabled={!canUpdate} />
         <Button
           variant="outline"
           size="icon"

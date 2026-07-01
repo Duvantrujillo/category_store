@@ -25,38 +25,23 @@ const createProduct = async (req, res) => {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "El nombre es obligatorio" });
     }
-
     if (name.trim().length > 50) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "El nombre no puede superar 50 caracteres" });
     }
-
     if (description && description.length > 3000) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "La descripción no puede superar 3000 caracteres" });
     }
-
     if (!categoryId) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "La categoría es obligatoria" });
     }
 
-    if (!brandId) {
-      deleteUploadedFile(file);
-      return res.status(400).json({ message: "La marca es obligatoria" });
-    }
-
     const categoryIdNumb = Number(categoryId);
-    const brandIdNumb = Number(brandId);
-
     if (!Number.isInteger(categoryIdNumb) || categoryIdNumb <= 0) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "categoryId inválido" });
-    }
-
-    if (!Number.isInteger(brandIdNumb) || brandIdNumb <= 0) {
-      deleteUploadedFile(file);
-      return res.status(400).json({ message: "brandId inválido" });
     }
 
     const categoryExists = await prisma.category.findUnique({ where: { id: categoryIdNumb } });
@@ -64,7 +49,6 @@ const createProduct = async (req, res) => {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "Categoría no encontrada" });
     }
-
     const hasChildren = await prisma.category.findFirst({
       where: { parentId: categoryIdNumb },
       select: { id: true },
@@ -74,14 +58,25 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ message: "Solo se pueden asignar productos a categorías hija" });
     }
 
-    const brandExists = await prisma.brand.findUnique({ where: { id: brandIdNumb } });
-    if (!brandExists) {
-      deleteUploadedFile(file);
-      return res.status(400).json({ message: "Marca no encontrada" });
+    // Marca es opcional
+    let brandIdNumb = null;
+    let brandName   = '';
+    if (brandId) {
+      brandIdNumb = Number(brandId);
+      if (!Number.isInteger(brandIdNumb) || brandIdNumb <= 0) {
+        deleteUploadedFile(file);
+        return res.status(400).json({ message: "brandId inválido" });
+      }
+      const brandExists = await prisma.brand.findUnique({ where: { id: brandIdNumb } });
+      if (!brandExists) {
+        deleteUploadedFile(file);
+        return res.status(400).json({ message: "Marca no encontrada" });
+      }
+      brandName = brandExists.name;
     }
 
-    const slugBase = `${name} ${brandExists.name}`.trim();
-    const slug = slugify(slugBase, { strict: true, lower: true });
+    const slugBase = brandName ? `${name.trim()} ${brandName}` : name.trim();
+    const slug     = slugify(slugBase, { strict: true, lower: true });
 
     const slugExist = await prisma.product.findUnique({ where: { slug } });
     if (slugExist) {
@@ -138,22 +133,10 @@ const updateProduct = async (req, res) => {
       return res.status(400).json({ message: "La categoría es obligatoria" });
     }
 
-    if (!brandId) {
-      deleteUploadedFile(file);
-      return res.status(400).json({ message: "La marca es obligatoria" });
-    }
-
     const categoryIdNumb = Number(categoryId);
-    const brandIdNumb = Number(brandId);
-
     if (!Number.isInteger(categoryIdNumb) || categoryIdNumb <= 0) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "categoryId inválido" });
-    }
-
-    if (!Number.isInteger(brandIdNumb) || brandIdNumb <= 0) {
-      deleteUploadedFile(file);
-      return res.status(400).json({ message: "brandId inválido" });
     }
 
     const productExist = await prisma.product.findUnique({ where: { id: formId } });
@@ -167,14 +150,34 @@ const updateProduct = async (req, res) => {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "Categoría no encontrada" });
     }
-
-    const brandExists = await prisma.brand.findUnique({ where: { id: brandIdNumb } });
-    if (!brandExists) {
+    const hasChildren = await prisma.category.findFirst({
+      where: { parentId: categoryIdNumb },
+      select: { id: true },
+    });
+    if (hasChildren) {
       deleteUploadedFile(file);
-      return res.status(400).json({ message: "Marca no encontrada" });
+      return res.status(400).json({ message: "Solo se pueden asignar productos a categorías hija" });
     }
 
-    const slug = slugify(`${name} ${brandExists.name}`.trim(), { strict: true, lower: true });
+    // Marca es opcional
+    let brandIdNumb = null;
+    let brandName   = '';
+    if (brandId) {
+      brandIdNumb = Number(brandId);
+      if (!Number.isInteger(brandIdNumb) || brandIdNumb <= 0) {
+        deleteUploadedFile(file);
+        return res.status(400).json({ message: "brandId inválido" });
+      }
+      const brandExists = await prisma.brand.findUnique({ where: { id: brandIdNumb } });
+      if (!brandExists) {
+        deleteUploadedFile(file);
+        return res.status(400).json({ message: "Marca no encontrada" });
+      }
+      brandName = brandExists.name;
+    }
+
+    const slugBase = brandName ? `${name.trim()} ${brandName}` : name.trim();
+    const slug     = slugify(slugBase, { strict: true, lower: true });
 
     const slugExist = await prisma.product.findFirst({
       where: { slug, NOT: { id: formId } },
@@ -195,6 +198,7 @@ const updateProduct = async (req, res) => {
       where: { id: formId },
       data: { categoryId: categoryIdNumb, brandId: brandIdNumb, name, slug, description, mainImage, status },
     });
+
 
     return res.status(200).json({ message: "Producto actualizado", data: updatedProduct });
   } catch (error) {
@@ -307,65 +311,79 @@ const searchProduct = async (req, res) => {
     const q = (req.query.q || "").trim();
 
     if (!q) {
-      return res.status(200).json({
-        data: [],
+      const active = await prisma.product.findMany({
+        where: { status: 'ACTIVE' },
+        include: { category: true, brand: true, variants: true },
+        orderBy: { name: 'asc' },
+        take: 20,
       });
+      return res.status(200).json({ data: active });
     }
 
     const products = await prisma.product.findMany({
       where: {
         OR: [
-          {
-            name: {
-              contains: q,
-            },
-          },
-          {
-            slug: {
-              contains: q,
-            },
-          },
-          {
-            category: {
-              name: {
-                contains: q,
-              },
-            },
-          },
-          {
-            brand: {
-              name: {
-                contains: q,
-              },
-            },
-          },
+          { name:     { contains: q } },
+          { slug:     { contains: q } },
+          { category: { name: { contains: q } } },
+          { brand:    { name: { contains: q } } },
         ],
       },
-
-      include: {
-        category: true,
-        brand: true,
-        variants: true,
-      },
-
+      include: { category: true, brand: true, variants: true },
       take: 20,
     });
 
-    return res.status(200).json({
-      data: products,
-    });
+    return res.status(200).json({ data: products });
 
   } catch (error) {
+    console.error("Error searching products:", error);
+    return res.status(500).json({ message: "Error al buscar" });
+  }
+};
 
-    console.error(
-      "Error searching products:",
-      error
-    );
+const getPublicProductBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
 
-    return res.status(500).json({
-      message: "Error al buscar",
+    const product = await prisma.product.findFirst({
+      where: { slug, status: 'ACTIVE' },
+      include: {
+        category: true,
+        brand: true,
+        variants: {
+          where: { isActive: true },
+          include: {
+            images: { orderBy: { slot: 'asc' } },
+            attributes: {
+              include: {
+                attributeValue: { include: { attribute: true } },
+              },
+            },
+          },
+          orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+        },
+      },
     });
 
+    if (!product) return res.status(404).json({ message: 'Producto no encontrado' });
+    if (!product.variants.length) return res.status(404).json({ message: 'Producto sin variantes activas' });
+
+    // Pre-computa las opciones de atributos para que el frontend no tenga que procesarlas
+    const attributeOptions = {};
+    product.variants.forEach((v) => {
+      v.attributes.forEach((a) => {
+        const name  = a.attributeValue?.attribute?.name;
+        const value = a.attributeValue?.value;
+        if (!name || !value) return;
+        if (!attributeOptions[name]) attributeOptions[name] = [];
+        if (!attributeOptions[name].includes(value)) attributeOptions[name].push(value);
+      });
+    });
+
+    return res.json({ ...product, attributeOptions });
+  } catch (error) {
+    console.error('Error en getPublicProductBySlug:', error);
+    return res.status(500).json({ message: 'Error interno' });
   }
 };
 
@@ -374,5 +392,6 @@ module.exports = {
   updateProduct,
   deleteProduct,
   allProduct,
-  searchProduct
+  searchProduct,
+  getPublicProductBySlug,
 }

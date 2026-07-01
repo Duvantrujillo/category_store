@@ -96,7 +96,7 @@ export default function HomeNavSearch({ onSearch, mobileOpen, onMobileClose }) {
     setValue("");
     setFocused(false);
     onMobileClose?.();
-    navigate(`/producto/${variant.id}`);
+    navigate(`/producto/${variant.product?.slug ?? variant.id}`);
   }
 
   const showSuggestions = focused && suggestions.length > 0;

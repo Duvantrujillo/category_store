@@ -1,7 +1,7 @@
 import {
   CheckCircle2, Clock, XCircle, Package,
   MessageSquare, User, BadgeDollarSign,
-  ShoppingBag, AlertCircle,
+  ShoppingBag, AlertCircle, Truck,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription,
@@ -163,9 +163,15 @@ export default function ReturnDetailModal({ open, item, onClose }) {
   const refundCfg   = refund ? (REFUND_STATUS[refund.status] ?? REFUND_STATUS.PENDING) : null;
   const RefundIcon  = refundCfg?.Icon;
 
-  const totalAmount = item.items?.reduce(
+  const itemsSubtotal = item.items?.reduce(
     (sum, ri) => sum + Number(ri.orderItem.unitPrice) * ri.quantity, 0
   ) ?? 0;
+
+  // Si ya existe un reembolso, usar su monto real (puede incluir envío)
+  const totalAmount    = refund ? Number(refund.amount) : itemsSubtotal;
+  const shippingInRefund = refund
+    ? Math.max(0, Number(refund.amount) - itemsSubtotal)
+    : item.willIncludeShipping ? Number(item.shippingCost ?? 0) : 0;
 
   const resLabel = item.resolution ? RESOLUTION_LABEL[item.resolution] : null;
   const resCls   = item.resolution ? RESOLUTION_CLS[item.resolution]   : "";
@@ -269,11 +275,29 @@ export default function ReturnDetailModal({ open, item, onClose }) {
                     })}
                   </TableBody>
                 </Table>
-                <div className="flex items-center justify-between px-4 py-3 bg-rose-50 border-t border-rose-100">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-rose-500">
-                    Total a {resLabel?.toLowerCase() ?? "devolver"}
-                  </span>
-                  <span className="text-base font-bold text-rose-700 tabular-nums">{fmtCOP(totalAmount)}</span>
+                <div className="border-t border-rose-100">
+                  {shippingInRefund > 0 && (
+                    <div className="flex items-center justify-between px-4 py-2 bg-rose-50 border-b border-rose-100">
+                      <span className="text-xs text-rose-400 flex items-center gap-1">
+                        <Truck size={11} /> Subtotal productos
+                      </span>
+                      <span className="text-sm tabular-nums text-rose-500">{fmtCOP(itemsSubtotal)}</span>
+                    </div>
+                  )}
+                  {shippingInRefund > 0 && (
+                    <div className="flex items-center justify-between px-4 py-2 bg-rose-50 border-b border-rose-100">
+                      <span className="text-xs text-rose-400 flex items-center gap-1">
+                        <Truck size={11} /> Envío (reembolso total)
+                      </span>
+                      <span className="text-sm tabular-nums text-rose-500">+{fmtCOP(shippingInRefund)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between px-4 py-3 bg-rose-50">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-rose-500">
+                      Total a {resLabel?.toLowerCase() ?? "devolver"}
+                    </span>
+                    <span className="text-base font-bold text-rose-700 tabular-nums">{fmtCOP(totalAmount)}</span>
+                  </div>
                 </div>
               </>
             ) : (
@@ -338,6 +362,9 @@ export default function ReturnDetailModal({ open, item, onClose }) {
               </div>
 
               <InfoPair label="Monto reembolsado" value={fmtCOP(totalAmount)} />
+              {shippingInRefund > 0 && (
+                <InfoPair label="Incluye envío" value={`+${fmtCOP(shippingInRefund)}`} />
+              )}
               <InfoPair label="Método de pago"    value={refund.method} />
               <InfoPair label="Referencia"         value={refund.reference} mono />
               <InfoPair label="Fecha de pago"      value={fmtDate(refund.paidAt)} />

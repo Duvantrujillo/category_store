@@ -64,15 +64,9 @@ export default function ProductCreateDialog({
         AllBrands(),
       ]);
 
-      console.log("Category Response:", catResponse);
-      console.log("Brand Response:", brandResponse);
-
       // Las respuestas vienen con estructura { data: [...] }
       const categoriesData = Array.isArray(catResponse?.data) ? catResponse.data : [];
       const brandsData = Array.isArray(brandResponse?.data) ? brandResponse.data : [];
-
-      console.log("Categories Data:", categoriesData);
-      console.log("Brands Data:", brandsData);
 
       setCategories(categoriesData);
       setBrands(brandsData);

@@ -97,6 +97,10 @@ app.get('/product-variant/public/suggestions',  getPublicSuggestions)
 app.get('/product-variant/public/related',      getRelatedVariants)
 app.get('/product-variant/public/:id',          getPublicVariantById)
 
+// Ruta pública de producto por slug — devuelve producto completo con todas sus variantes
+const { getPublicProductBySlug } = require('./controllers/product/product.controller')
+app.get('/product/public/:slug', getPublicProductBySlug)
+
 // Rutas públicas (no requieren sesión)
 const PUBLIC_ROUTES = new Set([
   'POST /user/create',

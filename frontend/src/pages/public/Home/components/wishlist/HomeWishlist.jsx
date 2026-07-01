@@ -27,7 +27,7 @@ export default function HomeWishlist({ open, onClose, items, onRemove, onAddToCa
               Me encanta
               {items.length > 0 && (
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                  {items.length} {items.length === 1 ? "producto" : "productos"}
+                  {items.length} prod.
                 </span>
               )}
             </SheetTitle>
@@ -61,7 +61,7 @@ export default function HomeWishlist({ open, onClose, items, onRemove, onAddToCa
         {items.length > 0 && (
           <SheetFooter className="px-5 pt-4 pb-6 border-t border-gray-100">
             <p className="text-center text-[10px] text-gray-300 w-full">
-              {items.length} {items.length === 1 ? "producto guardado" : "productos guardados"}
+              {items.length} {items.length === 1 ? "prod. guardado" : "prod. guardados"}
             </p>
           </SheetFooter>
         )}

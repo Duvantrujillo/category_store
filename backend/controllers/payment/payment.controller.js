@@ -14,6 +14,11 @@ const createPayment = async (req, res) => {
             return res.status(404).json({ message: "Orden no encontrada" });
         }
 
+        const existingPayment = await prisma.payment.findUnique({ where: { orderId } });
+        if (existingPayment) {
+            return res.status(400).json({ message: "La orden ya tiene un pago registrado" });
+        }
+
         // El monto siempre se toma del total de la orden (incluye costo de envío).
         // Nunca del cliente, para evitar manipulación.
         const amount = Number(order.total);

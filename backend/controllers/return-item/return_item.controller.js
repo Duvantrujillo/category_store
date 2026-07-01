@@ -57,6 +57,21 @@ const CreatereturnItem = async (req, res) => {
         })
       }
 
+      // Verificar que la suma acumulada de devoluciones no supere lo pedido
+      const alreadyReturned = await prisma.returnItem.aggregate({
+        where: {
+          orderItemId: orderItemNumb,
+          returnRequestId: { not: returnRequestNumb },
+        },
+        _sum: { quantity: true },
+      })
+      const prevQty = alreadyReturned._sum.quantity ?? 0
+      if (prevQty + quantityNumb > orderItemExist.quantity) {
+        return res.status(400).json({
+          message: `La cantidad total devuelta (${prevQty + quantityNumb}) supera lo pedido (${orderItemExist.quantity})`
+        })
+      }
+
       const created = await prisma.returnItem.upsert({
         where: {
           returnRequestId_orderItemId: {

@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PackageX, ArrowLeft } from "lucide-react";
 import HomeHeader from "../header/HomeHeader";
@@ -6,7 +7,7 @@ import HomeCart from "../cart/HomeCart";
 import HomeWishlist from "../wishlist/HomeWishlist";
 import { usePublicCart } from "../../hooks/usePublicCart";
 import { usePublicWishlist } from "../../hooks/usePublicWishlist";
-import { useProductVariant } from "../../hooks/useProductVariant";
+import { usePublicProduct } from "../../hooks/usePublicProduct";
 import ProductDetailGallery from "./ProductDetailGallery";
 import ProductDetailDescription from "./ProductDetailDescription";
 import ProductDetailBrand from "./ProductDetailBrand";
@@ -15,11 +16,65 @@ import ProductDetailPrice from "./ProductDetailPrice";
 import ProductDetailActions from "./ProductDetailActions";
 import RelatedProductsSection from "./related/RelatedProductsSection";
 
+// Extrae los atributos de una variante como { "Color": "Negro", "Talla": "38" }
+function getVariantAttrs(variant) {
+  const attrs = {};
+  variant?.attributes?.forEach((a) => {
+    const name  = a.attributeValue?.attribute?.name;
+    const value = a.attributeValue?.value;
+    if (name && value) attrs[name] = value;
+  });
+  return attrs;
+}
+
+// Busca la variante cuya combinación de atributos coincide exactamente
+function findVariantByAttrs(variants, selectedAttrs) {
+  const entries = Object.entries(selectedAttrs);
+  if (!entries.length) return null;
+  return variants.find((v) => {
+    const vAttrs = getVariantAttrs(v);
+    return entries.every(([name, val]) => vAttrs[name] === val);
+  }) ?? null;
+}
+
 export default function ProductDetail() {
-  const { id }   = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
 
-  const { variant, loading, notFound } = useProductVariant(id);
+  const { product, loading, notFound } = usePublicProduct(slug);
+
+  // null = el usuario aún no ha interactuado; se usa la variante isDefault directamente
+  const [selectedAttrs, setSelectedAttrs] = useState(null);
+
+  // selectedVariant se deriva en el mismo render en que llega product —
+  // nunca hay un render intermedio con imágenes vacías
+  const selectedVariant = useMemo(() => {
+    if (!product?.variants?.length) return null;
+    const def = product.variants.find((v) => v.isDefault) ?? product.variants[0];
+    if (!selectedAttrs) return def;
+    return findVariantByAttrs(product.variants, selectedAttrs) ?? def;
+  }, [product, selectedAttrs]);
+
+  // ID estable para productos relacionados (no cambia al seleccionar atributos)
+  const defaultVariantId = useMemo(() => {
+    if (!product?.variants?.length) return null;
+    return (product.variants.find((v) => v.isDefault) ?? product.variants[0]).id;
+  }, [product]);
+
+  // Todas las imágenes de todas las variantes (ya traen productVariantId del backend)
+  // La variante por defecto primero porque el backend ordena isDefault desc
+  const allImages = useMemo(() => {
+    if (!product?.variants) return [];
+    return product.variants.flatMap((v) => v.images ?? []);
+  }, [product]);
+
+  function handleSelectAttr(attrName, value) {
+    // Primera interacción: inicializa desde la variante visible actual
+    const base     = selectedAttrs ?? getVariantAttrs(selectedVariant);
+    const newAttrs = { ...base, [attrName]: value };
+    const match    = findVariantByAttrs(product.variants, newAttrs);
+    if (match) setSelectedAttrs(newAttrs);
+  }
 
   const {
     cartItems, cartUuid, cartOpen, setCartOpen,
@@ -32,11 +87,32 @@ export default function ProductDetail() {
   } = usePublicWishlist(cartUuid);
 
   const cartCount    = cartItems.reduce((sum, i) => sum + i.quantity, 0);
-  const cartQtyById  = Object.fromEntries(cartItems.map((i) => [i.variant.id, i.quantity]));
-  const favoritedIds = new Set(wishlistItems.map((v) => v.id));
+  const cartQtyById  = useMemo(
+    () => Object.fromEntries(cartItems.map((i) => [i.variant.id, i.quantity])),
+    [cartItems]
+  );
+  const favoritedIds = useMemo(() => new Set(wishlistItems.map((v) => v.id)), [wishlistItems]);
+
+  // Variante enriquecida con la referencia al producto para el carrito y wishlist
+  const enrichedVariant = useMemo(() => {
+    if (!selectedVariant || !product) return null;
+    return {
+      ...selectedVariant,
+      product: {
+        id:        product.id,
+        name:      product.name,
+        slug:      product.slug,
+        mainImage: product.mainImage,
+        brand:     product.brand,
+        category:  product.category,
+      },
+    };
+  }, [selectedVariant, product]);
+
+  // ── Estados de carga / error ──────────────────────────────────────────────
 
   if (loading) return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-linear-to-b from-rose-100/40 via-pink-50/20 to-white">
       <HomeHeader cartCount={0} onCartOpen={() => {}} wishlistCount={0} onWishlistOpen={() => {}} onSearch={() => {}} />
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
@@ -47,8 +123,8 @@ export default function ProductDetail() {
     </div>
   );
 
-  if (notFound || !variant) return (
-    <div className="min-h-screen bg-neutral-50">
+  if (notFound || !product) return (
+    <div className="min-h-screen bg-linear-to-b from-rose-100/40 via-pink-50/20 to-white">
       <HomeHeader cartCount={0} onCartOpen={() => {}} wishlistCount={0} onWishlistOpen={() => {}} onSearch={() => {}} />
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5">
         <PackageX size={52} className="text-gray-300" />
@@ -66,14 +142,16 @@ export default function ProductDetail() {
     </div>
   );
 
-  const { product, price, stock, attributes, images } = variant;
+  // ── Datos de la variante seleccionada ─────────────────────────────────────
+
+  const { price, stock } = selectedVariant ?? {};
   const outOfStock = !stock || Number(stock) === 0;
-  const cartQty    = cartQtyById[variant.id] ?? 0;
+  const cartQty    = cartQtyById[selectedVariant?.id] ?? 0;
   const atLimit    = !outOfStock && cartQty >= Number(stock);
-  const isFav      = favoritedIds.has(variant.id);
+  const isFav      = favoritedIds.has(selectedVariant?.id);
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-linear-to-b from-rose-100/40 via-pink-50/20 to-white">
       <HomeHeader
         cartCount={cartCount}
         onCartOpen={() => setCartOpen(true)}
@@ -92,22 +170,34 @@ export default function ProductDetail() {
           Volver
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-16 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 xl:gap-16 items-start">
 
-          <div className="h-[400px] sm:h-[520px] lg:h-[640px] lg:sticky lg:top-8">
-            <ProductDetailGallery images={images} />
+          <div className="h-[380px] sm:h-[460px] md:h-[520px] lg:h-[620px] md:sticky md:top-8">
+            <ProductDetailGallery images={allImages} selectedVariantId={selectedVariant?.id} />
           </div>
 
           <div className="flex flex-col gap-7">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight tracking-tight">
-              {product?.name}
+            <h1
+              className="text-3xl sm:text-4xl font-black leading-tight"
+              style={{ color: "#4b5563", WebkitTextStroke: "1.5px #4b5563", letterSpacing: "0.1em" }}
+            >
+              {product.name}
             </h1>
             <ProductDetailDescription product={product} />
-            <ProductDetailBrand brand={product?.brand} />
-            <ProductDetailAttributes attributes={attributes} />
+            <ProductDetailBrand brand={product.brand} />
+
+            {/* attributeOptions viene pre-computado del backend */}
+            <ProductDetailAttributes
+              attributeOptions={product.attributeOptions ?? {}}
+              variants={product.variants}
+              selectedVariant={selectedVariant}
+              selectedAttrs={selectedAttrs}
+              onSelectAttr={handleSelectAttr}
+            />
+
             <ProductDetailPrice price={price} stock={stock} outOfStock={outOfStock} />
             <ProductDetailActions
-              variant={variant}
+              variant={enrichedVariant}
               outOfStock={outOfStock}
               atLimit={atLimit}
               isFav={isFav}
@@ -122,11 +212,11 @@ export default function ProductDetail() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="h-px bg-gray-100 mb-12" />
         <RelatedProductsSection
-          currentVariantId={variant.id}
-          brandId={product?.brand?.id}
-          brandName={product?.brand?.name}
-          categoryId={product?.category?.id}
-          categoryName={product?.category?.name}
+          currentVariantId={defaultVariantId}
+          brandId={product.brand?.id}
+          brandName={product.brand?.name}
+          categoryId={product.category?.id}
+          categoryName={product.category?.name}
           onAddToCart={addToCart}
           onToggleFavorite={toggleFavorite}
           favoritedIds={favoritedIds}

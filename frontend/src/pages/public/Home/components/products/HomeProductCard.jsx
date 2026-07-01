@@ -18,14 +18,9 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
   const atLimit     = !outOfStock && cartQty >= Number(stock);
   const isTopSeller = topSellerIds?.has(variant.id) ?? false;
 
-  // Atributos como texto: "Color · Talla · ..."
-  const attrText = attributes?.length
-    ? attributes.map((a) => a.attributeValue?.value).filter(Boolean).join(" · ")
-    : null;
-
   return (
     <article
-      onClick={() => navigate(`/producto/${variant.id}`)}
+      onClick={() => navigate(`/producto/${variant.product?.slug ?? variant.id}`)}
       className="group flex flex-col h-full bg-white rounded-2xl cursor-pointer"
     >
       {/* ── Imagen ── */}
@@ -88,7 +83,7 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
               if (!outOfStock && !atLimit) onAddToCart?.(variant);
             }}
             disabled={outOfStock || atLimit}
-            className="w-full h-8 rounded-lg text-[9px] sm:text-xs font-bold tracking-wide uppercase whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-rose-400/80 hover:bg-rose-400/95 active:bg-rose-500 text-white"
+            className="w-full h-9 rounded-lg text-xs font-bold tracking-wide uppercase whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-rose-400/80 hover:bg-rose-400/95 active:bg-rose-500 text-white"
           >
             {outOfStock ? "Agotado" : atLimit ? "Límite de stock" : "Agregar al carrito"}
           </button>

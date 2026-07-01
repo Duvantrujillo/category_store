@@ -36,8 +36,8 @@ const upload = multer({
 const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE')
-      return res.status(400).json({ error: 'Cada imagen no puede superar 300 KB' });
-    return res.status(400).json({ error: 'Formato inválido. Solo jpg, jpeg, png o webp' });
+      return res.status(400).json({ message: 'Cada imagen no puede superar 300 KB' });
+    return res.status(400).json({ message: 'Formato inválido. Solo jpg, jpeg, png o webp' });
   }
   next(err);
 };

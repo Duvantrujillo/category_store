@@ -38,9 +38,9 @@ export default function HomeProductGrid({
     <section className="mt-2">
 
       {/* ── Encabezado ── */}
-      <div className="flex items-baseline justify-between mb-5 px-4 sm:px-0">
+      <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 mb-5 px-4 sm:px-0">
         <h2
-          className="text-4xl sm:text-7xl lg:text-9xl font-black"
+          className="text-3xl sm:text-5xl lg:text-7xl font-black"
           style={{ color: "#4b5563", WebkitTextStroke: "1.5px #4b5563", letterSpacing: "0.1em" }}
         >
           {search
@@ -51,7 +51,8 @@ export default function HomeProductGrid({
         </h2>
         {!loading && variants.length > 0 && (
           <span className="text-xs text-gray-400 font-medium tabular-nums">
-            {variants.length} {variants.length === 1 ? "producto" : "productos"}
+            <span className="sm:hidden">{variants.length} prod.</span>
+            <span className="hidden sm:inline">{variants.length} {variants.length === 1 ? "producto" : "productos"}</span>
           </span>
         )}
       </div>

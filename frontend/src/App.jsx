@@ -35,7 +35,7 @@ function App() {
       {/* Rutas públicas — scrollbar rosa */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/producto/:id" element={<ProductDetail />} />
+        <Route path="/producto/:slug" element={<ProductDetail />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/checkout/respuesta" element={<CheckoutResponse />} />
       </Route>

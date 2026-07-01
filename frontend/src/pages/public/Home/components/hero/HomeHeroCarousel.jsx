@@ -131,7 +131,7 @@ export default function HomeHeroCarousel() {
       )}
 
       {/* ── CONTENIDO ── */}
-      <div className="relative z-10 flex items-end sm:items-center min-h-60 sm:min-h-[380px] lg:min-h-[440px] px-5 sm:px-12 lg:px-16 pb-10 pt-8 sm:py-12">
+      <div className="relative z-10 flex items-end sm:items-center min-h-60 sm:min-h-80 md:min-h-[380px] lg:min-h-[440px] px-5 sm:px-12 lg:px-16 pb-10 pt-8 sm:py-12">
         <div
           key={current}
           className="flex flex-col gap-2.5 sm:gap-4 w-full sm:max-w-lg"
@@ -147,7 +147,7 @@ export default function HomeHeroCarousel() {
 
               {/* Título */}
               <h1
-                className="text-3xl sm:text-5xl lg:text-6xl font-bold text-rose-900 leading-tight"
+                className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-rose-900 leading-tight"
                 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic" }}
               >
                 {slide.title}

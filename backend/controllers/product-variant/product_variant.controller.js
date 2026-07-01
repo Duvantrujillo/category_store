@@ -445,6 +445,9 @@ const allProductVariant = async (req, res) => {
           }
         }
       },
+      product: {
+        select: { id: true, name: true, brand: { select: { name: true } } }
+      },
     },
     orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }]
   });
@@ -559,7 +562,15 @@ const getPublicVariants = async (req, res) => {
       orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
     });
 
-    return res.status(200).json({ data: variants });
+    // Un único resultado por producto: la variante isDefault (o la primera activa)
+    const seen = new Set();
+    const deduped = variants.filter((v) => {
+      if (seen.has(v.productId)) return false;
+      seen.add(v.productId);
+      return true;
+    });
+
+    return res.status(200).json({ data: deduped });
   } catch (error) {
     console.error("Error en getPublicVariants:", error);
     return res.status(500).json({ message: "Error interno" });
@@ -645,7 +656,9 @@ const getPublicSuggestions = async (req, res) => {
       },
       select: {
         id: true,
+        productId: true,
         price: true,
+        isDefault: true,
         images: {
           select: { imageUrl: true, slot: true },
           orderBy: { slot: "asc" },
@@ -654,15 +667,26 @@ const getPublicSuggestions = async (req, res) => {
         product: {
           select: {
             name: true,
+            slug: true,
             brand: { select: { name: true } },
           },
         },
       },
-      take: 6,
+      take: 30,
       orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
     });
 
-    return res.status(200).json({ data: variants });
+    // Un resultado por producto
+    const seen = new Set();
+    const deduped = variants
+      .filter((v) => {
+        if (seen.has(v.productId)) return false;
+        seen.add(v.productId);
+        return true;
+      })
+      .slice(0, 6);
+
+    return res.status(200).json({ data: deduped });
   } catch (error) {
     console.error("Error en getPublicSuggestions:", error);
     return res.status(500).json({ message: "Error interno" });
@@ -680,23 +704,24 @@ const getRelatedVariants = async (req, res) => {
 
     const current = await prisma.productVariant.findFirst({
       where: { id: variantId },
-      select: { product: { select: { brandId: true, categoryId: true } } },
+      select: { productId: true, product: { select: { brandId: true, categoryId: true } } },
     });
 
-    const brandId    = current?.product?.brandId    ?? null;
-    const categoryId = current?.product?.categoryId ?? null;
+    const currentProductId = current?.productId     ?? null;
+    const brandId          = current?.product?.brandId    ?? null;
+    const categoryId       = current?.product?.categoryId ?? null;
 
     const brandCatOR = [
       ...(brandId    ? [{ brandId }]    : []),
       ...(categoryId ? [{ categoryId }] : []),
     ];
 
-    // 1. Productos de la misma marca o categoría
+    // 1. Variantes de productos relacionados (misma marca o categoría)
     const related = brandCatOR.length
       ? await prisma.productVariant.findMany({
           where: {
             isActive: true,
-            NOT: { id: variantId },
+            ...(currentProductId ? { NOT: { productId: currentProductId } } : { NOT: { id: variantId } }),
             product: { status: "ACTIVE", OR: brandCatOR },
           },
           include: RELATED_INCLUDE,
@@ -704,32 +729,46 @@ const getRelatedVariants = async (req, res) => {
         })
       : [];
 
+    // Deduplica: un resultado por producto (isDefault ya viene primero)
+    const seenProducts = new Set(currentProductId ? [currentProductId] : []);
+    const dedupedRelated = related.filter((v) => {
+      if (seenProducts.has(v.productId)) return false;
+      seenProducts.add(v.productId);
+      return true;
+    });
+
     // Ordenar: marca (2 pts) > categoría (1 pt)
     const score = (v) =>
       (brandId    && v.product.brandId    === brandId    ? 2 : 0) +
       (categoryId && v.product.categoryId === categoryId ? 1 : 0);
-    related.sort((a, b) => score(b) - score(a));
+    dedupedRelated.sort((a, b) => score(b) - score(a));
 
-    if (related.length >= limit) {
-      return res.status(200).json({ data: related.slice(0, limit) });
+    if (dedupedRelated.length >= limit) {
+      return res.status(200).json({ data: dedupedRelated.slice(0, limit) });
     }
 
     // 2. Rellenar con otros productos si faltan
-    const needed     = limit - related.length;
-    const excludeIds = [variantId, ...related.map((v) => v.id)];
+    const needed         = limit - dedupedRelated.length;
+    const excludeProdIds = [...seenProducts];
 
     const fillers = await prisma.productVariant.findMany({
       where: {
         isActive: true,
-        NOT: { id: { in: excludeIds } },
+        NOT: { productId: { in: excludeProdIds } },
         product: { status: "ACTIVE" },
       },
       include: RELATED_INCLUDE,
-      take: needed,
-      orderBy: [{ updatedAt: "desc" }],
+      orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
     });
 
-    return res.status(200).json({ data: [...related, ...fillers] });
+    // Deduplica fillers también
+    const dedupedFillers = fillers.filter((v) => {
+      if (seenProducts.has(v.productId)) return false;
+      seenProducts.add(v.productId);
+      return true;
+    }).slice(0, needed);
+
+    return res.status(200).json({ data: [...dedupedRelated, ...dedupedFillers] });
   } catch (error) {
     console.error("Error en getRelatedVariants:", error);
     return res.status(500).json({ message: "Error interno" });

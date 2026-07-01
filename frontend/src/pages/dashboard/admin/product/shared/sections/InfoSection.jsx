@@ -73,24 +73,19 @@ export default function InfoSection({ form, handleChange, categories = [], brand
                     <div className="grid gap-2">
                         <Label htmlFor="brand">Marca</Label>
                         <Select
-                            value={form.brandId ? String(form.brandId) : ""}
-                            onValueChange={(val) => handleChange("brandId", val)}
+                            value={form.brandId ? String(form.brandId) : "__none__"}
+                            onValueChange={(val) => handleChange("brandId", val === "__none__" ? "" : val)}
                         >
                             <SelectTrigger id="brand">
-                                <SelectValue placeholder="Selecciona" />
+                                <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {brands.length > 0 ? (
-                                    brands.map((brand) => (
-                                        <SelectItem key={brand.id} value={String(brand.id)}>
-                                            {brand.name}
-                                        </SelectItem>
-                                    ))
-                                ) : (
-                                    <div className="p-2 text-sm text-muted-foreground">
-                                        Sin marcas
-                                    </div>
-                                )}
+                                <SelectItem value="__none__">Sin marca</SelectItem>
+                                {brands.map((brand) => (
+                                    <SelectItem key={brand.id} value={String(brand.id)}>
+                                        {brand.name}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>

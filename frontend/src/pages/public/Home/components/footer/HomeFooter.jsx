@@ -55,7 +55,7 @@ export default function HomeFooter() {
       <div className="h-1 w-full bg-linear-to-r from-pink-200 via-rose-300 to-fuchsia-200" />
 
       {/* Cuerpo */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
 
         {/* Marca */}
         <div className="flex flex-col gap-5 sm:col-span-2 lg:col-span-1">

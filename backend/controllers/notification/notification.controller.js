@@ -3,14 +3,10 @@ const prisma = new PrismaClient()
 
 const getAllNotifications = async (req, res) => {
   try {
-    const { userId } = req.query
-
-    if (!userId) {
-      return res.status(400).json({ message: 'userId requerido' })
-    }
+    const userId = req.user.id
 
     const notifications = await prisma.notification.findMany({
-      where: { userId: Number(userId) },
+      where: { userId },
       orderBy: [{ isRead: 'asc' }, { createdAt: 'desc' }]
     })
 
@@ -23,14 +19,10 @@ const getAllNotifications = async (req, res) => {
 
 const getUnreadCount = async (req, res) => {
   try {
-    const { userId } = req.query
-
-    if (!userId) {
-      return res.status(400).json({ message: 'userId requerido' })
-    }
+    const userId = req.user.id
 
     const count = await prisma.notification.count({
-      where: { userId: Number(userId), isRead: false }
+      where: { userId, isRead: false }
     })
 
     return res.status(200).json({ ok: true, count })
@@ -43,6 +35,7 @@ const getUnreadCount = async (req, res) => {
 const markAsRead = async (req, res) => {
   try {
     const { id } = req.params
+    const userId = req.user.id
 
     const notification = await prisma.notification.findUnique({
       where: { id: Number(id) }
@@ -50,6 +43,10 @@ const markAsRead = async (req, res) => {
 
     if (!notification) {
       return res.status(404).json({ message: 'Notificación no encontrada' })
+    }
+
+    if (notification.userId !== userId) {
+      return res.status(403).json({ message: 'Acceso denegado' })
     }
 
     if (notification.isRead) {
@@ -70,14 +67,10 @@ const markAsRead = async (req, res) => {
 
 const markAllAsRead = async (req, res) => {
   try {
-    const { userId } = req.body
-
-    if (!userId) {
-      return res.status(400).json({ message: 'userId requerido' })
-    }
+    const userId = req.user.id
 
     await prisma.notification.updateMany({
-      where: { userId: Number(userId), isRead: false },
+      where: { userId, isRead: false },
       data: { isRead: true, readAt: new Date() }
     })
 

@@ -20,9 +20,13 @@ export default function ProductDetailPrice({ price, stock, outOfStock }) {
             : "bg-emerald-50 text-emerald-600 border border-emerald-100"
         }`}>
           {outOfStock ? (
-            <><PackageX size={13} />Sin stock</>
+            <><PackageX size={13} /><span>Sin stock</span></>
           ) : (
-            <><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse" />{stock} disponibles</>
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
+              <span className="sm:hidden">{stock} disp.</span>
+              <span className="hidden sm:inline">{stock} disponibles</span>
+            </>
           )}
         </div>
       </div>

@@ -53,6 +53,19 @@ const createCartItem = async (req, res) => {
         })
       }
 
+      const qty = quantity ? Number(quantity) : 1
+      if (!Number.isInteger(qty) || qty < 1 || qty > 9999) {
+        return res.status(400).json({ message: "Cantidad inválida (1-9999)" })
+      }
+
+      const variantExists = await prisma.productVariant.findUnique({
+        where: { id: Number(productVariantId) },
+        select: { id: true },
+      })
+      if (!variantExists) {
+        return res.status(400).json({ message: "Variante no encontrada" })
+      }
+
       const cartItem = await prisma.cartItem.upsert({
         where: {
           cartId_productVariantId: {
@@ -62,13 +75,13 @@ const createCartItem = async (req, res) => {
         },
         update: {
           quantity: {
-            increment: quantity ? Number(quantity) : 1
+            increment: qty
           }
         },
         create: {
           cartId: cart.id,
           productVariantId: Number(productVariantId),
-          quantity: quantity ? Number(quantity) : 1
+          quantity: qty
         }
       })
 

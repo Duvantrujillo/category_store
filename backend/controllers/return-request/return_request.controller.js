@@ -28,6 +28,33 @@ const VALID_TRANSITIONS = {
 
 const USER_SELECT = { select: { id: true, name: true, email: true } }
 
+function computeWillIncludeShipping(rr) {
+  if (rr.resolution !== 'REFUND' || (rr.refunds?.length ?? 0) > 0) return false
+  const orderItems = rr.order?.items ?? []
+  if (orderItems.length === 0) return false
+
+  const qty = {}
+  for (const otherRR of (rr.order?.returns ?? [])) {
+    for (const item of otherRR.items) {
+      qty[item.orderItemId] = (qty[item.orderItemId] || 0) + item.quantity
+    }
+  }
+  for (const item of rr.items) {
+    qty[item.orderItemId] = (qty[item.orderItemId] || 0) + item.quantity
+  }
+
+  return orderItems.every(oi => (qty[oi.id] || 0) >= oi.quantity)
+}
+
+function enrichReturnRequest(rr) {
+  const willIncludeShipping = computeWillIncludeShipping(rr)
+  const shippingCost = Number(rr.order?.shippingCost ?? 0)
+  const order = rr.order
+    ? (({ items: _i, returns: _r, shippingCost: _s, ...rest }) => rest)(rr.order)
+    : rr.order
+  return { ...rr, order, willIncludeShipping, shippingCost }
+}
+
 const createreturnRequest = async (req, res) => {
     try {
         const { orderId, status, resolution, reason } = req.body
@@ -101,6 +128,15 @@ const getAllReturnRequests = async (req, res) => {
                         firstName: true,
                         lastName: true,
                         total: true,
+                        shippingCost: true,
+                        items: { select: { id: true, quantity: true } },
+                        returns: {
+                          where: { refunds: { some: {} } },
+                          select: {
+                            id: true,
+                            items: { select: { orderItemId: true, quantity: true } }
+                          }
+                        },
                     }
                 },
                 items: {
@@ -124,7 +160,7 @@ const getAllReturnRequests = async (req, res) => {
             }
         })
 
-        return res.status(200).json(requests)
+        return res.status(200).json(requests.map(enrichReturnRequest))
     } catch (error) {
         console.error(error)
         return res.status(500).json({ message: "Error interno" })
@@ -223,7 +259,23 @@ const searchReturnRequest = async (req, res) => {
         ],
       },
       include: {
-        order: { select: { orderNumber: true, firstName: true, lastName: true, total: true } },
+        order: {
+        select: {
+          orderNumber: true,
+          firstName: true,
+          lastName: true,
+          total: true,
+          shippingCost: true,
+          items: { select: { id: true, quantity: true } },
+          returns: {
+            where: { refunds: { some: {} } },
+            select: {
+              id: true,
+              items: { select: { orderItemId: true, quantity: true } }
+            }
+          },
+        }
+      },
         items: {
           include: {
             orderItem: { select: { productName: true, unitPrice: true, quantity: true } },
@@ -237,7 +289,7 @@ const searchReturnRequest = async (req, res) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    return res.status(200).json({ data: requests });
+    return res.status(200).json({ data: requests.map(enrichReturnRequest) });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Error al buscar" });
