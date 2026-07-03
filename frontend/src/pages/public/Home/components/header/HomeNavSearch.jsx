@@ -113,7 +113,7 @@ export default function HomeNavSearch({ onSearch, mobileOpen, onMobileClose }) {
             onChange={(e) => setValue(e.target.value)}
             onFocus={() => setFocused(true)}
             placeholder="Buscar productos de maquillaje..."
-            className="w-full h-10 pl-9 pr-9 rounded-xl border border-white bg-white text-sm text-rose-900 placeholder-rose-300 outline-none focus:ring-2 focus:ring-white/60 focus:border-white transition-all shadow-sm"
+            className="w-full h-10 pl-9 pr-9 rounded-xl border border-white bg-white text-sm text-gray-900 placeholder-rose-300 outline-none focus:ring-2 focus:ring-white/60 focus:border-white transition-all shadow-sm"
           />
           {value && (
             <button type="button" onClick={handleClear} className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-300 hover:text-rose-500 transition-colors">
@@ -144,7 +144,7 @@ export default function HomeNavSearch({ onSearch, mobileOpen, onMobileClose }) {
                   onChange={(e) => setValue(e.target.value)}
                   onFocus={() => setFocused(true)}
                   placeholder="Buscar productos..."
-                  className="w-full h-11 pl-9 pr-9 rounded-xl border border-rose-100 bg-white text-sm text-rose-900 placeholder-rose-300 outline-none focus:border-rose-200 focus:ring-2 focus:ring-rose-100 transition-all shadow-sm"
+                  className="w-full h-11 pl-9 pr-9 rounded-xl border border-rose-100 bg-white text-sm text-gray-900 placeholder-rose-300 outline-none focus:border-rose-200 focus:ring-2 focus:ring-rose-100 transition-all shadow-sm"
                 />
                 {value && (
                   <button type="button" onClick={handleClear} className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-300 hover:text-rose-500 transition-colors">

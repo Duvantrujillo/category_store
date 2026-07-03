@@ -16,6 +16,7 @@ function writeSession(key, value) {
 import HomeHeader from "./components/header/HomeHeader";
 import HomeCategorySection from "./components/categories/HomeCategorySection";
 import HomeProductGrid from "./components/products/HomeProductGrid";
+import HomeProductRow from "./components/products/HomeProductRow";
 import HomeCart from "./components/cart/HomeCart";
 import HomeWishlist from "./components/wishlist/HomeWishlist";
 import HomeFooter from "./components/footer/HomeFooter";
@@ -24,6 +25,7 @@ import HomeBrandMarquee from "./components/brands/HomeBrandMarquee";
 import { useHomeCategories } from "./hooks/useHomeCategories";
 import { useHomeBrands } from "./hooks/useHomeBrands";
 import { useHomeProducts } from "./hooks/useHomeProducts";
+import { useHomeShowcase } from "./hooks/useHomeShowcase";
 import { usePublicCart } from "./hooks/usePublicCart";
 import { usePublicWishlist } from "./hooks/usePublicWishlist";
 import { useTopSellers } from "./hooks/useTopSellers";
@@ -51,6 +53,11 @@ export default function Home() {
       : null;                // sin filtro
 
   const { variants, loading: loadingVariants } = useHomeProducts(search, filterCategoryIds);
+
+  // Las filas curadas por marca/categoría solo tienen sentido en la vista
+  // por defecto — si el usuario está buscando o filtrando, no aplican.
+  const showShowcase = !search && !selectedParent && !selectedCategory;
+  const { groups: showcaseGroups } = useHomeShowcase(showShowcase);
 
   // Lo que muestra el carrusel: padres o hijos del padre seleccionado
   const displayCategories = selectedParent ? (selectedParent.children || []) : categories;
@@ -138,6 +145,20 @@ export default function Home() {
             selectedParent={selectedParent}
             onBack={handleBack}
           />
+
+          {showShowcase && showcaseGroups.map((group) => (
+            <HomeProductRow
+              key={`${group.type}-${group.id}`}
+              title={group.title}
+              variants={group.variants}
+              onAddToCart={addToCart}
+              onToggleFavorite={toggleFavorite}
+              favoritedIds={favoritedIds}
+              cartQtyById={cartQtyById}
+              topSellerIds={topSellerIds}
+            />
+          ))}
+
           <HomeProductGrid
             variants={variants}
             loading={loadingVariants}

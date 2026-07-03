@@ -13,6 +13,7 @@ const LINKS = {
   ayuda: [
     { label: "Cómo comprar",         to: "/" },
     { label: "Envíos y entregas",    to: "/" },
+    { label: "Consultar mi pedido",  to: "/pedido" },
     { label: "Devoluciones",         to: "/" },
     { label: "Preguntas frecuentes", to: "/" },
   ],

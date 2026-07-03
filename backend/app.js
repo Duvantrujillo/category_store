@@ -91,10 +91,12 @@ const {
   getTopSellers,
   getPublicSuggestions,
   getRelatedVariants,
+  getPublicShowcase,
 } = require('./controllers/product-variant/product_variant.controller')
 app.get('/product-variant/public/top-sellers', getTopSellers)
 app.get('/product-variant/public/suggestions',  getPublicSuggestions)
 app.get('/product-variant/public/related',      getRelatedVariants)
+app.get('/product-variant/public/showcase',     getPublicShowcase)
 app.get('/product-variant/public/:id',          getPublicVariantById)
 
 // Ruta pública de producto por slug — devuelve producto completo con todas sus variantes
@@ -107,6 +109,7 @@ const PUBLIC_ROUTES = new Set([
   'POST /user/login',
   'POST /form/create',
   'POST /order/create',
+  'GET /order/track',
   'POST /payment/create',
   'GET /payment/methods',
   'GET /payment/verify',

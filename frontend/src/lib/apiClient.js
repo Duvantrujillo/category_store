@@ -26,13 +26,18 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('user')
       localStorage.removeItem('role')
 
-      if (message) {
-        toast.error(message, { autoClose: 3000, toastId: 'auth-error' })
-      }
+      // Chequeos silenciosos en segundo plano (ej. sincronizar permisos con un
+      // token viejo) no deben sacar al usuario de donde esté ni mostrar error —
+      // alcanza con limpiar el token inválido, como ya se hizo arriba.
+      if (!error.config?.silentAuth) {
+        if (message) {
+          toast.error(message, { autoClose: 3000, toastId: 'auth-error' })
+        }
 
-      setTimeout(() => {
-        window.location.href = '/login'
-      }, forceLogout ? 1500 : 800)
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, forceLogout ? 1500 : 800)
+      }
     }
 
     if (status === 403) {

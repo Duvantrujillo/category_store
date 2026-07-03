@@ -7,6 +7,7 @@ import Home from "./pages/public/Home/Home"
 import ProductDetail from "./pages/public/Home/components/detail/ProductDetail"
 import Checkout from "./pages/public/Checkout/Checkout"
 import CheckoutResponse from "./pages/public/Checkout/CheckoutResponse"
+import TrackOrder from "./pages/public/TrackOrder/TrackOrder"
 import Admin from "./pages/dashboard/admin/Admin"
 import Customer from "./pages/dashboard/customer/Customer"
 import CreateShipping from './pages/dashboard/admin/form_response/pages/CreateShipping'
@@ -38,6 +39,7 @@ function App() {
         <Route path="/producto/:slug" element={<ProductDetail />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/checkout/respuesta" element={<CheckoutResponse />} />
+        <Route path="/pedido" element={<TrackOrder />} />
       </Route>
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/login" element={<LoginForm />} />

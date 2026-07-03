@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import HomeProductCard from "@/pages/public/Home/components/products/HomeProductCard";
 import RelatedProductsSkeleton from "./RelatedProductsSkeleton";
 import { useRelatedProducts } from "../../../hooks/useRelatedProducts";
+import { useScrollCarousel } from "../../../hooks/useScrollCarousel";
 
 const ROWS     = 3;
 const PER_ROW  = 8;
@@ -21,36 +22,11 @@ function useCols() {
 
 // ── One independent scrollable row ──────────────────────────────────────────
 function RelatedRow({ variants, cols, onAddToCart, onToggleFavorite, favoritedIds, cartQtyById }) {
-  const scrollRef = useRef(null);
-  const [canLeft,  setCanLeft]  = useState(false);
-  const [canRight, setCanRight] = useState(false);
-  const [visibleW, setVisibleW] = useState(0);
+  const { scrollRef, canLeft, canRight, clientWidth, scroll: scrollBy } = useScrollCarousel([variants]);
 
-  const checkScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setVisibleW(el.clientWidth);
-    setCanLeft(el.scrollLeft > 1);
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    checkScroll();
-    el.addEventListener("scroll", checkScroll, { passive: true });
-    const ro = new ResizeObserver(checkScroll);
-    ro.observe(el);
-    return () => { el.removeEventListener("scroll", checkScroll); ro.disconnect(); };
-  }, [checkScroll, variants]);
-
-  const scroll = (dir) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * (colW + GAP), behavior: "smooth" });
-  };
-
-  const colW = visibleW > 0 ? (visibleW - GAP * (cols - 1)) / cols : 200;
+  // +0.15 columnas: deja asomar un pedacito de la siguiente tarjeta en el borde
+  const colW = clientWidth > 0 ? (clientWidth - GAP * (cols - 1)) / (cols + 0.15) : 200;
+  const scroll = (dir) => scrollBy(dir, colW + GAP);
 
   if (!variants.length) return null;
 
@@ -58,20 +34,17 @@ function RelatedRow({ variants, cols, onAddToCart, onToggleFavorite, favoritedId
     <div className="relative">
 
       {canLeft && (
-        <>
-          <div className="absolute left-0 top-0 bottom-0 z-10 w-14 bg-linear-to-r from-white via-white/60 to-transparent pointer-events-none" />
-          <button
-            onClick={() => scroll(-1)}
-            className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-20
-              items-center justify-center w-9 h-9 rounded-full
-              bg-white border border-gray-200 shadow-lg
-              text-gray-500 hover:text-rose-500 hover:border-rose-200
-              transition-all active:scale-95"
-            aria-label="Anterior"
-          >
-            <ChevronLeft size={16} />
-          </button>
-        </>
+        <button
+          onClick={() => scroll(-1)}
+          className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-20
+            items-center justify-center w-9 h-9 rounded-full
+            bg-white border border-gray-200 shadow-lg
+            text-gray-500 hover:text-rose-500 hover:border-rose-200
+            transition-all active:scale-95"
+          aria-label="Anterior"
+        >
+          <ChevronLeft size={16} />
+        </button>
       )}
 
       <div
@@ -94,20 +67,17 @@ function RelatedRow({ variants, cols, onAddToCart, onToggleFavorite, favoritedId
       </div>
 
       {canRight && (
-        <>
-          <div className="absolute right-0 top-0 bottom-0 z-10 w-14 bg-linear-to-l from-white via-white/60 to-transparent pointer-events-none" />
-          <button
-            onClick={() => scroll(1)}
-            className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-20
-              items-center justify-center w-9 h-9 rounded-full
-              bg-white border border-gray-200 shadow-lg
-              text-gray-500 hover:text-rose-500 hover:border-rose-200
-              transition-all active:scale-95"
-            aria-label="Siguiente"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </>
+        <button
+          onClick={() => scroll(1)}
+          className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-20
+            items-center justify-center w-9 h-9 rounded-full
+            bg-white border border-gray-200 shadow-lg
+            text-gray-500 hover:text-rose-500 hover:border-rose-200
+            transition-all active:scale-95"
+          aria-label="Siguiente"
+        >
+          <ChevronRight size={16} />
+        </button>
       )}
 
     </div>
@@ -138,11 +108,17 @@ export default function RelatedProductsSection({
   return (
     <section>
       <div className="flex items-center gap-3 mb-5">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-rose-400 shrink-0">
+        <p
+          className="text-xs sm:text-sm font-black uppercase shrink-0"
+          style={{ color: "#4b5563", WebkitTextStroke: "0.6px #4b5563", letterSpacing: "0.1em" }}
+        >
           Descubre más
         </p>
         <div className="flex-1 h-px bg-gray-100" />
-        <h2 className="text-sm font-bold text-gray-800 tracking-tight whitespace-nowrap shrink-0">
+        <h2
+          className="text-base sm:text-lg font-black whitespace-nowrap shrink-0"
+          style={{ color: "#4b5563", WebkitTextStroke: "0.6px #4b5563", letterSpacing: "0.08em" }}
+        >
           {title}
         </h2>
       </div>

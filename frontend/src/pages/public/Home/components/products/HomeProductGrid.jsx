@@ -1,9 +1,11 @@
-import HomeProductCard from "./HomeProductCard";
+import HomeProductRow from "./HomeProductRow";
 import HomeProductSkeleton from "./HomeProductSkeleton";
 import HomeProductEmpty from "./HomeProductEmpty";
 
-const SKELETONS = Array.from({ length: 12 });
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 8;
+const SKELETON_ROWS = 2;
+const SKELETON_CARDS_PER_ROW = 4;
+const SKELETON_CARD_CLS = "shrink-0 w-[calc((100%-0.75rem)/2)] sm:w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)]";
 
 export default function HomeProductGrid({
   variants,
@@ -16,23 +18,12 @@ export default function HomeProductGrid({
   cartQtyById,
   topSellerIds,
 }) {
-  const firstGroup = variants.slice(0, PAGE_SIZE);
-  const restGroups = [];
-  for (let i = PAGE_SIZE; i < variants.length; i += PAGE_SIZE) {
-    restGroups.push(variants.slice(i, i + PAGE_SIZE));
+  // Bloques de hasta 12 productos; cada uno se muestra como un carrusel
+  // horizontal (4 visibles en pantalla + flechas para navegar el resto).
+  const groups = [];
+  for (let i = 0; i < variants.length; i += PAGE_SIZE) {
+    groups.push(variants.slice(i, i + PAGE_SIZE));
   }
-
-  const cardProps = { onAddToCart, onToggleFavorite, favoritedIds, cartQtyById, topSellerIds };
-
-  const renderCard = (v) => (
-    <HomeProductCard
-      key={v.id}
-      variant={v}
-      isFavorited={favoritedIds?.has(v.id)}
-      cartQty={cartQtyById?.[v.id] ?? 0}
-      {...cardProps}
-    />
-  );
 
   return (
     <section className="mt-2">
@@ -57,10 +48,18 @@ export default function HomeProductGrid({
         )}
       </div>
 
-      {/* ── Skeleton ── */}
+      {/* ── Skeleton: mismo layout de fila/carrusel que el contenido real ── */}
       {loading && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 px-4 sm:px-0">
-          {SKELETONS.map((_, i) => <HomeProductSkeleton key={i} />)}
+        <div className="flex flex-col gap-6">
+          {Array.from({ length: SKELETON_ROWS }).map((_, row) => (
+            <div key={row} className="flex gap-3 sm:gap-4 overflow-hidden px-4 sm:px-0">
+              {Array.from({ length: SKELETON_CARDS_PER_ROW }).map((_, i) => (
+                <div key={i} className={SKELETON_CARD_CLS}>
+                  <HomeProductSkeleton />
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       )}
 
@@ -69,28 +68,18 @@ export default function HomeProductGrid({
         <HomeProductEmpty search={search} />
       )}
 
-      {!loading && variants.length > 0 && (
-        <>
-          {/* ── Primeros 12: grid (2 cols mobile, 3 tablet, 4 desktop) ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 px-4 sm:px-0">
-            {firstGroup.map(renderCard)}
-          </div>
-
-          {/* ── Resto: filas horizontales con scroll (round-robin visual) ── */}
-          {restGroups.map((group, idx) => (
-            <div
-              key={idx}
-              className="flex gap-3 sm:gap-4 overflow-x-auto mt-6 pb-2 px-4 sm:px-0 scroll-smooth"
-            >
-              {group.map((v) => (
-                <div key={v.id} className="shrink-0 w-[46vw] sm:w-52 md:w-56">
-                  {renderCard(v)}
-                </div>
-              ))}
-            </div>
-          ))}
-        </>
-      )}
+      {/* ── Cada bloque de hasta 12: carrusel horizontal (4 visibles + flechas) ── */}
+      {!loading && variants.length > 0 && groups.map((group, idx) => (
+        <HomeProductRow
+          key={idx}
+          variants={group}
+          onAddToCart={onAddToCart}
+          onToggleFavorite={onToggleFavorite}
+          favoritedIds={favoritedIds}
+          cartQtyById={cartQtyById}
+          topSellerIds={topSellerIds}
+        />
+      ))}
 
     </section>
   );

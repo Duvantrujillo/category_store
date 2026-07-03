@@ -60,8 +60,8 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
         {/* Parte superior: nombre */}
         <div className="flex flex-col gap-0.5 flex-1">
           <h3
-            className="font-black text-sm sm:text-[15px] leading-snug line-clamp-2 min-h-[2.5em]"
-            style={{ color: "#fb7185", WebkitTextStroke: "0.8px #fb7185", letterSpacing: "0.05em" }}
+            className="font-black text-[15px] sm:text-base leading-snug line-clamp-2 min-h-[2.5em]"
+            style={{ color: "#e96bb0", WebkitTextStroke: "0.8px #e96bb0", letterSpacing: "0.05em" }}
           >
             {product?.name ?? "—"}
           </h3>

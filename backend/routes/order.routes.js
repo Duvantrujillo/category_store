@@ -12,8 +12,20 @@ const createOrderLimiter = rateLimit({
   message: { message: 'Demasiadas solicitudes, intenta más tarde' }
 })
 
+// Limita intentos de adivinar número de pedido + correo (endpoint público sin auth)
+const trackOrderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { ok: false, message: 'Demasiadas solicitudes, intenta más tarde' }
+})
+
 // Crear orden es acción del cliente — no requiere permiso de admin
 routes.post('/create', createOrderLimiter, ordenController.createOrder)
+
+// Consultar pedido — acción pública del cliente, validada por orderNumber + email
+routes.get('/track', trackOrderLimiter, ordenController.trackOrder)
 
 // Vistas de admin
 routes.get('/all',        requirePermission('orders.view'),   ordenController.allOrder)

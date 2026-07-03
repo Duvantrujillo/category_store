@@ -1,6 +1,7 @@
 import { Eye, Package, CreditCard, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { formatMoneyCOP, formatDateCO } from "@/lib/format";
 
 const statusConfig = {
   PAID:      { label: "Pagada",      cls: "bg-green-100 text-green-700" },
@@ -37,12 +38,12 @@ function OrderRow({ order, onOpenDetails, onOpenItems, onOpenPayment, onOpenShip
 
       {/* Total */}
       <TableCell className="text-center px-4 py-3 font-semibold text-slate-800">
-        ${Number(order.total).toLocaleString("es-CO")}
+        {formatMoneyCOP(order.total)}
       </TableCell>
 
       {/* Fecha */}
       <TableCell className="text-center px-4 py-3 text-slate-500 text-sm">
-        {new Date(order.createdAt).toLocaleDateString("es-CO")}
+        {formatDateCO(order.createdAt)}
       </TableCell>
 
       {/* Acciones */}

@@ -20,14 +20,18 @@ export function PermissionProvider({ children }) {
     const token = localStorage.getItem('token')
     if (!token) return
 
-    apiClient.get('/user/me').then(({ data }) => {
+    // silentAuth: esto es una sincronización en segundo plano, no una acción
+    // que el usuario haya pedido — si el token quedó vencido no debe sacarlo
+    // de la página en la que esté (incluida la tienda pública).
+    apiClient.get('/user/me', { silentAuth: true }).then(({ data }) => {
       setPermissions(data.permissions)
       setRole(data.role)
       // Mantener localStorage sincronizado
       const prev = getStoredUser()
       localStorage.setItem('user', JSON.stringify({ ...prev, ...data }))
     }).catch(() => {
-      // Si falla (401 lo maneja apiClient), seguimos con los datos del localStorage
+      // Si falla (401 ya limpió el token viejo en apiClient), seguimos con
+      // los datos que había en localStorage o sin permisos.
     })
   }, [])
 

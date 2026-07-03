@@ -281,6 +281,83 @@ const searchOrder = async (req, res) => {
   }
 };
 
+// ── trackOrder ────────────────────────────────────────────────────────────────
+// Endpoint público: el cliente consulta su pedido con el número de orden + el
+// correo con el que lo registró. Sin autenticación, así que:
+//   · Nunca revelamos si el orderNumber existe cuando el email no coincide
+//     (mismo mensaje genérico) para evitar enumeración de pedidos.
+//   · Solo devolvemos los campos necesarios para el seguimiento, nunca
+//     documentNumber/phoneNumber/userId.
+const NOT_FOUND_MSG = 'Pedido no encontrado. Verifica el número de pedido y el correo electrónico.'
+
+const trackOrder = async (req, res) => {
+  try {
+    const { orderNumber, email } = req.query
+
+    if (!orderNumber || typeof orderNumber !== 'string' || !orderNumber.trim()) {
+      return res.status(400).json({ ok: false, message: 'El número de pedido es requerido' })
+    }
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return res.status(400).json({ ok: false, message: 'El correo electrónico es requerido' })
+    }
+
+    const normalizedOrderNumber = orderNumber.trim().toUpperCase()
+    const normalizedEmail = email.trim().toLowerCase()
+
+    const order = await prisma.order.findUnique({
+      where: { orderNumber: normalizedOrderNumber },
+      include: {
+        items: {
+          select: {
+            productName: true, quantity: true, unitPrice: true, subtotal: true,
+            productVariant: {
+              select: { images: { select: { imageUrl: true }, orderBy: { slot: 'asc' }, take: 1 } }
+            }
+          }
+        },
+        payment: { select: { status: true, paymentMethod: true, amount: true, currency: true } },
+        shipment: {
+          select: {
+            status: true, carrier: true, trackingNumber: true, shippedAt: true, deliveredAt: true,
+            history: {
+              select: { status: true, note: true, createdAt: true },
+              orderBy: { createdAt: 'asc' }
+            }
+          }
+        }
+      }
+    })
+
+    if (!order || !order.email || order.email.trim().toLowerCase() !== normalizedEmail) {
+      return res.status(404).json({ ok: false, message: NOT_FOUND_MSG })
+    }
+
+    return res.status(200).json({
+      ok: true,
+      order: {
+        orderNumber: order.orderNumber,
+        status: order.status,
+        createdAt: order.createdAt,
+        firstName: order.firstName,
+        lastName: order.lastName,
+        departament: order.departament,
+        municipality: order.municipality,
+        address: order.address,
+        subtotal: order.subtotal,
+        shippingCost: order.shippingCost,
+        total: order.total,
+        currency: order.currency,
+        items: order.items,
+        payment: order.payment,
+        shipment: order.shipment,
+      }
+    })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ ok: false, message: 'Error interno' })
+  }
+}
+
 const filterOrderByDate = async (req, res) => {
   try {
     const { from, to } = req.query;
@@ -362,5 +439,6 @@ module.exports = {
   allOrder,
   searchOrder,
   filterOrderByDate,
+  trackOrder,
   releaseExpiredReservations,
 }

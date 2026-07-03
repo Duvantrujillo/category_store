@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatMoneyCOP, formatDateTimeCO } from "@/lib/format";
 
 const STATUS_CONFIG = {
   PAID:      { label: "Pagada",      cls: "bg-green-500/20 text-green-300 border-green-500/30" },
@@ -18,7 +19,7 @@ const STATUS_CONFIG = {
   REFUNDED:  { label: "Reembolsada", cls: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
 };
 
-const fmtCOP = (n) => `$${Number(n ?? 0).toLocaleString("es-CO")}`;
+const fmtCOP = formatMoneyCOP;
 
 const Field = ({ icon: Icon, label, value, iconCls = "bg-slate-100 text-slate-500" }) => (
   <div className="flex items-start gap-3 py-2.5 border-b border-slate-100 last:border-0">
@@ -115,7 +116,7 @@ function OrderDetailsModal({ open, order, onClose }) {
             {/* Información del pedido */}
             <Section title="Información del pedido">
               <Field icon={ClipboardList} label="Número de orden" value={order.orderNumber} iconCls="bg-violet-50 text-violet-500" />
-              <Field icon={Calendar}      label="Fecha de creación" value={new Date(order.createdAt).toLocaleString("es-CO")} iconCls="bg-slate-100 text-slate-500" />
+              <Field icon={Calendar}      label="Fecha de creación" value={formatDateTimeCO(order.createdAt)} iconCls="bg-slate-100 text-slate-500" />
             </Section>
 
           </div>

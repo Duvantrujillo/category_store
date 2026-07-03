@@ -82,54 +82,62 @@ function validateForm(form) {
   return errs;
 }
 
-// ── Inyectar botón oficial de ePayco en el DOM ────────────────────────────────
+// ── ePayco: modo programático ──────────────────────────────────────────────────
+// En vez del "botón automático" (que ePayco dibuja con su propio estilo y que
+// queda pegado en la página, feo, si el cliente cierra el modal sin pagar),
+// cargamos el script una sola vez y abrimos el checkout mediante su API JS
+// desde nuestro propio botón — así siempre controlamos la UI.
 
-function injectEpaycoButton(container, { reference, total, form }) {
-  // Eliminar checkout.js previo para forzar re-ejecución limpia
-  document.querySelectorAll('script[src*="checkout.epayco.co"]').forEach((s) => s.remove());
-  try { delete window.ePayco; } catch (_) {}
-  try { delete window.EpaycoButton; } catch (_) {}
-  try { delete window.ePaycoButton; } catch (_) {}
-  container.innerHTML = "";
+let epaycoScriptPromise = null;
 
+function loadEpaycoScript() {
+  if (window.ePayco) return Promise.resolve();
+  if (epaycoScriptPromise) return epaycoScriptPromise;
+
+  epaycoScriptPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://checkout.epayco.co/checkout.js";
+    s.onload  = () => resolve();
+    s.onerror = () => { epaycoScriptPromise = null; reject(new Error("No se pudo cargar la pasarela de pago")); };
+    document.body.appendChild(s);
+  });
+  return epaycoScriptPromise;
+}
+
+async function openEpaycoCheckout({ reference, total, form }) {
+  await loadEpaycoScript();
   const tel = form.phoneNumber.replace(/\s|-/g, "");
 
-  const s = document.createElement("script");
-  s.src       = "https://checkout.epayco.co/checkout.js";
-  s.className = "epayco-button";
+  const handler = window.ePayco.checkout.configure({
+    key:  EPAYCO_KEY,
+    test: (import.meta.env.VITE_EPAYCO_TEST ?? "true") !== "false",
+  });
 
-  // Transacción
-  s.setAttribute("data-epayco-key",          EPAYCO_KEY);
-  s.setAttribute("data-epayco-amount",        String(Math.round(total)));
-  s.setAttribute("data-epayco-name",          "WowBeauty");
-  s.setAttribute("data-epayco-description",   `Pedido ${reference}`);
-  s.setAttribute("data-epayco-invoice",       reference);
-  s.setAttribute("data-epayco-currency",      "cop");
-  s.setAttribute("data-epayco-country",       "co");
-  s.setAttribute("data-epayco-test",          import.meta.env.VITE_EPAYCO_TEST ?? "true");
-  s.setAttribute("data-epayco-external",      "false");
-  s.setAttribute("data-epayco-lang",          "es");
-  s.setAttribute("data-epayco-tax-base",      "0");
-  s.setAttribute("data-epayco-tax-ico",       "0");
-  s.setAttribute("data-epayco-response",      `${window.location.origin}/checkout/respuesta`);
-  s.setAttribute("data-epayco-confirmation",  WEBHOOK_URL);
+  handler.open({
+    name:        "WowBeauty",
+    description: `Pedido ${reference}`,
+    invoice:     reference,
+    currency:    "cop",
+    amount:      String(Math.round(total)),
+    tax_base:    "0",
+    tax:         "0",
+    country:     "co",
+    lang:        "es",
+    external:    "false",
+    response:     `${window.location.origin}/checkout/respuesta`,
+    confirmation: WEBHOOK_URL,
 
-  // Al cargarse, el checkout se abre automáticamente mostrando todos los métodos de pago
-  s.setAttribute("data-epayco-autoclick",     "true");
-
-  // Datos del cliente — nombres de atributo según checkout-v2.js
-  s.setAttribute("data-epayco-name-billing",         form.firstName);
-  s.setAttribute("data-epayco-last-name-billing",    form.lastName);
-  s.setAttribute("data-epayco-type-doc-billing",     "cc");
-  s.setAttribute("data-epayco-number-doc-billing",   form.documentNumber);
-  s.setAttribute("data-epayco-mobilephone-billing",  tel);
-  s.setAttribute("data-epayco-address-billing",      form.address);
-  s.setAttribute("data-epayco-city-billing",         form.municipality);
-  s.setAttribute("data-epayco-dept-billing",         form.departament);
-  s.setAttribute("data-epayco-country-billing",      "CO");
-  if (form.email) s.setAttribute("data-epayco-email-billing", form.email);
-
-  container.appendChild(s);
+    name_billing:        form.firstName,
+    last_name_billing:   form.lastName,
+    email_billing:       form.email || "",
+    type_doc_billing:    "cc",
+    number_doc_billing:  form.documentNumber,
+    mobilephone_billing: tel,
+    address_billing:     form.address,
+    city_billing:        form.municipality,
+    dept_billing:        form.departament,
+    country_billing:     "CO",
+  });
 }
 
 // ── Select ────────────────────────────────────────────────────────────────────
@@ -226,7 +234,7 @@ function CollapsibleSection({ title, icon: Icon, open, onToggle, disabled, hasEr
 
 // ── Resumen del pedido ────────────────────────────────────────────────────────
 
-function OrderSummary({ items, pendingPayment, epaycoContainerRef, onPay, loading, onUpdateQty, onRemove }) {
+function OrderSummary({ items, pendingPayment, onPay, onRetryPayment, loading, onUpdateQty, onRemove }) {
   const subtotal      = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
   const total         = items.length > 0 ? subtotal + SHIPPING_COST : 0;
   const hasStockIssue = items.some(({ variant, quantity }) => quantity > Number(variant.stock ?? 0));
@@ -363,15 +371,18 @@ function OrderSummary({ items, pendingPayment, epaycoContainerRef, onPay, loadin
                 Pedido <span className="font-mono">{pendingPayment.orderNumber}</span> creado
               </p>
               <p className="text-[11px] text-emerald-600 mt-0.5">
-                La pasarela de pago se está abriendo. Si no abre, haz clic en el botón.
+                La pasarela de pago se está abriendo. Si se cierra sin completar el pago, volvé a abrirla con el botón.
               </p>
             </div>
           </div>
 
-          <div
-            ref={epaycoContainerRef}
-            className="flex items-center justify-center min-h-[52px] [&_button]:cursor-pointer! [&_img]:cursor-pointer!"
-          />
+          <button
+            type="button"
+            onClick={onRetryPayment}
+            className="w-full h-12 rounded-xl flex items-center justify-center gap-2.5 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white text-xs font-bold tracking-widest uppercase transition-colors shadow-sm shadow-rose-200"
+          >
+            <ShoppingBag size={15} /> Pagar ahora
+          </button>
         </div>
       ) : (
         <button
@@ -425,8 +436,7 @@ export default function Checkout() {
   // pendingPayment se setea luego de crear la orden exitosamente
   const [pendingPayment, setPendingPayment] = useState(null);
 
-  const keyRef            = useRef(uid());
-  const epaycoContainerRef = useRef(null);
+  const keyRef = useRef(uid());
 
   // Persistir el formulario en localStorage mientras el usuario escribe
   useEffect(() => {
@@ -446,15 +456,14 @@ export default function Checkout() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [departments]);
 
-  // Inyectar el botón oficial de ePayco cuando la orden esté creada
-  useEffect(() => {
-    if (!pendingPayment || !epaycoContainerRef.current) return;
-    injectEpaycoButton(epaycoContainerRef.current, {
+  function retryPayment() {
+    if (!pendingPayment) return;
+    openEpaycoCheckout({
       reference: pendingPayment.reference,
       total,
       form: pendingPayment.form,
-    });
-  }, [pendingPayment]);
+    }).catch((err) => toast.error(err.message));
+  }
 
 
   function handleChange(e) {
@@ -554,13 +563,16 @@ export default function Checkout() {
 
       keyRef.current = uid();
 
-      // ── 3. Activar botón oficial de ePayco (vía useEffect) ─────────────────
       try { localStorage.removeItem("checkout_form"); } catch { /* noop */ }
-      setPendingPayment({
+      const paymentInfo = {
         orderNumber: order.orderNumber,
         reference:   order.orderNumber,
         form: { ...form, phoneNumber: tel },
-      });
+      };
+      setPendingPayment(paymentInfo);
+
+      // ── 3. Abrir la pasarela de ePayco (modo programático, botón propio) ──
+      await openEpaycoCheckout({ reference: paymentInfo.reference, total, form: paymentInfo.form });
 
     } catch (err) {
       toast.error(err.message);
@@ -702,7 +714,7 @@ export default function Checkout() {
             <OrderSummary
               items={cartItems}
               pendingPayment={pendingPayment}
-              epaycoContainerRef={epaycoContainerRef}
+              onRetryPayment={retryPayment}
               onPay={handlePay}
               loading={submitting}
               onUpdateQty={updateQty}

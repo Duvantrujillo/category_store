@@ -1,37 +1,9 @@
-import { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import HomeProductCard from "./HomeProductCard";
+import { useScrollCarousel } from "../../hooks/useScrollCarousel";
 
-export default function HomeProductRow({ title, variants, onAddToCart, onToggleFavorite, favoritedIds, cartQtyById }) {
-  const scrollRef = useRef(null);
-  const [canLeft,  setCanLeft]  = useState(false);
-  const [canRight, setCanRight] = useState(false);
-
-  const checkScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 1);
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    checkScroll();
-    el.addEventListener("scroll", checkScroll, { passive: true });
-    const ro = new ResizeObserver(checkScroll);
-    ro.observe(el);
-    return () => {
-      el.removeEventListener("scroll", checkScroll);
-      ro.disconnect();
-    };
-  }, [checkScroll, variants]);
-
-  const scroll = (dir) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * 340, behavior: "smooth" });
-  };
+export default function HomeProductRow({ title, variants, onAddToCart, onToggleFavorite, favoritedIds, cartQtyById, topSellerIds }) {
+  const { scrollRef, canLeft, canRight, scrollByItem } = useScrollCarousel([variants]);
 
   return (
     <div className="mb-10">
@@ -39,7 +11,12 @@ export default function HomeProductRow({ title, variants, onAddToCart, onToggleF
       {/* Encabezado de categoría */}
       {title && (
         <div className="flex items-center gap-3 mb-4 px-4 sm:px-0">
-          <h2 className="text-sm font-bold text-gray-800 tracking-tight whitespace-nowrap">{title}</h2>
+          <h2
+            className="text-base sm:text-lg font-black whitespace-nowrap"
+            style={{ color: "#4b5563", WebkitTextStroke: "0.6px #4b5563", letterSpacing: "0.08em" }}
+          >
+            {title}
+          </h2>
           <div className="flex-1 h-px bg-gray-100" />
           <span className="text-[11px] text-gray-400 font-medium shrink-0 tabular-nums">
             {variants.length}
@@ -50,15 +27,10 @@ export default function HomeProductRow({ title, variants, onAddToCart, onToggleF
       {/* ── Carrusel ── */}
       <div className="relative">
 
-        {/* Gradiente izquierdo */}
-        {canLeft && (
-          <div className="absolute left-0 top-0 bottom-0 z-10 w-16 bg-linear-to-r from-white via-white/60 to-transparent pointer-events-none" />
-        )}
-
         {/* Flecha izquierda — centrada verticalmente */}
         {canLeft && (
           <button
-            onClick={() => scroll(-1)}
+            onClick={() => scrollByItem(-1)}
             className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-20
               items-center justify-center
               w-9 h-9
@@ -74,7 +46,7 @@ export default function HomeProductRow({ title, variants, onAddToCart, onToggleF
         {/* Track de productos */}
         <div
           ref={scrollRef}
-          className="flex flex-nowrap gap-3 overflow-x-auto
+          className="flex flex-nowrap gap-3 sm:gap-4 overflow-x-auto
             px-4 sm:px-0
             pb-1
             [&::-webkit-scrollbar]:hidden
@@ -84,7 +56,7 @@ export default function HomeProductRow({ title, variants, onAddToCart, onToggleF
           {variants.map((v) => (
             <div
               key={v.id}
-              className="w-44 sm:w-52 md:w-56 lg:w-60 shrink-0 self-stretch"
+              className="shrink-0 self-stretch w-[calc((100%-0.75rem)/2.15)] sm:w-[calc((100%-2rem)/3.15)] md:w-[calc((100%-3rem)/4.15)]"
             >
               <HomeProductCard
                 variant={v}
@@ -92,20 +64,16 @@ export default function HomeProductRow({ title, variants, onAddToCart, onToggleF
                 onToggleFavorite={onToggleFavorite}
                 isFavorited={favoritedIds?.has(v.id)}
                 cartQty={cartQtyById?.[v.id] ?? 0}
+                topSellerIds={topSellerIds}
               />
             </div>
           ))}
         </div>
 
-        {/* Gradiente derecho */}
-        {canRight && (
-          <div className="absolute right-0 top-0 bottom-0 z-10 w-16 bg-linear-to-l from-white via-white/60 to-transparent pointer-events-none" />
-        )}
-
         {/* Flecha derecha — centrada verticalmente */}
         {canRight && (
           <button
-            onClick={() => scroll(1)}
+            onClick={() => scrollByItem(1)}
             className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-20
               items-center justify-center
               w-9 h-9

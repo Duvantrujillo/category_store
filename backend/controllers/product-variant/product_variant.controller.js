@@ -505,6 +505,20 @@ function stemES(word) {
 function buildSearchStems(query) {
   return query.trim().split(/\s+/).filter(Boolean).map((w) => stemES(normSearch(w)));
 }
+
+// Deduplica variantes por producto (una por producto; ya vienen ordenadas con
+// isDefault primero). `seen` puede compartirse entre varias tandas (ej.
+// resultados + relleno) para no repetir un producto ya usado en la anterior.
+function dedupeByProduct(variants, { limit = Infinity, seen = new Set() } = {}) {
+  const result = [];
+  for (const v of variants) {
+    if (seen.has(v.productId)) continue;
+    seen.add(v.productId);
+    result.push(v);
+    if (result.length >= limit) break;
+  }
+  return result;
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 const getPublicVariants = async (req, res) => {
@@ -563,12 +577,7 @@ const getPublicVariants = async (req, res) => {
     });
 
     // Un único resultado por producto: la variante isDefault (o la primera activa)
-    const seen = new Set();
-    const deduped = variants.filter((v) => {
-      if (seen.has(v.productId)) return false;
-      seen.add(v.productId);
-      return true;
-    });
+    const deduped = dedupeByProduct(variants);
 
     return res.status(200).json({ data: deduped });
   } catch (error) {
@@ -677,14 +686,7 @@ const getPublicSuggestions = async (req, res) => {
     });
 
     // Un resultado por producto
-    const seen = new Set();
-    const deduped = variants
-      .filter((v) => {
-        if (seen.has(v.productId)) return false;
-        seen.add(v.productId);
-        return true;
-      })
-      .slice(0, 6);
+    const deduped = dedupeByProduct(variants, { limit: 6 });
 
     return res.status(200).json({ data: deduped });
   } catch (error) {
@@ -731,11 +733,7 @@ const getRelatedVariants = async (req, res) => {
 
     // Deduplica: un resultado por producto (isDefault ya viene primero)
     const seenProducts = new Set(currentProductId ? [currentProductId] : []);
-    const dedupedRelated = related.filter((v) => {
-      if (seenProducts.has(v.productId)) return false;
-      seenProducts.add(v.productId);
-      return true;
-    });
+    const dedupedRelated = dedupeByProduct(related, { seen: seenProducts });
 
     // Ordenar: marca (2 pts) > categoría (1 pt)
     const score = (v) =>
@@ -762,15 +760,169 @@ const getRelatedVariants = async (req, res) => {
     });
 
     // Deduplica fillers también
-    const dedupedFillers = fillers.filter((v) => {
-      if (seenProducts.has(v.productId)) return false;
-      seenProducts.add(v.productId);
-      return true;
-    }).slice(0, needed);
+    const dedupedFillers = dedupeByProduct(fillers, { limit: needed, seen: seenProducts });
 
     return res.status(200).json({ data: [...dedupedRelated, ...dedupedFillers] });
   } catch (error) {
     console.error("Error en getRelatedVariants:", error);
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
+// ── getPublicShowcase ─────────────────────────────────────────────────────────
+// Filas curadas para el home ("Más de {marca}", "Explora {categoría}"). La
+// selección de qué marcas/categorías destacar (las que más productos activos
+// tienen) y el armado de cada grupo vive en el backend: el frontend solo
+// renderiza lo que aquí se le entrega, para no duplicar lógica de negocio ni
+// dar una experiencia distinta según quién consuma la API.
+const SHOWCASE_MIN_PRODUCTS   = 2;  // no destacar marcas/categorías casi vacías
+const SHOWCASE_ITEMS_PER_GROUP = 8;
+// Más candidatos que filas finales: el conteo de `having` es por productos
+// ACTIVE, no por productos con variantes isActive, así que algún candidato
+// puede quedar sin stock real y descartarse — este margen evita perder el
+// cupo cuando eso pasa.
+const SHOWCASE_CANDIDATES      = 5;  // top N candidatos por tipo (marca / categoría)
+const SHOWCASE_MAX_GROUPS      = 5;  // total de filas a devolver, ya intercaladas (incluye "Más vendidos")
+
+const SHOWCASE_SELECT = {
+  id: true,
+  productId: true,
+  price: true,
+  isDefault: true,
+  stock: true,
+  images: { select: { imageUrl: true, slot: true }, orderBy: { slot: "asc" }, take: 2 },
+  product: {
+    select: { id: true, name: true, slug: true, brand: { select: { name: true } } },
+  },
+};
+
+async function fetchGroupVariants(where) {
+  const variants = await prisma.productVariant.findMany({
+    where: { isActive: true, product: { status: "ACTIVE", ...where } },
+    select: SHOWCASE_SELECT,
+    orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+    // Tope de seguridad: de sobra para deduplicar a SHOWCASE_ITEMS_PER_GROUP
+    // sin traer el catálogo completo de una marca/categoría muy grande.
+    take: SHOWCASE_ITEMS_PER_GROUP * 5,
+  });
+
+  return dedupeByProduct(variants, { limit: SHOWCASE_ITEMS_PER_GROUP });
+}
+
+// Fila "Más vendidos" — misma ventana de tiempo (mes en curso) y criterio
+// (cantidad vendida en órdenes PAID/PENDING) que usa el badge de getTopSellers,
+// pero trayendo la data completa de la variante para armar una fila entera.
+async function fetchTopSellerGroupVariants() {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const grouped = await prisma.orderItem.groupBy({
+    by: ["productVariantId"],
+    where: {
+      order: {
+        createdAt: { gte: startOfMonth, lte: endOfMonth },
+        status: { in: ["PAID", "PENDING"] },
+      },
+    },
+    _sum: { quantity: true },
+    orderBy: { _sum: { quantity: "desc" } },
+    take: SHOWCASE_ITEMS_PER_GROUP * 3,
+  });
+
+  const variantIds = grouped.map((g) => g.productVariantId);
+  if (!variantIds.length) return [];
+
+  const variants = await prisma.productVariant.findMany({
+    where: { id: { in: variantIds }, isActive: true, product: { status: "ACTIVE" } },
+    select: SHOWCASE_SELECT,
+  });
+
+  // Reordenar según el ranking de ventas — `WHERE id IN (...)` no lo preserva.
+  const rank = new Map(variantIds.map((id, i) => [id, i]));
+  variants.sort((a, b) => rank.get(a.id) - rank.get(b.id));
+
+  return dedupeByProduct(variants, { limit: SHOWCASE_ITEMS_PER_GROUP });
+}
+
+const getPublicShowcase = async (req, res) => {
+  try {
+    const topSellerVariants = await fetchTopSellerGroupVariants();
+    const topSellerGroup = topSellerVariants.length >= SHOWCASE_MIN_PRODUCTS
+      ? { type: "topSellers", id: "top-sellers", title: "Los más vendidos", variants: topSellerVariants }
+      : null;
+
+    const [topBrands, topCategories] = await Promise.all([
+      prisma.product.groupBy({
+        by: ["brandId"],
+        where: { status: "ACTIVE", brandId: { not: null } },
+        _count: { id: true },
+        having: { id: { _count: { gte: SHOWCASE_MIN_PRODUCTS } } },
+        orderBy: { _count: { id: "desc" } },
+        take: SHOWCASE_CANDIDATES,
+      }),
+      prisma.product.groupBy({
+        by: ["categoryId"],
+        where: { status: "ACTIVE" },
+        _count: { id: true },
+        having: { id: { _count: { gte: SHOWCASE_MIN_PRODUCTS } } },
+        orderBy: { _count: { id: "desc" } },
+        take: SHOWCASE_CANDIDATES,
+      }),
+    ]);
+
+    // isActive se filtra acá (consulta simple sobre el propio modelo) y no
+    // arriba dentro del groupBy — una marca/categoría desactivada nunca
+    // aparece en brandRows/categoryRows y queda descartada más abajo.
+    const [brandRows, categoryRows] = await Promise.all([
+      prisma.brand.findMany({
+        where: { id: { in: topBrands.map((b) => b.brandId) }, isActive: true },
+        select: { id: true, name: true },
+      }),
+      prisma.category.findMany({
+        where: { id: { in: topCategories.map((c) => c.categoryId) }, isActive: true },
+        select: { id: true, name: true },
+      }),
+    ]);
+
+    // `WHERE id IN (...)` no garantiza el orden de la lista — se reordena
+    // según el ranking de popularidad ya calculado por el groupBy de arriba.
+    const brandById    = new Map(brandRows.map((b) => [b.id, b]));
+    const categoryById = new Map(categoryRows.map((c) => [c.id, c]));
+    const brands     = topBrands.map((b) => brandById.get(b.brandId)).filter(Boolean);
+    const categories = topCategories.map((c) => categoryById.get(c.categoryId)).filter(Boolean);
+
+    const [brandGroups, categoryGroups] = await Promise.all([
+      Promise.all(brands.map(async (b) => ({
+        type: "brand",
+        id: b.id,
+        title: `Más de ${b.name}`,
+        variants: await fetchGroupVariants({ brandId: b.id }),
+      }))),
+      Promise.all(categories.map(async (c) => ({
+        type: "category",
+        id: c.id,
+        title: `Explora ${c.name}`,
+        variants: await fetchGroupVariants({ categoryId: c.id }),
+      }))),
+    ]);
+
+    // Intercalar marca/categoría para variedad visual, descartando grupos
+    // que tras deduplicar por producto quedaron demasiado cortos.
+    const usable = (g) => g.variants.length >= SHOWCASE_MIN_PRODUCTS;
+    const interleaved = [];
+    const maxLen = Math.max(brandGroups.length, categoryGroups.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (brandGroups[i] && usable(brandGroups[i]))       interleaved.push(brandGroups[i]);
+      if (categoryGroups[i] && usable(categoryGroups[i])) interleaved.push(categoryGroups[i]);
+    }
+
+    // "Más vendidos" siempre va primero cuando hay suficientes ventas este mes
+    const groups = topSellerGroup ? [topSellerGroup, ...interleaved] : interleaved;
+
+    return res.status(200).json({ data: groups.slice(0, SHOWCASE_MAX_GROUPS) });
+  } catch (error) {
+    console.error("Error en getPublicShowcase:", error);
     return res.status(500).json({ message: "Error interno" });
   }
 };
@@ -786,4 +938,5 @@ module.exports = {
   getTopSellers,
   getPublicSuggestions,
   getRelatedVariants,
+  getPublicShowcase,
 }

@@ -1,6 +1,6 @@
-import { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import HomeCategoryCard from "./HomeCategoryCard";
+import { useScrollCarousel } from "../../hooks/useScrollCarousel";
 
 function SkeletonCard() {
   return (
@@ -12,37 +12,7 @@ function SkeletonCard() {
 }
 
 export default function HomeCategorySection({ categories, loading, selected, onSelect, selectedParent, onBack }) {
-  const scrollRef = useRef(null);
-  const [showLeft,  setShowLeft]  = useState(false);
-  const [showRight, setShowRight] = useState(false);
-
-  const update = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setShowLeft(el.scrollLeft > 1);
-    setShowRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    // Medir después de que el DOM pinte el contenido
-    const raf = requestAnimationFrame(update);
-    el.addEventListener("scroll", update, { passive: true });
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      el.removeEventListener("scroll", update);
-      ro.disconnect();
-    };
-  }, [categories, loading, update]);
-
-  function scroll(dir) {
-    scrollRef.current?.scrollBy({ left: dir * 340, behavior: "smooth" });
-  }
+  const { scrollRef, canLeft: showLeft, canRight: showRight, scrollByItem: scroll } = useScrollCarousel([categories, loading]);
 
   if (!loading && categories.length === 0) return null;
 
@@ -75,7 +45,7 @@ export default function HomeCategorySection({ categories, loading, selected, onS
 
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto py-2 px-1 scroll-smooth"
+          className="flex gap-4 overflow-x-auto py-2 px-1"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {selectedParent ? (

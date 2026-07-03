@@ -5,6 +5,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Paleta "rose" del sitio público, centrada en #e96bb0 (anclado en el 400,
+   el tono más usado para botones/íconos/acentos). Sobrescribe la paleta rose
+   por defecto de Tailwind, así toda clase rose-* existente (bg, border,
+   text, hover, etc.) usa este tono sin tocar cada componente. */
+@theme {
+  --color-rose-50:  #fef0f8;
+  --color-rose-100: #fde5f2;
+  --color-rose-200: #facce5;
+  --color-rose-300: #f4a6d1;
+  --color-rose-400: #e96bb0;
+  --color-rose-500: #e458a5;
+  --color-rose-600: #df268b;
+  --color-rose-700: #bc1a73;
+  --color-rose-800: #97195e;
+  --color-rose-900: #77184c;
+  --color-rose-950: #450c2c;
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
