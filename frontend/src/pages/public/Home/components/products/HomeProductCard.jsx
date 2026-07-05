@@ -24,7 +24,7 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
       className="group flex flex-col h-full bg-white rounded-2xl cursor-pointer"
     >
       {/* ── Imagen ── */}
-      <div className="relative overflow-hidden bg-gray-50 rounded-2xl border border-rose-100" style={{ aspectRatio: "4/5" }}>
+      <div className="relative overflow-hidden bg-gray-50 rounded-2xl border border-rose-100" style={{ aspectRatio: "4/4.4" }}>
         <img
           src={imgSrc}
           alt={product?.name ?? "Producto"}
@@ -83,7 +83,11 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
               if (!outOfStock && !atLimit) onAddToCart?.(variant);
             }}
             disabled={outOfStock || atLimit}
-            className="w-full h-9 rounded-lg text-xs font-bold tracking-wide uppercase whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-rose-400/80 hover:bg-rose-400/95 active:bg-rose-500 text-white"
+            className={`w-full h-9 rounded-lg text-[10px] sm:text-xs font-bold tracking-wide uppercase whitespace-nowrap transition-colors disabled:cursor-not-allowed text-white ${
+              outOfStock
+                ? "bg-gray-400/90 disabled:opacity-100"
+                : "bg-rose-400/80 hover:bg-rose-400/95 active:bg-rose-500 disabled:opacity-50"
+            }`}
           >
             {outOfStock ? "Agotado" : atLimit ? "Límite de stock" : "Agregar al carrito"}
           </button>

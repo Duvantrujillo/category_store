@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight, Loader2 } from "lucide-react";
 
 function RegisterForm({ form, handleChange, handleSubmit, loading }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -9,44 +9,43 @@ function RegisterForm({ form, handleChange, handleSubmit, loading }) {
     <div className="min-h-screen flex">
 
       {/* Panel izquierdo — branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-slate-900 via-indigo-950 to-slate-900 flex-col justify-between p-12 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-rose-400 via-rose-500 to-fuchsia-600 flex-col justify-between p-12 relative overflow-hidden">
 
-        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
 
         {/* Logo */}
-        <div className="relative flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-900/60">
-            <ShieldCheck size={20} className="text-white" />
+        <Link to="/" className="relative flex items-center gap-2.5 w-fit group">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/25 text-white shadow-sm group-hover:bg-white/35 transition-colors">
+            <Sparkles size={18} />
           </div>
-          <div>
-            <p className="text-white font-bold text-base tracking-wide leading-none">Category Store</p>
-            <p className="text-indigo-400 text-[10px] font-medium uppercase tracking-widest mt-0.5">Admin Panel</p>
-          </div>
-        </div>
+          <span className="font-bold italic text-white text-lg tracking-tight leading-none">
+            Wow<span className="text-white/75">Beauty</span>
+          </span>
+        </Link>
 
         {/* Contenido central */}
         <div className="relative space-y-5">
           <div>
             <h2 className="text-3xl font-bold text-white tracking-tight leading-snug">
               Crea tu cuenta y<br />
-              <span className="text-indigo-400">empieza a gestionar</span>
+              <span className="text-white/80">empieza a brillar</span>
             </h2>
-            <p className="text-slate-400 text-sm mt-3 leading-relaxed max-w-xs">
-              Únete al panel de administración y toma el control de tu operación desde el primer día.
+            <p className="text-white/70 text-sm mt-3 leading-relaxed max-w-xs">
+              Únete a WowBeauty y disfruta de una experiencia de compra pensada para ti, desde el primer pedido.
             </p>
           </div>
 
           <ul className="space-y-3.5">
             {[
-              "Acceso completo al panel admin",
-              "Gestión de productos y categorías",
-              "Reportes y métricas en tiempo real",
-              "Soporte para múltiples roles",
+              "Guarda tus productos favoritos",
+              "Sigue el estado de tus pedidos",
+              "Checkout más rápido la próxima vez",
+              "Ofertas y novedades primero",
             ].map((feat) => (
-              <li key={feat} className="flex items-center gap-2.5 text-sm text-slate-300">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600/30 border border-indigo-500/40 shrink-0">
-                  <ArrowRight size={10} className="text-indigo-400" />
+              <li key={feat} className="flex items-center gap-2.5 text-sm text-white/90">
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white/20 border border-white/30 shrink-0">
+                  <ArrowRight size={10} className="text-white" />
                 </span>
                 {feat}
               </li>
@@ -54,35 +53,37 @@ function RegisterForm({ form, handleChange, handleSubmit, loading }) {
           </ul>
         </div>
 
-        <p className="relative text-[11px] text-slate-600">
-          © {new Date().getFullYear()} Category Store. Todos los derechos reservados.
+        <p className="relative text-[11px] text-white/60">
+          © {new Date().getFullYear()} WowBeauty. Todos los derechos reservados.
         </p>
       </div>
 
       {/* Panel derecho — formulario */}
-      <div className="flex-1 flex items-center justify-center bg-slate-50 p-6">
+      <div className="flex-1 flex items-center justify-center bg-rose-50/40 p-6">
         <div className="w-full max-w-sm">
 
           {/* Logo mobile */}
-          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-600 shadow-md shadow-indigo-200">
-              <ShieldCheck size={18} className="text-white" />
+          <Link to="/" className="flex items-center gap-2.5 mb-8 lg:hidden w-fit">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-rose-400 text-white shadow-md shadow-rose-200">
+              <Sparkles size={17} />
             </div>
-            <p className="font-bold text-slate-800 text-base">Category Store</p>
-          </div>
+            <span className="font-bold italic text-rose-900 text-base">
+              Wow<span className="text-rose-400">Beauty</span>
+            </span>
+          </Link>
 
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Crear cuenta</h1>
-            <p className="text-slate-500 text-sm mt-1.5">Completa los datos para registrarte</p>
+            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Crear cuenta</h1>
+            <p className="text-gray-500 text-sm mt-1.5">Completa los datos para registrarte</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
 
             {/* Nombre */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Nombre completo</label>
+              <label className="text-sm font-medium text-gray-700">Nombre completo</label>
               <div className="relative">
-                <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   name="name"
                   type="text"
@@ -90,46 +91,47 @@ function RegisterForm({ form, handleChange, handleSubmit, loading }) {
                   onChange={handleChange}
                   placeholder="Juan Pérez"
                   required
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent transition-shadow shadow-sm"
                 />
               </div>
             </div>
 
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Correo electrónico</label>
+              <label className="text-sm font-medium text-gray-700">Correo electrónico</label>
               <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   name="email"
                   type="email"
                   value={form.email}
                   onChange={handleChange}
-                  placeholder="admin@ejemplo.com"
+                  placeholder="tu@correo.com"
                   required
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent transition-shadow shadow-sm"
                 />
               </div>
             </div>
 
             {/* Contraseña */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Contraseña</label>
+              <label className="text-sm font-medium text-gray-700">Contraseña</label>
               <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   name="password"
                   type={showPassword ? "text" : "password"}
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="••••••••"
+                  placeholder="Mínimo 8 caracteres"
                   required
-                  className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm"
+                  minLength={8}
+                  className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent transition-shadow shadow-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -140,7 +142,7 @@ function RegisterForm({ form, handleChange, handleSubmit, loading }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm shadow-indigo-200 mt-2"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 active:bg-rose-700 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm shadow-rose-200 mt-2"
             >
               {loading ? (
                 <>
@@ -157,9 +159,9 @@ function RegisterForm({ form, handleChange, handleSubmit, loading }) {
 
           </form>
 
-          <p className="text-center text-sm text-slate-500 mt-6">
+          <p className="text-center text-sm text-gray-500 mt-6">
             ¿Ya tienes cuenta?{" "}
-            <Link to="/login" className="font-semibold text-indigo-600 hover:text-indigo-700 hover:underline transition-colors">
+            <Link to="/login" className="font-semibold text-rose-500 hover:text-rose-600 hover:underline transition-colors">
               Iniciar sesión
             </Link>
           </p>

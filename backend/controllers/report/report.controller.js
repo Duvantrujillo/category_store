@@ -568,6 +568,65 @@ const getDetailedReport = async (req, res) => {
   }
 }
 
+// GET /report/discount-codes
+// Cupones usados: cuáles, cuántas veces y cuánto se descontó
+const getDiscountCodeReport = async (req, res) => {
+  try {
+    const dateFilter = parseDateRange(req.query)
+
+    const [usages, byDiscountCode, totals] = await Promise.all([
+      prisma.discountCodeUsage.findMany({
+        where: dateFilter,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          discountCode: { select: { code: true, type: true, value: true } },
+          order: { select: { orderNumber: true, firstName: true, lastName: true, status: true, total: true } },
+        },
+      }),
+
+      prisma.discountCodeUsage.groupBy({
+        by: ['discountCodeId'],
+        where: dateFilter,
+        _count: { discountCodeId: true },
+        _sum: { amount: true },
+        orderBy: { _sum: { amount: 'desc' } },
+        take: 10,
+      }),
+
+      prisma.discountCodeUsage.aggregate({
+        where: dateFilter,
+        _sum: { amount: true },
+        _count: true,
+      }),
+    ])
+
+    const discountCodeIds = byDiscountCode.map((d) => d.discountCodeId)
+    const discountCodes   = discountCodeIds.length
+      ? await prisma.discountCode.findMany({
+          where: { id: { in: discountCodeIds } },
+          select: { id: true, code: true, type: true },
+        })
+      : []
+    const discountCodeMap = Object.fromEntries(discountCodes.map((d) => [d.id, d]))
+
+    return res.json({
+      records: usages,
+      byDiscountCode: byDiscountCode.map((d) => ({
+        discountCode: discountCodeMap[d.discountCodeId] ?? null,
+        count: d._count.discountCodeId,
+        amount: Number(d._sum.amount ?? 0),
+      })),
+      totals: {
+        count: totals._count,
+        amount: Number(totals._sum.amount ?? 0),
+      },
+    })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: 'Error interno' })
+  }
+}
+
 module.exports = {
   getSummary,
   getReturnsReport,
@@ -575,4 +634,5 @@ module.exports = {
   getShipmentsReport,
   getSalesReport,
   getDetailedReport,
+  getDiscountCodeReport,
 }

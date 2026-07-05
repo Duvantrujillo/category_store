@@ -25,13 +25,16 @@ import ReportsPage from './pages/dashboard/admin/reports/pages/ReportsPage'
 import ListUser from './pages/dashboard/admin/user/pages/ListUser'
 import ListPermission from './pages/dashboard/admin/permission/pages/ListPermission'
 import ListBanner from './pages/dashboard/admin/banner/page/ListBanner'
+import ListDiscountCode from './pages/dashboard/admin/discount-code/page/ListDiscountCode'
 import AdminHome from './pages/dashboard/admin/home/AdminHome'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicLayout from './components/layouts/PublicLayout'
+import ScrollToTop from './components/ScrollToTop'
 
 function App() {
   return (
     <PermissionProvider>
+    <ScrollToTop />
     <Routes>
       {/* Rutas públicas — scrollbar rosa */}
       <Route element={<PublicLayout />}>
@@ -69,6 +72,7 @@ function App() {
         <Route path="list/users"       element={<ListUser />} />
         <Route path="list/permissions" element={<ListPermission />} />
         <Route path="list/banner"      element={<ListBanner />} />
+        <Route path="list/discount-codes" element={<ListDiscountCode />} />
       </Route>
 
       {/* Panel de cliente */}

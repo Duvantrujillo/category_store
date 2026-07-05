@@ -2,6 +2,7 @@ const { randomBytes } = require('crypto')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const { notifyOrderCreated } = require('../../services/notification.service')
+const { resolveDiscount } = require('../discount-code/discount_code.controller')
 
 // ── Constantes de negocio ──────────────────────────────────────────────────────
 const ALLOWED_CURRENCIES = new Set(['COP', 'USD'])
@@ -26,10 +27,12 @@ const createOrder = async (req, res) => {
     if (existing) return res.status(200).json({ message: 'Orden ya procesada', order: existing })
 
     const {
-      userId, firstName, lastName, documentNumber, email,
+      firstName, lastName, documentNumber, email,
       phoneNumber, departament, municipality, address,
-      additionalDetails, items, currency
+      additionalDetails, items, currency, discountCode
     } = req.body
+    // `/order/create` es pública (sin sesión) — nunca se confía en un
+    // `userId` enviado por el cliente para asociar el pedido a una cuenta.
 
     // FIX 2 — CURRENCY WHITELIST
     // Nunca confiar en strings libres del cliente para campos críticos.
@@ -88,7 +91,7 @@ const createOrder = async (req, res) => {
       // del pedido, no una lectura previa que pudo haber quedado desactualizada.
       const variants = await tx.productVariant.findMany({
         where: { id: { in: variantIds }, isActive: true },
-        select: { id: true, price: true, product: { select: { name: true } } }
+        select: { id: true, price: true, product: { select: { id: true, name: true, categoryId: true, brandId: true } } }
       })
       const variantMap = Object.fromEntries(variants.map(v => [v.id, v]))
 
@@ -128,7 +131,23 @@ const createOrder = async (req, res) => {
       const subtotal = items.reduce((acc, item) => {
         return acc + Number(variantMap[item.productVariantId].price) * Number(item.quantity)
       }, 0)
-      const total = subtotal + SHIPPING_COST
+
+      // Cupón de descuento — validado y recalculado aquí (nunca confiar en un
+      // monto de descuento enviado por el cliente).
+      let discount = null
+      if (discountCode) {
+        const cartLines = items.map(item => ({
+          variantId: item.productVariantId,
+          unitPrice: variantMap[item.productVariantId].price,
+          quantity: Number(item.quantity),
+          product: variantMap[item.productVariantId].product
+        }))
+        discount = await resolveDiscount(tx, discountCode, cartLines)
+      }
+
+      const shippingCost = discount?.freeShipping ? 0 : SHIPPING_COST
+      const discountAmount = discount?.discountAmount ?? 0
+      const total = Math.max(0, subtotal + shippingCost - discountAmount)
 
       // FIX 7 — IDEMPOTENCIA CONCURRENTE (blindaje total)
       // Si dos requests con la misma idempotencyKey llegan simultáneamente y
@@ -136,19 +155,24 @@ const createOrder = async (req, res) => {
       // @unique. El segundo recibe P2002, que capturamos en el catch.
       // Al estar dentro de la transacción, si este create falla, las reservas
       // de stock hechas arriba se revierten automáticamente.
-      return await tx.order.create({
+      // El cupón queda "reservado" en la orden desde ya (su monto ya está
+      // descontado en `total`), pero NO se registra como DiscountCodeUsage
+      // todavía — eso solo pasa cuando el webhook confirma el pago (PAID),
+      // para que el maxUses del cupón cuente compras pagadas, no intentos.
+      const createdOrder = await tx.order.create({
         data: {
           orderNumber,
           idempotencyKey,
-          userId: userId || null,
           firstName, lastName, documentNumber,
           email: email || null,
           phoneNumber, departament, municipality, address,
           additionalDetails: additionalDetails || null,
           subtotal,
-          shippingCost: SHIPPING_COST,
+          shippingCost,
           total,
           currency: normalizedCurrency,
+          discountCodeId: discount?.discountCode.id ?? null,
+          discountAmount,
           items: {
             create: items.map(item => {
               const variant = variantMap[item.productVariantId]
@@ -164,12 +188,17 @@ const createOrder = async (req, res) => {
         },
         include: { items: true }
       })
+
+      return createdOrder
     })
 
     notifyOrderCreated(order).catch(err => console.error('Error notificando ORDER_CREATED', err))
     return res.status(201).json({ message: 'Orden creada', order })
 
   } catch (error) {
+    if (error.message?.startsWith('INVALID_COUPON:')) {
+      return res.status(400).json({ message: error.message.slice('INVALID_COUPON:'.length) })
+    }
     if (error.message?.startsWith('VARIANT_NOT_FOUND:')) {
       const variantId = error.message.split(':')[1]
       return res.status(400).json({ message: `Variante ${variantId} no encontrada` })
@@ -213,7 +242,7 @@ const allOrder = async (req, res) => {
   try {
     const orders = await prisma.order.findMany({
       include: {
-        user: true,
+        user: { select: { id: true, name: true, email: true } },
         payment: true,
         items: {
           include: {
@@ -222,7 +251,8 @@ const allOrder = async (req, res) => {
               select: { quantity: true }
             }
           }
-        }
+        },
+        discountCode: { select: { code: true, type: true, value: true } }
       },
       orderBy: {
         createdAt: 'desc'
@@ -262,7 +292,7 @@ const searchOrder = async (req, res) => {
         ],
       },
       include: {
-        user: true,
+        user: { select: { id: true, name: true, email: true } },
         payment: true,
         items: {
           include: {
@@ -270,6 +300,7 @@ const searchOrder = async (req, res) => {
             returnItems: { select: { quantity: true } },
           },
         },
+        discountCode: { select: { code: true, type: true, value: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -324,7 +355,8 @@ const trackOrder = async (req, res) => {
               orderBy: { createdAt: 'asc' }
             }
           }
-        }
+        },
+        discountCode: { select: { code: true, type: true } }
       }
     })
 
@@ -350,6 +382,8 @@ const trackOrder = async (req, res) => {
         items: order.items,
         payment: order.payment,
         shipment: order.shipment,
+        discountCode: order.discountCode,
+        discountAmount: order.discountAmount,
       }
     })
   } catch (error) {
@@ -374,7 +408,7 @@ const filterOrderByDate = async (req, res) => {
     const orders = await prisma.order.findMany({
       where: { createdAt: { gte: fromDate, lte: toDate } },
       include: {
-        user: true,
+        user: { select: { id: true, name: true, email: true } },
         payment: true,
         items: {
           include: {
@@ -382,6 +416,7 @@ const filterOrderByDate = async (req, res) => {
             returnItems: { select: { quantity: true } },
           },
         },
+        discountCode: { select: { code: true, type: true, value: true } },
       },
       orderBy: { createdAt: 'desc' },
     });

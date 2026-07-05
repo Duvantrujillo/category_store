@@ -1,6 +1,6 @@
 import {
   User, Hash, Mail, Phone, MapPin, FileText,
-  DollarSign, Receipt, Calendar, ClipboardList, Truck,
+  DollarSign, Receipt, Calendar, ClipboardList, Truck, TicketPercent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +48,7 @@ function OrderDetailsModal({ open, order, onClose }) {
   if (!order) return null;
 
   const { label: statusLabel, cls: statusCls } = STATUS_CONFIG[order.status] ?? { label: order.status, cls: "bg-slate-500/20 text-slate-300 border-slate-500/30" };
+  const hasDiscount = Number(order.discountAmount) > 0;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -101,6 +102,14 @@ function OrderDetailsModal({ open, order, onClose }) {
             <Section title="Resumen financiero">
               <Field icon={DollarSign} label="Subtotal productos" value={fmtCOP(order.subtotal)} iconCls="bg-emerald-50 text-emerald-500" />
               <Field icon={Truck} label="Costo de envío" value={fmtCOP(order.shippingCost ?? 11000)} iconCls="bg-sky-50 text-sky-500" />
+              {hasDiscount && (
+                <Field
+                  icon={TicketPercent}
+                  label="Descuento aplicado"
+                  value={`-${fmtCOP(order.discountAmount)} · cupón ${order.discountCode?.code ?? ""}`}
+                  iconCls="bg-rose-50 text-rose-500"
+                />
+              )}
               <div className="flex items-start gap-3 py-2.5">
                 <div className="p-1.5 rounded-lg shrink-0 mt-0.5 bg-emerald-100 text-emerald-600">
                   <Receipt size={13} />

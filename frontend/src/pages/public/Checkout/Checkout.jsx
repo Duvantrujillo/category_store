@@ -234,9 +234,14 @@ function CollapsibleSection({ title, icon: Icon, open, onToggle, disabled, hasEr
 
 // ── Resumen del pedido ────────────────────────────────────────────────────────
 
-function OrderSummary({ items, pendingPayment, onPay, onRetryPayment, loading, onUpdateQty, onRemove }) {
-  const subtotal      = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
-  const total         = items.length > 0 ? subtotal + SHIPPING_COST : 0;
+function OrderSummary({
+  items, pendingPayment, onPay, onRetryPayment, loading, onUpdateQty, onRemove,
+  couponInput, setCouponInput, coupon, couponLoading, couponError, onApplyCoupon, onRemoveCoupon,
+}) {
+  const subtotal        = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
+  const shippingCost     = coupon?.freeShipping ? 0 : SHIPPING_COST;
+  const discountAmount  = coupon?.discountAmount ?? 0;
+  const total           = items.length > 0 ? Math.max(0, subtotal + shippingCost - discountAmount) : 0;
   const hasStockIssue = items.some(({ variant, quantity }) => quantity > Number(variant.stock ?? 0));
 
   return (
@@ -261,7 +266,12 @@ function OrderSummary({ items, pendingPayment, onPay, onRetryPayment, loading, o
             const maxStock = Number(variant.stock ?? 0);
             const atMax    = quantity >= maxStock;
             const overStock = quantity > maxStock;
-            const sub      = (Number(variant.price) * quantity).toLocaleString("es-CO");
+            const lineTotal = Number(variant.price) * quantity;
+            const sub      = lineTotal.toLocaleString("es-CO");
+            // Precio final por producto ya calculado y validado por el backend
+            // (no se calcula acá cuánto "le toca" a cada línea).
+            const lineDiscount = coupon?.lineDiscounts?.find((d) => d.variantId === variant.id);
+            const hasLineDiscount = lineDiscount && lineDiscount.lineAmount < lineTotal;
 
             return (
               <div key={variant.id} className="flex gap-3 px-5 py-4">
@@ -328,15 +338,70 @@ function OrderSummary({ items, pendingPayment, onPay, onRetryPayment, loading, o
                         </button>
                       </div>
                     )}
-                    <span className={`text-[13px] font-bold shrink-0 ${overStock ? "text-rose-400" : "text-gray-800"}`}>
-                      ${sub}
-                    </span>
+                    {hasLineDiscount ? (
+                      <span className="flex flex-col items-end shrink-0 leading-none">
+                        <span className="text-[10px] text-rose-300 line-through">${sub}</span>
+                        <span className="text-[13px] font-bold text-gray-800 mt-0.5">
+                          ${lineDiscount.lineAmount.toLocaleString("es-CO")}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className={`text-[13px] font-bold shrink-0 ${overStock ? "text-rose-400" : "text-gray-800"}`}>
+                        ${sub}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* Cupón de descuento */}
+        {items.length > 0 && !pendingPayment && (
+          <div className="px-5 py-4 border-t border-gray-50">
+            {coupon ? (
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2">
+                <span className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700">
+                  <CheckCircle2 size={13} className="shrink-0" />
+                  Cupón <span className="font-mono">{coupon.code}</span> aplicado
+                </span>
+                <button
+                  type="button"
+                  onClick={onRemoveCoupon}
+                  className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-800 transition-colors shrink-0"
+                >
+                  Quitar
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onApplyCoupon(); } }}
+                    placeholder="¿Tienes un cupón?"
+                    className="flex-1 h-9 rounded-lg border border-gray-200 px-3 text-[12px] font-mono outline-none focus:border-rose-300 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={onApplyCoupon}
+                    disabled={couponLoading || !couponInput.trim()}
+                    className="h-9 px-3.5 rounded-lg bg-gray-800 hover:bg-gray-900 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-bold uppercase tracking-wider transition-colors shrink-0"
+                  >
+                    {couponLoading ? "..." : "Aplicar"}
+                  </button>
+                </div>
+                {couponError && (
+                  <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1">
+                    <AlertCircle size={11} className="shrink-0" />{couponError}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="px-5 py-4 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-2">
           {items.length > 0 && (
@@ -345,10 +410,16 @@ function OrderSummary({ items, pendingPayment, onPay, onRetryPayment, loading, o
                 <span>Subtotal productos</span>
                 <span className="font-medium">${subtotal.toLocaleString("es-CO")}</span>
               </div>
-              <div className="flex items-center justify-between text-xs text-lime-600 font-medium">
+              <div className="flex items-center justify-between text-xs text-emerald-500 font-semibold">
                 <span className="flex items-center gap-1.5"><Truck size={11} />Envío</span>
-                <span>${SHIPPING_COST.toLocaleString("es-CO")}</span>
+                <span>{shippingCost === 0 ? "Gratis" : `$${shippingCost.toLocaleString("es-CO")}`}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex items-center justify-between text-xs text-rose-500 font-semibold">
+                  <span>Descuento ({coupon.code})</span>
+                  <span>-${discountAmount.toLocaleString("es-CO")}</span>
+                </div>
+              )}
             </>
           )}
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
@@ -436,6 +507,12 @@ export default function Checkout() {
   // pendingPayment se setea luego de crear la orden exitosamente
   const [pendingPayment, setPendingPayment] = useState(null);
 
+  // ── Cupón de descuento ──
+  const [couponInput, setCouponInput]   = useState("");
+  const [coupon, setCoupon]             = useState(null); // { code, type, discountAmount, freeShipping }
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError]     = useState("");
+
   const keyRef = useRef(uid());
 
   // Persistir el formulario en localStorage mientras el usuario escribe
@@ -445,8 +522,6 @@ export default function Checkout() {
   }, [form, pendingPayment]);
 
   const cartCount   = cartItems.reduce((s, i) => s + i.quantity, 0);
-  const cartSubtotal = cartItems.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
-  const total        = cartSubtotal + SHIPPING_COST;
 
   // Restaurar el departamento seleccionado cuando los datos de localidad cargan
   useEffect(() => {
@@ -460,9 +535,53 @@ export default function Checkout() {
     if (!pendingPayment) return;
     openEpaycoCheckout({
       reference: pendingPayment.reference,
-      total,
+      total: pendingPayment.total,
       form: pendingPayment.form,
     }).catch((err) => toast.error(err.message));
+  }
+
+  async function applyCoupon() {
+    const code = couponInput.trim();
+    if (!code) return;
+
+    setCouponLoading(true);
+    setCouponError("");
+
+    try {
+      const res = await fetch(`${API}/discount-code/validate`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          items: cartItems.map(({ variant, quantity }) => ({
+            productVariantId: variant.id,
+            quantity,
+          })),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setCoupon(null);
+        setCouponError(data.message ?? "Cupón no válido");
+        return;
+      }
+
+      setCoupon(data.data);
+      setCouponError("");
+    } catch {
+      setCoupon(null);
+      setCouponError("Error de conexión al validar el cupón");
+    } finally {
+      setCouponLoading(false);
+    }
+  }
+
+  function removeCoupon() {
+    setCoupon(null);
+    setCouponInput("");
+    setCouponError("");
   }
 
 
@@ -526,6 +645,7 @@ export default function Checkout() {
             unitPrice: Number(variant.price),
           })),
           currency: "COP",
+          discountCode: coupon?.code ?? null,
         }),
       });
 
@@ -539,9 +659,17 @@ export default function Checkout() {
           throw new Error(orderData.message);
         throw new Error(orderData.message ?? "Conflicto al procesar el pedido.");
       }
+      if (orderRes.status === 400 && orderData.message) {
+        // Cupón inválido/expirado detectado en el servidor al crear la orden
+        setCoupon(null);
+        throw new Error(orderData.message);
+      }
       if (!orderRes.ok) throw new Error(orderData.message ?? "Error al crear la orden.");
 
       const order = orderData.order;
+      // Monto autoritativo: el total ya recalculado por el servidor (incluye
+      // el descuento del cupón validado ahí), nunca el estimado del cliente.
+      const orderTotal = Number(order.total);
 
       // ── 2. Crear registro de pago (PENDING) ────────────────────────────────
       const payRes = await fetch(`${API}/payment/create`, {
@@ -551,7 +679,7 @@ export default function Checkout() {
           orderId:   order.id,
           provider:  "epayco",
           reference: order.orderNumber,
-          amount:    total,
+          amount:    orderTotal,
           currency:  "COP",
         }),
       });
@@ -567,12 +695,13 @@ export default function Checkout() {
       const paymentInfo = {
         orderNumber: order.orderNumber,
         reference:   order.orderNumber,
+        total:       orderTotal,
         form: { ...form, phoneNumber: tel },
       };
       setPendingPayment(paymentInfo);
 
       // ── 3. Abrir la pasarela de ePayco (modo programático, botón propio) ──
-      await openEpaycoCheckout({ reference: paymentInfo.reference, total, form: paymentInfo.form });
+      await openEpaycoCheckout({ reference: paymentInfo.reference, total: orderTotal, form: paymentInfo.form });
 
     } catch (err) {
       toast.error(err.message);
@@ -719,6 +848,13 @@ export default function Checkout() {
               loading={submitting}
               onUpdateQty={updateQty}
               onRemove={removeFromCart}
+              couponInput={couponInput}
+              setCouponInput={setCouponInput}
+              coupon={coupon}
+              couponLoading={couponLoading}
+              couponError={couponError}
+              onApplyCoupon={applyCoupon}
+              onRemoveCoupon={removeCoupon}
             />
           </div>
         </div>

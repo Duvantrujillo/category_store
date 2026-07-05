@@ -12,18 +12,38 @@ export default function HomeProductGrid({
   loading,
   search,
   selectedCategory,
+  selectedParent,
   onAddToCart,
   onToggleFavorite,
   favoritedIds,
   cartQtyById,
   topSellerIds,
 }) {
-  // Bloques de hasta 12 productos; cada uno se muestra como un carrusel
+  // Bloques de hasta 8 productos; cada uno se muestra como un carrusel
   // horizontal (4 visibles en pantalla + flechas para navegar el resto).
   const groups = [];
   for (let i = 0; i < variants.length; i += PAGE_SIZE) {
     groups.push(variants.slice(i, i + PAGE_SIZE));
   }
+
+  // En la vista por defecto (sin búsqueda ni categoría), si un bloque queda
+  // "huérfano" (menos productos que PAGE_SIZE), se rellena repitiendo
+  // productos ya existentes del catálogo para que la fila no quede en blanco.
+  // A medida que se agreguen productos reales, ocuparán esos cupos y los
+  // repetidos van desapareciendo solos.
+  const isDefaultView = !search && !selectedCategory && !selectedParent;
+  const displayGroups = isDefaultView
+    ? groups.map((group) => {
+        if (group.length === 0 || group.length >= PAGE_SIZE) return group;
+        const padded = [...group];
+        let i = 0;
+        while (padded.length < PAGE_SIZE) {
+          padded.push(variants[i % variants.length]);
+          i++;
+        }
+        return padded;
+      })
+    : groups;
 
   return (
     <section className="mt-2">
@@ -36,7 +56,7 @@ export default function HomeProductGrid({
         >
           {search
             ? `Resultados para "${search}"`
-            : selectedCategory
+            : selectedCategory || selectedParent
             ? "Productos de esta categoría"
             : "Nuestros productos"}
         </h2>
@@ -69,7 +89,7 @@ export default function HomeProductGrid({
       )}
 
       {/* ── Cada bloque de hasta 12: carrusel horizontal (4 visibles + flechas) ── */}
-      {!loading && variants.length > 0 && groups.map((group, idx) => (
+      {!loading && variants.length > 0 && displayGroups.map((group, idx) => (
         <HomeProductRow
           key={idx}
           variants={group}

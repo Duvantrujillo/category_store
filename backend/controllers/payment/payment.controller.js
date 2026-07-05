@@ -10,7 +10,12 @@ const createPayment = async (req, res) => {
         }
 
         const order = await prisma.order.findUnique({ where: { id: orderId } });
-        if (!order) {
+        // `orderId` es un entero autoincremental fácil de adivinar/enumerar.
+        // Exigimos que además coincida con `orderNumber` (el identificador
+        // público, no secuencial, que solo conoce quien creó ese pedido)
+        // para evitar que cualquiera registre un pago falso sobre la orden
+        // de otra persona y bloquee su pago legítimo.
+        if (!order || order.orderNumber !== reference) {
             return res.status(404).json({ message: "Orden no encontrada" });
         }
 

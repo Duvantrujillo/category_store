@@ -1,13 +1,32 @@
 const express = require('express');
 const router = express.Router();
 require('dotenv').config();
+const { rateLimit } = require('express-rate-limit');
 const userController = require('../controllers/user/user.controller');
 const { authMiddleware } = require('../middlewares/auth.middleware');
 const { requirePermission, requireAdmin } = require('../middlewares/permission.middleware');
 
+// Limita intentos de fuerza bruta contra contraseñas (endpoint público sin auth)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { message: 'Demasiados intentos de inicio de sesión, intenta más tarde' }
+});
+
+// Limita creación masiva de cuentas (endpoint público sin auth)
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { message: 'Demasiados registros desde esta conexión, intenta más tarde' }
+});
+
 // Rutas públicas
-router.post('/create', userController.createUser);
-router.post('/login',  userController.loginUser);
+router.post('/create', registerLimiter, userController.createUser);
+router.post('/login',  loginLimiter,    userController.loginUser);
 
 // Perfil propio — requiere sesión válida
 router.get('/me', authMiddleware, userController.getMe);

@@ -21,6 +21,15 @@ const createUser = async (req, res) => {
       return res.status(400).json({ message: 'Campos requeridos' });
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Correo electrónico inválido' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'La contraseña debe tener al menos 8 caracteres' });
+    }
+
     const userExist = await prisma.user.findUnique({ where: { email } });
     if (userExist) {
       return res.status(409).json({ message: 'Correo ya registrado' });

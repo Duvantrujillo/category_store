@@ -53,9 +53,9 @@ export default function HomeProductRow({ title, variants, onAddToCart, onToggleF
             [-ms-overflow-style:none]
             [scrollbar-width:none]"
         >
-          {variants.map((v) => (
+          {variants.map((v, i) => (
             <div
-              key={v.id}
+              key={`${v.id}-${i}`}
               className="shrink-0 self-stretch w-[calc((100%-0.75rem)/2.15)] sm:w-[calc((100%-2rem)/3.15)] md:w-[calc((100%-3rem)/4.15)]"
             >
               <HomeProductCard

@@ -27,12 +27,14 @@ export default function CategoryCreateDialog({
 
   /*
     🔥 SOLO CATEGORÍAS VÁLIDAS
+    Máximo 2 niveles: solo categorías raíz (sin padre propio) pueden
+    elegirse como padre, para no crear nietos.
   */
   const parentCategories = useMemo(() => {
 
     if (!Array.isArray(categories)) return [];
 
-    return categories;
+    return categories.filter((c) => !c.parentId);
 
   }, [categories]);
 

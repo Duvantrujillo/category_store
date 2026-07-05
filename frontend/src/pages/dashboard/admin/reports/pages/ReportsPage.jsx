@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import {
-  BarChart3, Calendar, LayoutDashboard, TrendingUp,
-  RotateCcw, Wallet, Truck, ShieldOff, FileSpreadsheet,
+  Calendar, LayoutDashboard, TrendingUp,
+  RotateCcw, Wallet, Truck, ShieldOff, FileSpreadsheet, TicketPercent,
 } from "lucide-react";
 import { Button }     from "@/components/ui/button";
 import { Label }      from "@/components/ui/label";
@@ -15,6 +15,7 @@ import ReturnsReport   from "../components/ReturnsReport";
 import RefundsReport   from "../components/RefundsReport";
 import ShipmentsReport from "../components/ShipmentsReport";
 import DetailedReport  from "../components/DetailedReport";
+import DiscountCodeReport from "../components/DiscountCodeReport";
 
 const fmtDate = (d) => format(d, "yyyy-MM-dd");
 const now     = new Date();
@@ -35,6 +36,7 @@ const TABS = [
   { key: "refunds",   label: "Reembolsos",  icon: Wallet           },
   { key: "shipments", label: "Envíos",      icon: Truck            },
   { key: "detailed",  label: "Detallado",   icon: FileSpreadsheet  },
+  { key: "coupons",   label: "Cupones",     icon: TicketPercent    },
 ];
 
 function ReportsPage() {
@@ -65,16 +67,6 @@ function ReportsPage() {
 
   return (
     <div className="px-6 pt-2 pb-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-indigo-50 rounded-xl border border-indigo-100">
-          <BarChart3 size={20} className="text-indigo-600" />
-        </div>
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Reportes</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Analiza el rendimiento del sistema por período</p>
-        </div>
-      </div>
 
       {/* Panel de filtros */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-100">
@@ -164,6 +156,7 @@ function ReportsPage() {
         {activeTab === "refunds"   && <RefundsReport   filters={applied} />}
         {activeTab === "shipments" && <ShipmentsReport filters={applied} />}
         {activeTab === "detailed"  && <DetailedReport  filters={applied} />}
+        {activeTab === "coupons"   && <DiscountCodeReport filters={applied} />}
       </div>
     </div>
   );

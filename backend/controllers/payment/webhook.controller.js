@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { createShipment } = require("../../services/shipment.service");
+const { confirmDiscountUsage } = require("../discount-code/discount_code.controller");
 const {
   notifyOrderPaid,
   notifyOrderCancelled,
@@ -22,8 +23,11 @@ const TERMINAL_STATUSES = ["APPROVED", "DECLINED", "VOIDED", "ERROR"];
 // Referencia: https://docs.epayco.co/payments/checkout/confirmation
 function verifyEpaycoSignature(payload) {
   if (!EPAYCO_CUST_ID || !EPAYCO_P_KEY) {
-    console.warn("EPAYCO_CUST_ID / EPAYCO_P_KEY no configurados — omitiendo validación de firma");
-    return true;
+    // Fail-closed: sin estas variables no hay forma de verificar que el
+    // webhook realmente viene de ePayco. Rechazar es la opción segura —
+    // aceptar sin firma permitiría marcar cualquier orden como pagada.
+    console.error("EPAYCO_CUST_ID / EPAYCO_P_KEY no configurados — rechazando webhook por seguridad");
+    return false;
   }
 
   const { x_ref_payco, x_transaction_id, x_amount, x_currency_code, x_signature } = payload;
@@ -136,7 +140,7 @@ const epaycoWebhook = async (req, res) => {
         // 0 filas actualizadas → otro worker ganó la carrera o el estado ya cambió.
         if (claimed.count === 0) throw new WebhookAlreadyProcessed();
 
-        await tx.order.update({
+        const updatedOrder = await tx.order.update({
           where: { id: payment.orderId },
           data:  { status: orderStatus }
         });
@@ -164,6 +168,10 @@ const epaycoWebhook = async (req, res) => {
               WHERE id = ${item.productVariantId}
             `
           }
+
+          // El cupón (si el pedido tenía uno) recién "cuenta" para su límite
+          // de usos ahora que el pago quedó confirmado — no al crear la orden.
+          await confirmDiscountUsage(tx, updatedOrder)
         } else {
           // Pago rechazado o con error: liberar la reserva sin tocar el stock.
           for (const item of orderItems) {

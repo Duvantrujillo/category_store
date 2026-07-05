@@ -22,7 +22,7 @@ export default function BannerTable({ banners, totalItems, page, pageSize, onPag
               Gestiona los slides que aparecen en la página principal.
             </p>
           </div>
-          <span className="text-xs font-medium bg-rose-50 text-rose-500 border border-rose-100 px-2.5 py-1 rounded-full">
+          <span className="text-xs font-medium bg-indigo-50 text-indigo-600 border border-indigo-100 px-2.5 py-1 rounded-full">
             {totalItems} registros
           </span>
         </div>

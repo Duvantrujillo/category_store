@@ -1,7 +1,7 @@
 import {
   LayoutGrid, Package, Layers, Award, Settings, List,
   FileText, ClipboardList, Truck, RotateCcw, CreditCard,
-  LayoutDashboard, BarChart2,
+  LayoutDashboard, BarChart2, TicketPercent,
 } from 'lucide-react'
 
 export const MODULE_CONFIG = {
@@ -18,6 +18,7 @@ export const MODULE_CONFIG = {
   returns:             { label: 'Devoluciones',                  icon: RotateCcw,     color: 'orange'   },
   refunds:             { label: 'Reembolsos',                    icon: CreditCard,    color: 'red'      },
   reports:             { label: 'Reportes',                      icon: BarChart2,     color: 'green'    },
+  'discount-codes':    { label: 'Cupones de descuento',          icon: TicketPercent, color: 'pink'     },
 }
 
 export const MODULE_COLORS = {

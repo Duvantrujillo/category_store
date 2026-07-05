@@ -6,6 +6,7 @@ import {
   fetchShipmentsReport,
   fetchSalesReport,
   fetchDetailedReport,
+  fetchDiscountCodeReport,
 } from "../api/reportApi";
 
 function useReportData(fetcher, filters) {
@@ -37,3 +38,4 @@ export const useRefundsReport    = (f) => useReportData(fetchRefundsReport,   f)
 export const useShipmentsReport  = (f) => useReportData(fetchShipmentsReport, f);
 export const useSalesReport      = (f) => useReportData(fetchSalesReport,     f);
 export const useDetailedReport   = (f) => useReportData(fetchDetailedReport,  f);
+export const useDiscountCodeReport = (f) => useReportData(fetchDiscountCodeReport, f);

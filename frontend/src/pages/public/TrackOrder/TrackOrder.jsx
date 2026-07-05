@@ -504,8 +504,14 @@ export default function TrackOrder() {
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>Envío</span>
-                  <span className="font-medium">{formatMoney(order.shippingCost)}</span>
+                  <span className="font-medium">{order.shippingCost === 0 ? "Gratis" : formatMoney(order.shippingCost)}</span>
                 </div>
+                {Number(order.discountAmount) > 0 && (
+                  <div className="flex items-center justify-between text-xs text-rose-500 font-semibold">
+                    <span>Descuento ({order.discountCode?.code})</span>
+                    <span>-{formatMoney(order.discountAmount)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</span>
                   <div className="flex items-baseline gap-1">

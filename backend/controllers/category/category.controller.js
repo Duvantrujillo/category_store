@@ -10,6 +10,17 @@ const deleteUploadedFile = (file) => {
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 };
 
+// La jerarquía admite solo 2 niveles (padre → hijo). Antes de asignar un
+// parentId hay que verificar que esa categoría padre sea a su vez una
+// categoría raíz (sin padre propio); de lo contrario se estaría creando
+// un nieto.
+const assertValidParent = async (parentId) => {
+  const parent = await prisma.category.findUnique({ where: { id: parentId } });
+  if (!parent) return "La categoría padre no existe";
+  if (parent.parentId !== null) return "No se pueden anidar más de 2 niveles (padre e hijo)";
+  return null;
+};
+
 const createCategory = async (req, res) => {
   try {
     const { parentId, name, description, isActive, sortOrder } = req.body;
@@ -35,12 +46,25 @@ const createCategory = async (req, res) => {
       return res.status(400).json({ message: "Campos incompletos" });
     }
 
+    if (!file) {
+      return res.status(400).json({ message: "La imagen es obligatoria" });
+    }
+
     const customerSlug = slugify(name, { lower: true, strict: true });
 
     const slugExist = await prisma.category.findUnique({ where: { slug: customerSlug } });
     if (slugExist) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "El nombre ya existe" });
+    }
+
+    const parentIdValue = parentId ? parseInt(parentId) : null;
+    if (parentIdValue !== null) {
+      const parentError = await assertValidParent(parentIdValue);
+      if (parentError) {
+        deleteUploadedFile(file);
+        return res.status(400).json({ message: parentError });
+      }
     }
 
     let isActiveValue = isActive;
@@ -51,7 +75,7 @@ const createCategory = async (req, res) => {
 
     const result = await prisma.category.create({
       data: {
-        parentId: parentId ? parseInt(parentId) : null,
+        parentId: parentIdValue,
         name,
         slug: customerSlug,
         description,
@@ -111,6 +135,28 @@ const updateCategory = async (req, res) => {
       return res.status(400).json({ message: "El nombre ya existe" });
     }
 
+    const parentIdValue = parentId ? parseInt(parentId) : null;
+    if (parentIdValue !== null) {
+      if (parentIdValue === formId) {
+        deleteUploadedFile(file);
+        return res.status(400).json({ message: "Una categoría no puede ser su propio padre" });
+      }
+
+      const parentError = await assertValidParent(parentIdValue);
+      if (parentError) {
+        deleteUploadedFile(file);
+        return res.status(400).json({ message: parentError });
+      }
+
+      // Si esta categoría ya tiene hijos propios, convertirla en hija de otra
+      // crearía nietos (sus hijos actuales pasarían a un 3er nivel).
+      const hasChildren = await prisma.category.findFirst({ where: { parentId: formId } });
+      if (hasChildren) {
+        deleteUploadedFile(file);
+        return res.status(400).json({ message: "Esta categoría tiene subcategorías propias; no puede convertirse en hija de otra" });
+      }
+    }
+
     let isActiveValue = isActive;
     if (typeof isActiveValue === "string") isActiveValue = isActiveValue === "true";
     if (typeof isActiveValue !== "boolean") isActiveValue = categoryExist.isActive;
@@ -125,7 +171,7 @@ const updateCategory = async (req, res) => {
     }
 
     const baseData = {
-      parentId: parentId ? parseInt(parentId) : null,
+      parentId: parentIdValue,
       name,
       slug: customerSlug,
       description,
@@ -155,6 +201,9 @@ const deleteCategory = async (req, res) => {
 
     const hasRelatedProducts = await prisma.product.findFirst({ where: { categoryId: formId } });
     if (hasRelatedProducts) return res.status(400).json({ message: "Tiene productos asociados" });
+
+    const hasDiscountCode = await prisma.discountCodeCategory.findFirst({ where: { categoryId: formId } });
+    if (hasDiscountCode) return res.status(400).json({ message: "Tiene cupones de descuento asociados" });
 
     // Eliminar imagen física
     if (categoryExist.imageUrl) {

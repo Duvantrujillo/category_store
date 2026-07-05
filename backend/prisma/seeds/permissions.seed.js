@@ -52,6 +52,7 @@ const ALL_PERMISSIONS = [
 
   // Devoluciones
   { name: 'returns.view',            description: 'Ver devoluciones' },
+  { name: 'returns.create',          description: 'Registrar solicitudes de devolución' },
   { name: 'returns.approve',         description: 'Aprobar / rechazar devoluciones' },
 
   // Reembolsos
@@ -69,6 +70,12 @@ const ALL_PERMISSIONS = [
   { name: 'banners.create',          description: 'Crear banners del hero' },
   { name: 'banners.update',          description: 'Editar banners del hero' },
   { name: 'banners.delete',          description: 'Eliminar banners del hero' },
+
+  // Cupones de descuento
+  { name: 'discount-codes.view',     description: 'Ver cupones de descuento' },
+  { name: 'discount-codes.create',   description: 'Crear cupones de descuento' },
+  { name: 'discount-codes.update',   description: 'Editar cupones de descuento' },
+  { name: 'discount-codes.delete',   description: 'Eliminar cupones de descuento' },
 
   // Permisos — gestión de roles (solo super_admin puede asignarlo)
   { name: 'permissions.manage',      description: 'Gestionar permisos de roles' },
@@ -88,6 +95,7 @@ const ADMIN_DEFAULT_PERMISSIONS = [
   'dashboard.view',
   'reports.view',
   'banners.view',
+  'discount-codes.view',
 ];
 
 async function main() {

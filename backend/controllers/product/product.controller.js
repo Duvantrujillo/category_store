@@ -241,6 +241,17 @@ const deleteProduct = async (req, res) => {
       });
     }
 
+    // 🔥 VALIDAR SI ESTÁ RESTRINGIDO A ALGÚN CUPÓN DE DESCUENTO
+    const hasDiscountCode = await prisma.discountCodeProduct.findFirst({
+      where: { productId: formId }
+    });
+
+    if (hasDiscountCode) {
+      return res.status(400).json({
+        message: "Tiene cupones de descuento asociados"
+      });
+    }
+
     // 🧹 eliminar imagen si existe
     if (productExist.mainImage) {
       const imagePath = path.join(

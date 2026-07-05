@@ -178,6 +178,18 @@ const deleteBrand = async (req, res) => {
             });
         }
 
+        const discountCodeExist = await prisma.discountCodeBrand.findFirst({
+            where: {
+                brandId: formId
+            }
+        })
+
+        if (discountCodeExist) {
+            return res.status(400).json({
+                message: "Tiene cupones de descuento asociados"
+            });
+        }
+
         /*
         |--------------------------------------------------------------------------
         | ELIMINAR LOGO FÍSICO

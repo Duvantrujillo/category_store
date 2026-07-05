@@ -2,12 +2,29 @@ const express = require('express');
 const app = express();
 const cors = require("cors");
 const path = require("path");
+const helmet = require("helmet");
 require('dotenv').config();
 
 const { authMiddleware } = require('./middlewares/auth.middleware');
 
+// Headers de seguridad HTTP estándar (X-Content-Type-Options, X-Frame-Options,
+// HSTS, etc). `crossOriginResourcePolicy` en 'cross-origin' porque las
+// imágenes subidas en /uploads las consume el frontend en otro origen.
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
 // En producción: solo el frontend puede llamar al backend.
 // En desarrollo (sin FRONTEND_URL): acepta cualquier origen para no romper localhost.
+// Si falta FRONTEND_URL en producción, NO se cae a permisivo (eso abriría la
+// API con sesión JWT a cualquier origen) — se restringe por defecto y se
+// avisa fuerte en logs para que se corrija la configuración.
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction && !process.env.FRONTEND_URL) {
+  console.error('FRONTEND_URL no está configurado en producción — CORS quedará restringido (ningún origen permitido) hasta que se configure esta variable.');
+}
+
 app.use(cors(
   process.env.FRONTEND_URL
     ? {
@@ -15,7 +32,9 @@ app.use(cors(
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key'],
       }
-    : {}
+    : isProduction
+      ? { origin: false }
+      : {}
 ));
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
@@ -65,6 +84,7 @@ const searchRouter       = require('./routes/search.routes.js')
 const permissionRouter       = require('./routes/permission.routes.js')
 const paymentMethodRouter    = require('./routes/payment-method.routes.js')
 const bannerRouter           = require('./routes/banner.routes.js')
+const discountCodeRouter     = require('./routes/discount-code.routes.js')
 
 /*
 |--------------------------------------------------------------------------
@@ -118,6 +138,7 @@ const PUBLIC_ROUTES = new Set([
   'GET /brand/public',
   'GET /search/public',
   'GET /banner/public',
+  'POST /discount-code/validate',
 ])
 
 app.use((req, res, next) => {
@@ -156,6 +177,7 @@ app.use('/search',      searchRouter)
 app.use('/permission',  permissionRouter)
 app.use('/payment-method', paymentMethodRouter)
 app.use('/banner',         bannerRouter)
+app.use('/discount-code',  discountCodeRouter)
 
 /*
 |--------------------------------------------------------------------------

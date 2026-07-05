@@ -3,12 +3,16 @@ const routes = express.Router()
 const productController = require('../controllers/product/product.controller')
 const { requirePermission } = require('../middlewares/permission.middleware')
 const multer = require('multer')
+const path = require('path')
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp']
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/product'),
-  filename:    (req, file, cb) => cb(null, Date.now() + '-' + file.originalname),
+  filename:    (req, file, cb) => {
+    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_')
+    cb(null, Date.now() + '-' + safeName)
+  },
 })
 
 const upload = multer({

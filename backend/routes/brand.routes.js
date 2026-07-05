@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const multer = require('multer')
+const path = require('path')
 const branchController = require('../controllers/brand/brand.controller')
 const { requirePermission } = require('../middlewares/permission.middleware')
 
@@ -11,7 +12,8 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/brand')
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname)
+    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_')
+    cb(null, Date.now() + '-' + safeName)
   }
 })
 

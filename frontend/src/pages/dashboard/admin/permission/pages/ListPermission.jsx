@@ -93,11 +93,7 @@ export default function ListPermission() {
     <div className="px-4 pt-2 pb-4 space-y-4">
 
       {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Gestión de permisos</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Configura qué puede hacer cada rol dentro del sistema</p>
-        </div>
+      <div className="flex items-start justify-end gap-4 flex-wrap">
         {hasPendingChanges && (
           <button
             onClick={handleSave}

@@ -12,6 +12,10 @@ const globalSearch = async (req, res) => {
     }
 
     const contains = q;
+    // Los pedidos contienen datos personales de clientes — solo se buscan
+    // si el usuario realmente tiene permiso para ver órdenes, no por el
+    // simple hecho de estar autenticado.
+    const canViewOrders = req.user?.permissions?.includes('orders.view');
 
     const [categories, brands, products, orders] = await Promise.all([
       prisma.category.findMany({
@@ -39,25 +43,27 @@ const globalSearch = async (req, res) => {
         take: LIMIT,
       }),
 
-      prisma.order.findMany({
-        where: {
-          OR: [
-            { orderNumber: { contains } },
-            { email: { contains } },
-            { firstName: { contains } },
-            { lastName: { contains } },
-          ],
-        },
-        select: {
-          id: true,
-          orderNumber: true,
-          firstName: true,
-          lastName: true,
-          status: true,
-        },
-        take: LIMIT,
-        orderBy: { createdAt: 'desc' },
-      }),
+      canViewOrders
+        ? prisma.order.findMany({
+            where: {
+              OR: [
+                { orderNumber: { contains } },
+                { email: { contains } },
+                { firstName: { contains } },
+                { lastName: { contains } },
+              ],
+            },
+            select: {
+              id: true,
+              orderNumber: true,
+              firstName: true,
+              lastName: true,
+              status: true,
+            },
+            take: LIMIT,
+            orderBy: { createdAt: 'desc' },
+          })
+        : Promise.resolve([]),
     ]);
 
     const total = categories.length + brands.length + products.length + orders.length;

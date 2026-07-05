@@ -88,8 +88,7 @@ const createPayment = async (req, res) => {
     console.error("ERROR COMPLETO EN EL PROCESO:");
     console.error(err);
     return res.status(500).json({
-      error: "Error al procesar pago",
-      details: err.message || err
+      error: "Error al procesar pago"
     });
   }
 };

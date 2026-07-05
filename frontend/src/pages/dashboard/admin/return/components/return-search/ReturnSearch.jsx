@@ -73,7 +73,7 @@ function ReturnSearch({
       <div className="w-px h-5 bg-slate-200" />
 
       {/* Rango de fechas */}
-      <div className="flex items-center gap-1.5 [&_button]:h-8 [&_button]:text-xs [&_button]:px-2 [&_button]:w-28">
+      <div className="flex items-center gap-1.5 [&_button]:h-8 [&_button]:text-xs [&_button]:px-2.5">
         <DatePicker value={dateFrom} onChange={handleDateFromChange} placeholder="Desde" />
         <span className="text-xs text-slate-400">—</span>
         <DatePicker value={dateTo} onChange={handleDateToChange} placeholder="Hasta" />

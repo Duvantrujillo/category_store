@@ -618,12 +618,12 @@ const getTopSellers = async (req, res) => {
       where: {
         order: {
           createdAt: { gte: startOfMonth, lte: endOfMonth },
-          status: { in: ["PAID", "PENDING"] },
+          status: "PAID",
         },
       },
       _sum: { quantity: true },
       orderBy: { _sum: { quantity: "desc" } },
-      take: 3,
+      take: 8,
     });
 
     const ids = grouped.map((g) => g.productVariantId);
@@ -810,7 +810,7 @@ async function fetchGroupVariants(where) {
 }
 
 // Fila "Más vendidos" — misma ventana de tiempo (mes en curso) y criterio
-// (cantidad vendida en órdenes PAID/PENDING) que usa el badge de getTopSellers,
+// (cantidad vendida en órdenes PAID) que usa el badge de getTopSellers,
 // pero trayendo la data completa de la variante para armar una fila entera.
 async function fetchTopSellerGroupVariants() {
   const now = new Date();
@@ -822,7 +822,7 @@ async function fetchTopSellerGroupVariants() {
     where: {
       order: {
         createdAt: { gte: startOfMonth, lte: endOfMonth },
-        status: { in: ["PAID", "PENDING"] },
+        status: "PAID",
       },
     },
     _sum: { quantity: true },

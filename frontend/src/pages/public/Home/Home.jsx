@@ -164,6 +164,7 @@ export default function Home() {
             loading={loadingVariants}
             search={search}
             selectedCategory={selectedCategory}
+            selectedParent={selectedParent}
             onAddToCart={addToCart}
             onToggleFavorite={toggleFavorite}
             favoritedIds={favoritedIds}

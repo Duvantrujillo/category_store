@@ -17,7 +17,10 @@ const storage = multer.diskStorage({
     cb(null, UPLOAD_DIR)
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname)
+    // path.basename() descarta cualquier segmento de directorio (ej. "../../")
+    // que venga en el nombre original, evitando escribir fuera de UPLOAD_DIR.
+    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_')
+    cb(null, Date.now() + '-' + safeName)
   }
 })
 

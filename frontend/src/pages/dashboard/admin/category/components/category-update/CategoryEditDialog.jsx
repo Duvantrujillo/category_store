@@ -25,13 +25,24 @@ export default function CategoryEditDialog({
 }) {
 
   const [open, setOpen] = useState(false);
+
+  // Máximo 2 niveles: solo categorías raíz (sin padre propio) son válidas
+  // como padre. Si esta categoría ya tiene subcategorías propias, no puede
+  // convertirse en hija de otra (crearía nietos), así que no se ofrece
+  // ninguna opción de padre.
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  const itemHasChildren = useMemo(() => {
+    if (!Array.isArray(categories) || !item?.id) return false;
+    return categories.some((c) => c.parentId === item.id);
+  }, [categories, item?.id]);
+
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const parentCategories = useMemo(() => {
-    if (!Array.isArray(categories)) return [];
-    if (!item?.id) return categories;
+    if (!Array.isArray(categories) || !item?.id) return [];
+    if (itemHasChildren) return [];
 
-    return categories.filter(c => c.id !== item.id);
-  }, [categories, item?.id]);
+    return categories.filter((c) => !c.parentId && c.id !== item.id);
+  }, [categories, item?.id, itemHasChildren]);
 
   const {
     form,

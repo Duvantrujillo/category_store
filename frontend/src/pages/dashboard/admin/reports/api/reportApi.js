@@ -15,3 +15,4 @@ export const fetchRefundsReport  = (f) => apiClient.get(`/report/refunds${buildP
 export const fetchShipmentsReport= (f) => apiClient.get(`/report/shipments${buildParams(f)}`).then((r) => r.data);
 export const fetchSalesReport    = (f) => apiClient.get(`/report/sales${buildParams(f)}`).then((r) => r.data);
 export const fetchDetailedReport = (f) => apiClient.get(`/report/detailed${buildParams(f)}`).then((r) => r.data);
+export const fetchDiscountCodeReport = (f) => apiClient.get(`/report/discount-codes${buildParams(f)}`).then((r) => r.data);

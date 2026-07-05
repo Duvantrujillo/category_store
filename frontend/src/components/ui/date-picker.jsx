@@ -78,7 +78,7 @@ function DatePicker({ value, onChange, placeholder = "Seleccionar fecha", classN
       </div>
 
       {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-1.5 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
+        <div className="absolute top-full left-0 z-50 mt-1.5 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
           <Calendar
             mode="single"
             selected={selected}
