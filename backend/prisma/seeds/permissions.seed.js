@@ -77,6 +77,12 @@ const ALL_PERMISSIONS = [
   { name: 'discount-codes.update',   description: 'Editar cupones de descuento' },
   { name: 'discount-codes.delete',   description: 'Eliminar cupones de descuento' },
 
+  // Combos / bundles de productos
+  { name: 'bundles.view',            description: 'Ver combos de productos' },
+  { name: 'bundles.create',          description: 'Crear combos de productos' },
+  { name: 'bundles.update',          description: 'Editar combos de productos' },
+  { name: 'bundles.delete',          description: 'Eliminar combos de productos' },
+
   // Permisos — gestión de roles (solo super_admin puede asignarlo)
   { name: 'permissions.manage',      description: 'Gestionar permisos de roles' },
 ];
@@ -96,6 +102,7 @@ const ADMIN_DEFAULT_PERMISSIONS = [
   'reports.view',
   'banners.view',
   'discount-codes.view',
+  'bundles.view',
 ];
 
 async function main() {

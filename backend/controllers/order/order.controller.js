@@ -3,10 +3,12 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const { notifyOrderCreated } = require('../../services/notification.service')
 const { resolveDiscount } = require('../discount-code/discount_code.controller')
+const { resolveBundleComponents } = require('../cart/cart-public.controller')
 
 // ── Constantes de negocio ──────────────────────────────────────────────────────
 const ALLOWED_CURRENCIES = new Set(['COP', 'USD'])
 const MAX_ITEMS_PER_ORDER = 50
+const MAX_BUNDLES_PER_ORDER = 20
 const SHIPPING_COST = 11000
 
 // ── createOrder ───────────────────────────────────────────────────────────────
@@ -22,14 +24,14 @@ const createOrder = async (req, res) => {
 
     const existing = await prisma.order.findUnique({
       where: { idempotencyKey },
-      include: { items: true }
+      include: { items: true, bundleItems: { include: { items: true } } }
     })
     if (existing) return res.status(200).json({ message: 'Orden ya procesada', order: existing })
 
     const {
       firstName, lastName, documentNumber, email,
       phoneNumber, departament, municipality, address,
-      additionalDetails, items, currency, discountCode
+      additionalDetails, items, bundleItems, currency, discountCode, cartUuid
     } = req.body
     // `/order/create` es pública (sin sesión) — nunca se confía en un
     // `userId` enviado por el cliente para asociar el pedido a una cuenta.
@@ -53,14 +55,20 @@ const createOrder = async (req, res) => {
     }
 
     // FIX 4 — LÍMITE DE ÍTEMS (evita payloads abusivos y sobrecarga en BD)
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: 'Se esperaba un array de ítems' })
+    const rawItems = Array.isArray(items) ? items : []
+    const rawBundleItems = Array.isArray(bundleItems) ? bundleItems : []
+
+    if (rawItems.length === 0 && rawBundleItems.length === 0) {
+      return res.status(400).json({ message: 'El carrito está vacío' })
     }
-    if (items.length > MAX_ITEMS_PER_ORDER) {
+    if (rawItems.length > MAX_ITEMS_PER_ORDER) {
       return res.status(400).json({ message: `Máximo ${MAX_ITEMS_PER_ORDER} ítems por orden` })
     }
+    if (rawBundleItems.length > MAX_BUNDLES_PER_ORDER) {
+      return res.status(400).json({ message: `Máximo ${MAX_BUNDLES_PER_ORDER} combos por orden` })
+    }
     const seenVariants = new Set()
-    for (const item of items) {
+    for (const item of rawItems) {
       if (seenVariants.has(item.productVariantId)) {
         return res.status(400).json({
           message: `productVariantId duplicado: ${item.productVariantId}`,
@@ -69,7 +77,7 @@ const createOrder = async (req, res) => {
       }
       seenVariants.add(item.productVariantId)
     }
-    for (const item of items) {
+    for (const item of rawItems) {
       if (!item.productVariantId) {
         return res.status(400).json({ message: 'Cada ítem debe tener productVariantId' })
       }
@@ -82,7 +90,31 @@ const createOrder = async (req, res) => {
       }
     }
 
-    const variantIds = items.map(item => item.productVariantId)
+    const seenBundles = new Set()
+    for (const bundleItem of rawBundleItems) {
+      if (seenBundles.has(bundleItem.bundleId)) {
+        return res.status(400).json({
+          message: `bundleId duplicado: ${bundleItem.bundleId}`,
+          bundleId: bundleItem.bundleId
+        })
+      }
+      seenBundles.add(bundleItem.bundleId)
+    }
+    for (const bundleItem of rawBundleItems) {
+      if (!bundleItem.bundleId) {
+        return res.status(400).json({ message: 'Cada combo debe tener bundleId' })
+      }
+      const qty = Number(bundleItem.quantity)
+      if (!Number.isInteger(qty) || qty <= 0 || qty > 9999) {
+        return res.status(400).json({
+          message: `Cantidad inválida para el combo ${bundleItem.bundleId} (1–9999)`,
+          bundleId: bundleItem.bundleId
+        })
+      }
+    }
+
+    const variantIds = rawItems.map(item => item.productVariantId)
+    const bundleIds = rawBundleItems.map(bundleItem => bundleItem.bundleId)
     const orderNumber = `ORD-${Date.now()}-${randomBytes(4).toString('hex').toUpperCase()}`
 
     const order = await prisma.$transaction(async (tx) => {
@@ -95,13 +127,51 @@ const createOrder = async (req, res) => {
       })
       const variantMap = Object.fromEntries(variants.map(v => [v.id, v]))
 
-      for (const item of items) {
+      for (const item of rawItems) {
         const variant = variantMap[item.productVariantId]
         if (!variant) throw new Error(`VARIANT_NOT_FOUND:${item.productVariantId}`)
         // Comparar en centavos enteros evita falsos positivos/negativos por IEEE 754
         if (Math.round(Number(variant.price) * 100) !== Math.round(Number(item.unitPrice) * 100)) {
           throw new Error(`PRICE_MISMATCH:${item.productVariantId}:${Number(variant.price)}`)
         }
+      }
+
+      // Combos: se leen íntegros desde la BD (nombre, precio, componentes) — el
+      // cliente solo puede elegir bundleId + quantity + (si el componente es
+      // "libre") qué variante quiere de cada producto; nunca el precio ni la
+      // composición, así que no hay PRICE_MISMATCH posible para combos.
+      const bundles = await tx.productBundle.findMany({
+        where: { id: { in: bundleIds }, isActive: true },
+        include: {
+          items: {
+            select: {
+              id: true,
+              quantity: true,
+              productId: true,
+              productVariantId: true,
+              product: {
+                select: {
+                  name: true,
+                  variants: { where: { isActive: true }, select: { id: true, stock: true, isActive: true } }
+                }
+              },
+              productVariant: { select: { id: true, isActive: true, stock: true } },
+            }
+          }
+        }
+      })
+      const bundleMap = Object.fromEntries(bundles.map(b => [b.id, b]))
+      // bundleId -> componentes ya resueltos (variante fija o elegida por el cliente)
+      const resolvedBundleComponents = {}
+
+      for (const bundleItem of rawBundleItems) {
+        const bundle = bundleMap[bundleItem.bundleId]
+        if (!bundle) throw new Error(`BUNDLE_NOT_FOUND:${bundleItem.bundleId}`)
+
+        const { error, resolved } = resolveBundleComponents(bundle, bundleItem.selections)
+        if (error) throw new Error(`BUNDLE_SELECTION:${bundleItem.bundleId}:${error}`)
+
+        resolvedBundleComponents[bundleItem.bundleId] = resolved
       }
 
       // FIX 6 — RESERVA ATÓMICA DE STOCK (compare-and-swap real)
@@ -114,7 +184,7 @@ const createOrder = async (req, res) => {
       // Disponible = stock - reservedStock
       // El webhook libera reservedStock y descuenta stock al confirmar el pago.
       // Si el pago falla/caduca, el webhook libera la reserva sin tocar stock.
-      for (const item of items) {
+      for (const item of rawItems) {
         const affected = await tx.$executeRaw`
           UPDATE ProductVariant
           SET reservedStock = reservedStock + ${Number(item.quantity)}
@@ -127,16 +197,42 @@ const createOrder = async (req, res) => {
         }
       }
 
+      // Misma reserva atómica, pero por cada componente ya resuelto de cada
+      // combo — la cantidad requerida es quantity del combo × quantity del
+      // componente dentro de la receta. Si un solo componente de un solo
+      // combo no alcanza, toda la transacción (incluidos ítems sueltos ya
+      // reservados) se revierte.
+      for (const bundleItem of rawBundleItems) {
+        const resolved = resolvedBundleComponents[bundleItem.bundleId]
+        for (const component of resolved) {
+          const requiredQty = Number(bundleItem.quantity) * component.recipeQuantity
+          const affected = await tx.$executeRaw`
+            UPDATE ProductVariant
+            SET reservedStock = reservedStock + ${requiredQty}
+            WHERE id = ${component.productVariantId}
+              AND (stock - reservedStock) >= ${requiredQty}
+          `
+          if (Number(affected) === 0) {
+            throw new Error(`INSUFFICIENT_STOCK:${component.productVariantId}:${component.productName}`)
+          }
+        }
+      }
+
       // Subtotal calculado con precios de BD, nunca con los del cliente
-      const subtotal = items.reduce((acc, item) => {
+      const itemsSubtotal = rawItems.reduce((acc, item) => {
         return acc + Number(variantMap[item.productVariantId].price) * Number(item.quantity)
       }, 0)
+      const bundlesSubtotal = rawBundleItems.reduce((acc, bundleItem) => {
+        return acc + Number(bundleMap[bundleItem.bundleId].price) * Number(bundleItem.quantity)
+      }, 0)
+      const subtotal = itemsSubtotal + bundlesSubtotal
 
       // Cupón de descuento — validado y recalculado aquí (nunca confiar en un
-      // monto de descuento enviado por el cliente).
+      // monto de descuento enviado por el cliente). Los combos no participan
+      // en la elegibilidad del cupón: ya tienen su propio precio fijo.
       let discount = null
-      if (discountCode) {
-        const cartLines = items.map(item => ({
+      if (discountCode && rawItems.length > 0) {
+        const cartLines = rawItems.map(item => ({
           variantId: item.productVariantId,
           unitPrice: variantMap[item.productVariantId].price,
           quantity: Number(item.quantity),
@@ -163,6 +259,7 @@ const createOrder = async (req, res) => {
         data: {
           orderNumber,
           idempotencyKey,
+          cartUuid: cartUuid || null,
           firstName, lastName, documentNumber,
           email: email || null,
           phoneNumber, departament, municipality, address,
@@ -174,7 +271,7 @@ const createOrder = async (req, res) => {
           discountCodeId: discount?.discountCode.id ?? null,
           discountAmount,
           items: {
-            create: items.map(item => {
+            create: rawItems.map(item => {
               const variant = variantMap[item.productVariantId]
               return {
                 productVariantId: item.productVariantId,
@@ -184,9 +281,29 @@ const createOrder = async (req, res) => {
                 subtotal: Number(variant.price) * Number(item.quantity)
               }
             })
+          },
+          bundleItems: {
+            create: rawBundleItems.map(bundleItem => {
+              const bundle = bundleMap[bundleItem.bundleId]
+              const resolved = resolvedBundleComponents[bundleItem.bundleId]
+              return {
+                bundleId: bundleItem.bundleId,
+                bundleName: bundle.name,
+                quantity: Number(bundleItem.quantity),
+                unitPrice: bundle.price,
+                subtotal: Number(bundle.price) * Number(bundleItem.quantity),
+                items: {
+                  create: resolved.map(component => ({
+                    productVariantId: component.productVariantId,
+                    productName: component.productName,
+                    quantity: component.recipeQuantity,
+                  }))
+                }
+              }
+            })
           }
         },
-        include: { items: true }
+        include: { items: true, bundleItems: { include: { items: true } } }
       })
 
       return createdOrder
@@ -202,6 +319,14 @@ const createOrder = async (req, res) => {
     if (error.message?.startsWith('VARIANT_NOT_FOUND:')) {
       const variantId = error.message.split(':')[1]
       return res.status(400).json({ message: `Variante ${variantId} no encontrada` })
+    }
+    if (error.message?.startsWith('BUNDLE_NOT_FOUND:')) {
+      const bundleId = error.message.split(':')[1]
+      return res.status(400).json({ message: `Combo ${bundleId} no disponible`, bundleId: Number(bundleId) })
+    }
+    if (error.message?.startsWith('BUNDLE_SELECTION:')) {
+      const [, bundleId, ...rest] = error.message.split(':')
+      return res.status(400).json({ message: rest.join(':'), bundleId: Number(bundleId) })
     }
     if (error.message?.startsWith('PRICE_MISMATCH:')) {
       const [, variantId, currentPrice] = error.message.split(':')
@@ -226,7 +351,7 @@ const createOrder = async (req, res) => {
       if (idempotencyKey) {
         const existing = await prisma.order.findUnique({
           where: { idempotencyKey },
-          include: { items: true }
+          include: { items: true, bundleItems: { include: { items: true } } }
         })
         if (existing) return res.status(200).json({ message: 'Orden ya procesada', order: existing })
       }
@@ -437,7 +562,12 @@ const releaseExpiredReservations = async () => {
 
   const expiredOrders = await prisma.order.findMany({
     where: { status: 'PENDING', createdAt: { lt: cutoff } },
-    include: { items: { select: { productVariantId: true, quantity: true } } }
+    include: {
+      items: { select: { productVariantId: true, quantity: true } },
+      bundleItems: {
+        select: { quantity: true, items: { select: { productVariantId: true, quantity: true } } }
+      }
+    }
   })
 
   let released = 0
@@ -457,6 +587,19 @@ const releaseExpiredReservations = async () => {
             SET reservedStock = GREATEST(reservedStock - ${item.quantity}, 0)
             WHERE id = ${item.productVariantId}
           `
+        }
+
+        // Por cada componente de cada combo, la cantidad reservada fue
+        // quantity del combo × quantity del componente en la receta.
+        for (const bundleItem of order.bundleItems) {
+          for (const detail of bundleItem.items) {
+            const releaseQty = bundleItem.quantity * detail.quantity
+            await tx.$executeRaw`
+              UPDATE ProductVariant
+              SET reservedStock = GREATEST(reservedStock - ${releaseQty}, 0)
+              WHERE id = ${detail.productVariantId}
+            `
+          }
         }
       })
       released++

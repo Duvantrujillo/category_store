@@ -19,4 +19,8 @@ routes.post('/public/:uuid/items',            cartWriteLimiter, ctrl.addPublicCa
 routes.put('/public/:uuid/items/:variantId',  cartWriteLimiter, ctrl.updatePublicCartItem)
 routes.delete('/public/:uuid/items/:variantId', cartWriteLimiter, ctrl.removePublicCartItem)
 
+routes.post('/public/:uuid/bundles',            cartWriteLimiter, ctrl.addPublicBundleItem)
+routes.put('/public/:uuid/bundles/:bundleId',   cartWriteLimiter, ctrl.updatePublicBundleItem)
+routes.delete('/public/:uuid/bundles/:bundleId', cartWriteLimiter, ctrl.removePublicBundleItem)
+
 module.exports = routes

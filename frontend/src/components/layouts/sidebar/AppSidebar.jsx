@@ -18,6 +18,7 @@ import {
   KeyRound,
   Paintbrush,
   TicketPercent,
+  PackagePlus,
 } from "lucide-react";
 
 const ALL_SECTIONS = [
@@ -41,6 +42,7 @@ const ALL_SECTIONS = [
     items: [
       { title: "Productos",  url: "/dashboard/admin/list/product",         icon: PackageSearch },
       { title: "Variantes",  url: "/dashboard/admin/list/product-variant", icon: Layers },
+      { title: "Combos",     url: "/dashboard/admin/list/product-bundle",  icon: PackagePlus },
     ],
   },
   {

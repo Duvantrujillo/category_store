@@ -103,7 +103,11 @@ export default function CheckoutResponse() {
     async function verify() {
       if (cancelled) return;
       try {
-        const res  = await fetch(`${API}/payment/verify?reference=${encodeURIComponent(invoice)}`);
+        // Mismo navegador que creó el pedido (ePayco redirige de vuelta aquí),
+        // así que el cart_uuid guardado localmente sigue siendo válido — el
+        // backend lo exige para confirmar que este pago es de quien pregunta.
+        const cartUuid = localStorage.getItem("cart_uuid") ?? "";
+        const res  = await fetch(`${API}/payment/verify?reference=${encodeURIComponent(invoice)}&cartUuid=${encodeURIComponent(cartUuid)}`);
 
         if (!res.ok) {
           // Pago aún no registrado o error de red — reintentar si ePayco dijo Aceptada

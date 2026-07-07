@@ -4,16 +4,14 @@ import noPhotos from "@/assets/icons/no-fotos.png";
 const API = import.meta.env.VITE_API_URL;
 function url(path) { return path ? `${API}${path}` : null; }
 
-// images: todas las imágenes de todas las variantes, cada una con variantId
-// selectedVariantId: la variante actualmente seleccionada
-export default function ProductDetailGallery({ images = [], selectedVariantId, outOfStock = false }) {
-  const [active, setActive] = useState(null);
+// images: [{ imageUrl }] — la imagen principal del combo + principal/secundaria
+// de cada producto que incluye. Mismo patrón visual que ProductDetailGallery.
+export default function BundleDetailGallery({ images = [] }) {
+  const [active, setActive] = useState(images[0]?.imageUrl ?? null);
 
-  // Cuando cambia la variante seleccionada, saltar a su primera imagen
   useEffect(() => {
-    const first = images.find((img) => img.productVariantId === selectedVariantId) ?? images[0] ?? null;
-    if (first) setActive(first.imageUrl);
-  }, [selectedVariantId, images]);
+    setActive(images[0]?.imageUrl ?? null);
+  }, [images]);
 
   const activeSrc = (active ? url(active) : null) ?? noPhotos;
 
@@ -23,20 +21,17 @@ export default function ProductDetailGallery({ images = [], selectedVariantId, o
       {images.length > 1 && (
         <div className="order-2 sm:order-1 flex flex-row sm:flex-col gap-2 overflow-x-auto sm:overflow-y-auto sm:overflow-x-hidden sm:w-[80px] pb-1 sm:pb-0 sm:pr-1">
           {images.map((img, idx) => {
-            const src       = url(img.imageUrl) ?? noPhotos;
-            const isAct     = active === img.imageUrl;
-            const isVariant = img.productVariantId === selectedVariantId;
+            const src   = url(img.imageUrl) ?? noPhotos;
+            const isAct = active === img.imageUrl;
 
             return (
               <button
-                key={`${img.productVariantId}-${img.slot ?? idx}`}
+                key={`${img.imageUrl}-${idx}`}
                 onClick={() => setActive(img.imageUrl)}
                 className={`shrink-0 w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-xl overflow-hidden border-2 transition-all duration-200 ${
                   isAct
                     ? "border-rose-500 shadow-md opacity-100"
-                    : isVariant
-                    ? "border-gray-300 opacity-100 hover:border-rose-300"
-                    : "border-gray-100 opacity-35 hover:opacity-65 hover:border-gray-300"
+                    : "border-gray-100 opacity-60 hover:opacity-100 hover:border-gray-300"
                 }`}
               >
                 <img src={src} alt="" className="w-full h-full object-cover" />
@@ -50,14 +45,9 @@ export default function ProductDetailGallery({ images = [], selectedVariantId, o
         <img
           key={active}
           src={activeSrc}
-          alt="Producto"
-          className={`w-full h-full object-contain transition-all ${outOfStock ? "opacity-60 grayscale-30" : ""}`}
+          alt="Combo"
+          className="w-full h-full object-contain"
         />
-        {outOfStock && (
-          <span className="absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-full bg-gray-700/80 text-white tracking-wide uppercase">
-            Agotado
-          </span>
-        )}
       </div>
 
     </div>

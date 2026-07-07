@@ -3,7 +3,7 @@ const prisma = new PrismaClient()
 
 const createPayment = async (req, res) => {
     try {
-        const { orderId, provider, reference, transactionId, currency, paymentMethod } = req.body;
+        const { orderId, provider, reference, transactionId, currency, paymentMethod, cartUuid } = req.body;
 
         if (!orderId || !provider || !reference) {
             return res.status(400).json({ message: "Campos requeridos" });
@@ -16,6 +16,14 @@ const createPayment = async (req, res) => {
         // para evitar que cualquiera registre un pago falso sobre la orden
         // de otra persona y bloquee su pago legítimo.
         if (!order || order.orderNumber !== reference) {
+            return res.status(404).json({ message: "Orden no encontrada" });
+        }
+
+        // Segunda prueba de dueño: el UUID del carrito anónimo que creó el
+        // pedido (mucho más difícil de adivinar que el orderNumber solo).
+        // Si el pedido no tiene uno guardado (órdenes de antes de este
+        // cambio) se omite esta verificación para no romperlas.
+        if (order.cartUuid && order.cartUuid !== cartUuid) {
             return res.status(404).json({ message: "Orden no encontrada" });
         }
 
@@ -69,16 +77,30 @@ const getPaymentMethods = async (req, res) => {
 
 const verifyPayment = async (req, res) => {
     try {
-        const { reference } = req.query;
+        const { reference, cartUuid } = req.query;
         if (!reference) return res.status(400).json({ message: "Referencia requerida" });
 
         const payment = await prisma.payment.findUnique({
             where: { reference },
-            select: { status: true }
+            select: { status: true, order: { select: { cartUuid: true, status: true } } }
         });
 
         if (!payment) return res.status(404).json({ message: "Pago no encontrado" });
-        return res.json({ status: payment.status });
+
+        // Misma prueba de dueño que en createPayment: si el pedido tiene un
+        // cartUuid guardado, debe coincidir con el de quien consulta. Evita
+        // que cualquiera con el orderNumber (o adivinándolo) pueda ver el
+        // estado de un pago ajeno.
+        if (payment.order?.cartUuid && payment.order.cartUuid !== cartUuid) {
+            return res.status(404).json({ message: "Pago no encontrado" });
+        }
+
+        // orderStatus le permite al frontend saber si la orden sigue vigente
+        // (PENDING = el stock sigue reservado) antes de reabrir la pasarela en
+        // un reintento — si el pedido expiró/se canceló (releaseExpiredReservations
+        // lo pasa a CANCELLED y libera el stock a los 30 min sin pago), no debe
+        // reabrir la pasarela con datos obsoletos, sino forzar un pedido nuevo.
+        return res.json({ status: payment.status, orderStatus: payment.order?.status });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Error interno" });

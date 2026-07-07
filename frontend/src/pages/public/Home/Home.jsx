@@ -17,6 +17,7 @@ import HomeHeader from "./components/header/HomeHeader";
 import HomeCategorySection from "./components/categories/HomeCategorySection";
 import HomeProductGrid from "./components/products/HomeProductGrid";
 import HomeProductRow from "./components/products/HomeProductRow";
+import HomeBundleRow from "./components/bundles/HomeBundleRow";
 import HomeCart from "./components/cart/HomeCart";
 import HomeWishlist from "./components/wishlist/HomeWishlist";
 import HomeFooter from "./components/footer/HomeFooter";
@@ -26,6 +27,7 @@ import { useHomeCategories } from "./hooks/useHomeCategories";
 import { useHomeBrands } from "./hooks/useHomeBrands";
 import { useHomeProducts } from "./hooks/useHomeProducts";
 import { useHomeShowcase } from "./hooks/useHomeShowcase";
+import { useHomeBundles } from "./hooks/useHomeBundles";
 import { usePublicCart } from "./hooks/usePublicCart";
 import { usePublicWishlist } from "./hooks/usePublicWishlist";
 import { useTopSellers } from "./hooks/useTopSellers";
@@ -95,14 +97,19 @@ export default function Home() {
     setSearch("");
   }
   const { topSellerIds }                       = useTopSellers();
+  const { bundles }                            = useHomeBundles();
 
   const {
     cartItems,
+    cartBundleItems,
     cartOpen,
     setCartOpen,
     addToCart,
     updateQty,
     removeFromCart,
+    addBundleToCart,
+    updateBundleQty,
+    removeBundleFromCart,
     cartUuid,
   } = usePublicCart();
 
@@ -114,9 +121,11 @@ export default function Home() {
     removeFromWishlist,
   } = usePublicWishlist(cartUuid);
 
-  const cartCount    = cartItems.reduce((sum, i) => sum + i.quantity, 0);
+  const cartCount    = cartItems.reduce((sum, i) => sum + i.quantity, 0)
+    + cartBundleItems.reduce((sum, i) => sum + i.quantity, 0);
   const favoritedIds = new Set(wishlistItems.map((v) => v.id));
   const cartQtyById  = Object.fromEntries(cartItems.map((i) => [i.variant.id, i.quantity]));
+  const cartBundleQtyById = Object.fromEntries(cartBundleItems.map((i) => [i.bundle.id, i.quantity]));
 
   return (
     <div className="min-h-screen bg-white">
@@ -145,6 +154,14 @@ export default function Home() {
             selectedParent={selectedParent}
             onBack={handleBack}
           />
+
+          {showShowcase && bundles.length > 0 && (
+            <HomeBundleRow
+              bundles={bundles}
+              onAddToCart={addBundleToCart}
+              cartQtyById={cartBundleQtyById}
+            />
+          )}
 
           {showShowcase && showcaseGroups.map((group) => (
             <HomeProductRow
@@ -190,6 +207,9 @@ export default function Home() {
         items={cartItems}
         onRemove={removeFromCart}
         onUpdateQty={updateQty}
+        bundleItems={cartBundleItems}
+        onRemoveBundle={removeBundleFromCart}
+        onUpdateBundleQty={updateBundleQty}
         onCheckout={() => { setCartOpen(false); navigate("/checkout"); }}
       />
     </div>

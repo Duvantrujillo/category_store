@@ -507,14 +507,32 @@ function buildSearchStems(query) {
 }
 
 // Deduplica variantes por producto (una por producto; ya vienen ordenadas con
-// isDefault primero). `seen` puede compartirse entre varias tandas (ej.
-// resultados + relleno) para no repetir un producto ya usado en la anterior.
+// isDefault primero). Si la variante que le tocaría a un producto (isDefault
+// o la más reciente) está agotada pero otra variante del mismo producto sí
+// tiene stock, se muestra esa en su lugar — un producto solo debe salir como
+// agotado cuando NINGUNA de sus variantes tiene stock.
+// `seen` puede compartirse entre varias tandas (ej. resultados + relleno)
+// para no repetir un producto ya usado en la anterior.
 function dedupeByProduct(variants, { limit = Infinity, seen = new Set() } = {}) {
-  const result = [];
+  const firstOverall = new Map(); // productId -> primera variante vista (fallback si ninguna tiene stock)
+  const firstInStock = new Map(); // productId -> primera variante vista CON stock
+  const order = [];               // orden de aparición de cada producto nuevo
+
   for (const v of variants) {
     if (seen.has(v.productId)) continue;
-    seen.add(v.productId);
-    result.push(v);
+    if (!firstOverall.has(v.productId)) {
+      firstOverall.set(v.productId, v);
+      order.push(v.productId);
+    }
+    if (!firstInStock.has(v.productId) && Number(v.stock) > 0) {
+      firstInStock.set(v.productId, v);
+    }
+  }
+
+  const result = [];
+  for (const productId of order) {
+    seen.add(productId);
+    result.push(firstInStock.get(productId) ?? firstOverall.get(productId));
     if (result.length >= limit) break;
   }
   return result;

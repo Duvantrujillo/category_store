@@ -7,11 +7,12 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import HomeCartItem from "./HomeCartItem";
+import HomeCartBundleItem from "./HomeCartBundleItem";
 import HomeCartEmpty from "./HomeCartEmpty";
 
 const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER ?? "";
 
-function buildWhatsAppUrl(items) {
+function buildWhatsAppUrl(items, bundleItems) {
   const lines = items.map(({ variant, quantity }) => {
     const brand    = variant.product?.brand?.name ?? "";
     const name     = variant.product?.name ?? "Producto";
@@ -23,16 +24,23 @@ function buildWhatsAppUrl(items) {
     return `• ${brand ? brand + " - " : ""}${name}${attrs ? ` (${attrs})` : ""} × ${quantity} → $${subtotal} COP`;
   });
 
+  const bundleLines = bundleItems.map(({ bundle, quantity }) => {
+    const subtotal = (Number(bundle.price) * quantity).toLocaleString("es-CO");
+    return `• [Combo] ${bundle.name} × ${quantity} → $${subtotal} COP`;
+  });
+
   const total = items
     .reduce((s, { variant, quantity }) => s + Number(variant.price) * quantity, 0)
-    .toLocaleString("es-CO");
+    + bundleItems.reduce((s, { bundle, quantity }) => s + Number(bundle.price) * quantity, 0);
+  const totalFormatted = total.toLocaleString("es-CO");
 
   const message = [
     "¡Hola! 👋 Estoy interesad@ en los siguientes productos:",
     "",
     ...lines,
+    ...bundleLines,
     "",
-    `*Total: $${total} COP*`,
+    `*Total: $${totalFormatted} COP*`,
     "",
     "¿Están disponibles? 😊",
   ].join("\n");
@@ -40,12 +48,18 @@ function buildWhatsAppUrl(items) {
   return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-export default function HomeCart({ open, onClose, items, onRemove, onUpdateQty, onCheckout }) {
-  const total = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
-  const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+export default function HomeCart({
+  open, onClose, items, onRemove, onUpdateQty,
+  bundleItems = [], onRemoveBundle, onUpdateBundleQty,
+  onCheckout,
+}) {
+  const total = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0)
+    + bundleItems.reduce((s, i) => s + Number(i.bundle.price) * i.quantity, 0);
+  const totalUnits = items.reduce((s, i) => s + i.quantity, 0)
+    + bundleItems.reduce((s, i) => s + i.quantity, 0);
 
   function handleWhatsApp() {
-    window.open(buildWhatsAppUrl(items), "_blank", "noopener,noreferrer");
+    window.open(buildWhatsAppUrl(items, bundleItems), "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -82,22 +96,32 @@ export default function HomeCart({ open, onClose, items, onRemove, onUpdateQty, 
 
         {/* ── Lista de productos ── */}
         <div className="flex-1 overflow-y-auto px-5">
-          {items.length === 0 ? (
+          {items.length === 0 && bundleItems.length === 0 ? (
             <HomeCartEmpty />
           ) : (
-            items.map((item) => (
-              <HomeCartItem
-                key={item.variant.id}
-                item={item}
-                onRemove={onRemove}
-                onUpdateQty={onUpdateQty}
-              />
-            ))
+            <>
+              {bundleItems.map((item) => (
+                <HomeCartBundleItem
+                  key={item.bundle.id}
+                  item={item}
+                  onRemove={onRemoveBundle}
+                  onUpdateQty={onUpdateBundleQty}
+                />
+              ))}
+              {items.map((item) => (
+                <HomeCartItem
+                  key={item.variant.id}
+                  item={item}
+                  onRemove={onRemove}
+                  onUpdateQty={onUpdateQty}
+                />
+              ))}
+            </>
           )}
         </div>
 
         {/* ── Footer ── */}
-        {items.length > 0 && (
+        {(items.length > 0 || bundleItems.length > 0) && (
           <SheetFooter className="px-5 pt-4 pb-6 border-t border-gray-100 flex flex-col gap-3">
 
             {/* Total productos */}

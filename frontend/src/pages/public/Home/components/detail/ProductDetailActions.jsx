@@ -6,10 +6,14 @@ export default function ProductDetailActions({ variant, outOfStock, atLimit, isF
       <button
         onClick={() => { if (!outOfStock && !atLimit) onAddToCart(variant); }}
         disabled={outOfStock || atLimit}
-        className="w-full h-16 rounded-2xl flex items-center justify-center gap-3 bg-linear-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 active:from-rose-700 active:to-pink-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-lg font-bold tracking-wide transition-all shadow-lg shadow-rose-200/60"
+        className={`w-full h-16 rounded-2xl flex items-center justify-center gap-3 text-lg font-bold tracking-wide transition-all disabled:cursor-not-allowed ${
+          outOfStock
+            ? "bg-gray-400/90 text-white disabled:opacity-100"
+            : "bg-linear-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 active:from-rose-700 active:to-pink-800 disabled:opacity-50 text-white shadow-lg shadow-rose-200/60"
+        }`}
       >
         <ShoppingBag size={22} />
-        {outOfStock ? "Sin stock" : atLimit ? "Límite de stock" : "Agregar al carrito"}
+        {outOfStock ? "Agotado" : atLimit ? "Límite de stock" : "Agregar al carrito"}
       </button>
 
       <button

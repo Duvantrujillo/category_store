@@ -12,9 +12,18 @@ const STATUS_MESSAGES = {
 
 /* ─────────────────────────────────────────
    REGISTRO PÚBLICO (cliente)
+   Deshabilitado a propósito — no se elimina la lógica por si se reactiva
+   más adelante, pero mientras REGISTRATION_ENABLED sea false no se puede
+   crear ninguna cuenta por este endpoint, sin importar cómo se llame.
 ───────────────────────────────────────── */
+const REGISTRATION_ENABLED = false;
+
 const createUser = async (req, res) => {
   try {
+    if (!REGISTRATION_ENABLED) {
+      return res.status(403).json({ message: 'El registro de nuevas cuentas está deshabilitado por ahora.' });
+    }
+
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {

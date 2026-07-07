@@ -1,10 +1,11 @@
 import './App.css'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { PermissionProvider } from './context/PermissionContext'
 import RegisterForm from './pages/auth/register/RegisterPages'
 import LoginForm from './pages/auth/login/LoginPage'
 import Home from "./pages/public/Home/Home"
 import ProductDetail from "./pages/public/Home/components/detail/ProductDetail"
+import BundleDetail from "./pages/public/Home/components/bundles/BundleDetail"
 import Checkout from "./pages/public/Checkout/Checkout"
 import CheckoutResponse from "./pages/public/Checkout/CheckoutResponse"
 import TrackOrder from "./pages/public/TrackOrder/TrackOrder"
@@ -26,6 +27,7 @@ import ListUser from './pages/dashboard/admin/user/pages/ListUser'
 import ListPermission from './pages/dashboard/admin/permission/pages/ListPermission'
 import ListBanner from './pages/dashboard/admin/banner/page/ListBanner'
 import ListDiscountCode from './pages/dashboard/admin/discount-code/page/ListDiscountCode'
+import ListProductBundle from './pages/dashboard/admin/product-bundle/page/ListProductBundle'
 import AdminHome from './pages/dashboard/admin/home/AdminHome'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicLayout from './components/layouts/PublicLayout'
@@ -40,11 +42,15 @@ function App() {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/producto/:slug" element={<ProductDetail />} />
+        <Route path="/combo/:slug" element={<BundleDetail />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/checkout/respuesta" element={<CheckoutResponse />} />
         <Route path="/pedido" element={<TrackOrder />} />
       </Route>
-      <Route path="/register" element={<RegisterForm />} />
+      {/* Registro deshabilitado a propósito — se redirige a /login. No se
+          elimina la ruta ni el componente por si se reactiva más adelante:
+          <Route path="/register" element={<RegisterForm />} /> */}
+      <Route path="/register" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginForm />} />
       <Route path="/create/shipping" element={<CreateShipping />} />
 
@@ -73,6 +79,7 @@ function App() {
         <Route path="list/permissions" element={<ListPermission />} />
         <Route path="list/banner"      element={<ListBanner />} />
         <Route path="list/discount-codes" element={<ListDiscountCode />} />
+        <Route path="list/product-bundle" element={<ListProductBundle />} />
       </Route>
 
       {/* Panel de cliente */}

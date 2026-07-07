@@ -85,6 +85,7 @@ const permissionRouter       = require('./routes/permission.routes.js')
 const paymentMethodRouter    = require('./routes/payment-method.routes.js')
 const bannerRouter           = require('./routes/banner.routes.js')
 const discountCodeRouter     = require('./routes/discount-code.routes.js')
+const productBundleRouter    = require('./routes/product-bundle.routes.js')
 
 /*
 |--------------------------------------------------------------------------
@@ -123,6 +124,10 @@ app.get('/product-variant/public/:id',          getPublicVariantById)
 const { getPublicProductBySlug } = require('./controllers/product/product.controller')
 app.get('/product/public/:slug', getPublicProductBySlug)
 
+// Ruta pública de combo por slug — debe estar ANTES del guard porque no requiere sesión
+const { getPublicProductBundleBySlug } = require('./controllers/product-bundle/product_bundle.controller')
+app.get('/bundle/public/:slug', getPublicProductBundleBySlug)
+
 // Rutas públicas (no requieren sesión)
 const PUBLIC_ROUTES = new Set([
   'POST /user/create',
@@ -139,6 +144,7 @@ const PUBLIC_ROUTES = new Set([
   'GET /search/public',
   'GET /banner/public',
   'POST /discount-code/validate',
+  'GET /bundle/public',
 ])
 
 app.use((req, res, next) => {
@@ -178,6 +184,7 @@ app.use('/permission',  permissionRouter)
 app.use('/payment-method', paymentMethodRouter)
 app.use('/banner',         bannerRouter)
 app.use('/discount-code',  discountCodeRouter)
+app.use('/bundle',         productBundleRouter)
 
 /*
 |--------------------------------------------------------------------------

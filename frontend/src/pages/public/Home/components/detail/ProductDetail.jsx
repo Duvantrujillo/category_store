@@ -50,7 +50,14 @@ export default function ProductDetail() {
   // nunca hay un render intermedio con imágenes vacías
   const selectedVariant = useMemo(() => {
     if (!product?.variants?.length) return null;
-    const def = product.variants.find((v) => v.isDefault) ?? product.variants[0];
+    // Preferir la variante marcada como default, pero solo si tiene stock —
+    // si esa se agotó, cae a cualquier otra variante disponible del producto
+    // antes de mostrarlo como agotado. Solo si NINGUNA tiene stock se usa la
+    // default (agotada) o la primera, para que ahí sí se vea "Sin stock".
+    const def = product.variants.find((v) => v.isDefault && Number(v.stock) > 0)
+      ?? product.variants.find((v) => Number(v.stock) > 0)
+      ?? product.variants.find((v) => v.isDefault)
+      ?? product.variants[0];
     if (!selectedAttrs) return def;
     return findVariantByAttrs(product.variants, selectedAttrs) ?? def;
   }, [product, selectedAttrs]);
@@ -173,7 +180,7 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 xl:gap-16 items-start">
 
           <div className="h-[380px] sm:h-[460px] md:h-[520px] lg:h-[620px] md:sticky md:top-8">
-            <ProductDetailGallery images={allImages} selectedVariantId={selectedVariant?.id} />
+            <ProductDetailGallery images={allImages} selectedVariantId={selectedVariant?.id} outOfStock={outOfStock} />
           </div>
 
           <div className="flex flex-col gap-7">
