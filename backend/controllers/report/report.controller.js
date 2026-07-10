@@ -32,6 +32,7 @@ const getSummary = async (req, res) => {
       processedRefunds,
       shipmentsByStatus,
       topProducts,
+      topBundles,
     ] = await Promise.all([
       prisma.order.count({ where: dateFilter }),
 
@@ -73,6 +74,19 @@ const getSummary = async (req, res) => {
         orderBy: { _sum: { quantity: 'desc' } },
         take: 5,
       }),
+
+      // Top combos vendidos — se cuentan aparte de los productos sueltos
+      // porque su ingreso ya está representado en el total de la orden;
+      // mezclarlos con topProducts duplicaría el revenue reportado.
+      prisma.orderBundleItem.groupBy({
+        by: ['bundleName'],
+        where: {
+          order: { ...dateFilter, status: 'PAID' },
+        },
+        _sum: { quantity: true, subtotal: true },
+        orderBy: { _sum: { quantity: 'desc' } },
+        take: 5,
+      }),
     ])
 
     return res.json({
@@ -100,6 +114,11 @@ const getSummary = async (req, res) => {
         name: p.productName,
         quantity: p._sum.quantity,
         revenue: Number(p._sum.subtotal ?? 0),
+      })),
+      topBundles: topBundles.map((b) => ({
+        name: b.bundleName,
+        quantity: b._sum.quantity,
+        revenue: Number(b._sum.subtotal ?? 0),
       })),
     })
   } catch (error) {
@@ -338,7 +357,7 @@ const getSalesReport = async (req, res) => {
   try {
     const dateFilter = parseDateRange(req.query)
 
-    const [orders, byStatus, revenue, topProducts] = await Promise.all([
+    const [orders, byStatus, revenue, topProducts, topBundles] = await Promise.all([
       prisma.order.findMany({
         where: { ...dateFilter, status: { in: ['PAID', 'REFUNDED'] } },
         orderBy: { createdAt: 'desc' },
@@ -355,6 +374,15 @@ const getSalesReport = async (req, res) => {
           createdAt: true,
           items: {
             select: { productName: true, quantity: true, unitPrice: true, subtotal: true },
+          },
+          bundleItems: {
+            select: {
+              bundleName: true,
+              quantity: true,
+              unitPrice: true,
+              subtotal: true,
+              items: { select: { productName: true, quantity: true } },
+            },
           },
         },
       }),
@@ -380,6 +408,16 @@ const getSalesReport = async (req, res) => {
         orderBy: { _sum: { subtotal: 'desc' } },
         take: 10,
       }),
+
+      // Top combos por ingresos — aparte de topProducts para no duplicar
+      // revenue (el total del combo ya está incluido en order.total).
+      prisma.orderBundleItem.groupBy({
+        by: ['bundleName'],
+        where: { order: { ...dateFilter, status: 'PAID' } },
+        _sum: { quantity: true, subtotal: true },
+        orderBy: { _sum: { subtotal: 'desc' } },
+        take: 10,
+      }),
     ])
 
     return res.json({
@@ -398,6 +436,11 @@ const getSalesReport = async (req, res) => {
         name: p.productName,
         quantity: p._sum.quantity,
         revenue: Number(p._sum.subtotal ?? 0),
+      })),
+      topBundles: topBundles.map((b) => ({
+        name: b.bundleName,
+        quantity: b._sum.quantity,
+        revenue: Number(b._sum.subtotal ?? 0),
       })),
     })
   } catch (error) {
@@ -442,6 +485,19 @@ const getDetailedReport = async (req, res) => {
             unitPrice: true,
             subtotal: true,
             returnItems: { select: { quantity: true } },
+          },
+        },
+        bundleItems: {
+          select: {
+            id: true,
+            bundleName: true,
+            quantity: true,
+            unitPrice: true,
+            subtotal: true,
+            // Los combos no se pueden devolver por componente en el modelo
+            // actual (ReturnItem solo referencia OrderItem) — no hay
+            // returnItems que enlazar aquí.
+            items: { select: { productName: true, quantity: true } },
           },
         },
         returns: {
@@ -529,6 +585,19 @@ const getDetailedReport = async (req, res) => {
             netSubtotal:      Number(item.subtotal) - returnedSubtotal,
           }
         }),
+        // Combos vendidos en la orden — sin soporte de devolución por
+        // componente todavía, por eso no hay returnedQty/returnedSubtotal.
+        bundleItems: order.bundleItems.map((bundleItem) => ({
+          bundleName: bundleItem.bundleName,
+          quantity:   bundleItem.quantity,
+          unitPrice:  Number(bundleItem.unitPrice),
+          subtotal:   Number(bundleItem.subtotal),
+          netSubtotal: Number(bundleItem.subtotal),
+          components: bundleItem.items.map((detail) => ({
+            productName: detail.productName,
+            quantity:    detail.quantity,
+          })),
+        })),
         returns: order.returns.map((r) => ({
           status:        r.status,
           resolution:    r.resolution,

@@ -5,6 +5,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { createShipment } = require("../../services/shipment.service");
 const { confirmDiscountUsage } = require("../discount-code/discount_code.controller");
+const { confirmPromotionUsage } = require("../promotion/promotion.controller");
 const {
   notifyOrderPaid,
   notifyOrderCancelled,
@@ -109,6 +110,7 @@ const epaycoWebhook = async (req, res) => {
     // Mapear estado ePayco → estados internos.
     let paymentStatus = "PENDING";
     let orderStatus   = "PENDING";
+    const isPending    = transactionState === "Pendiente";
 
     if      (transactionState === "Aceptada")  { paymentStatus = "APPROVED"; orderStatus = "PAID";      }
     else if (transactionState === "Rechazada") { paymentStatus = "DECLINED"; orderStatus = "CANCELLED"; }
@@ -116,7 +118,7 @@ const epaycoWebhook = async (req, res) => {
     else if (transactionState === "Anulada")   { paymentStatus = "VOIDED";   orderStatus = "CANCELLED"; }
     // "Pendiente" → permanece PENDING; cualquier otro estado desconocido también
     // se trata como no-terminal para no liberar stock por error.
-    else if (transactionState !== "Pendiente") {
+    else if (!isPending) {
       console.warn(`Estado ePayco desconocido ignorado: "${transactionState}" (ref: ${invoiceReference})`)
       return res.status(200).send("OK")
     }
@@ -126,6 +128,8 @@ const epaycoWebhook = async (req, res) => {
     //    solo el primer worker que llegue puede actualizar la fila;
     //    los demás ven count=0 (PostgreSQL re-evalúa el WHERE tras adquirir el lock de fila).
     //    Todo lo que es irreversible (stock, estado de orden) vive dentro de esta misma transacción.
+    let orderClaimed = false;
+
     try {
       await prisma.$transaction(async (tx) => {
         const claimed = await tx.payment.updateMany({
@@ -140,17 +144,44 @@ const epaycoWebhook = async (req, res) => {
         // 0 filas actualizadas → otro worker ganó la carrera o el estado ya cambió.
         if (claimed.count === 0) throw new WebhookAlreadyProcessed();
 
-        const updatedOrder = await tx.order.update({
-          where: { id: payment.orderId },
+        // Barrera atómica también sobre la orden: si releaseExpiredReservations
+        // (cron) ya la canceló y liberó su reserva mientras el cliente todavía
+        // tenía la pasarela abierta (típico en pagos con tarjeta lentos, p.ej.
+        // 3D-secure, que tardan más que RESERVATION_TTL_MS), NO hay que revivirla
+        // ni descontar stock — esas unidades ya pueden estar vendidas a otra
+        // persona. El pago queda registrado como APPROVED (el dinero sí entró)
+        // pero la orden se deja como está y se marca para revisión manual.
+        const orderClaim = await tx.order.updateMany({
+          where: { id: payment.orderId, status: 'PENDING' },
           data:  { status: orderStatus }
         });
 
+        if (orderClaim.count === 0) {
+          console.error(
+            `ALERTA — pago ${paymentStatus} confirmado para la orden ${payment.orderId} pero ya no estaba PENDING ` +
+            `(probablemente cancelada por expiración de reserva antes de que el cliente terminara de pagar). ` +
+            `Revisar manualmente: puede requerir reembolso o reconciliación de stock. ref: ${invoiceReference}`
+          );
+          return;
+        }
+
+        orderClaimed = true;
+
+        const updatedOrder = await tx.order.findUniqueOrThrow({ where: { id: payment.orderId } });
+
         // 5. Descuento de stock — ocurre UNA SOLA VEZ dentro de la transacción atómica.
         //    El gate es la propia transacción; no necesitamos volver a verificar el estado previo.
-        // Obtener ítems una sola vez para los dos posibles caminos
+        // Obtener ítems una sola vez para los dos posibles caminos (sueltos y de combo)
         const orderItems = await tx.orderItem.findMany({
           where:  { orderId: payment.orderId },
           select: { productVariantId: true, quantity: true }
+        });
+        const orderBundleItems = await tx.orderBundleItem.findMany({
+          where:  { orderId: payment.orderId },
+          select: {
+            quantity: true,
+            items: { select: { productVariantId: true, quantity: true } }
+          }
         });
 
         if (paymentStatus === "APPROVED") {
@@ -168,12 +199,29 @@ const epaycoWebhook = async (req, res) => {
               WHERE id = ${item.productVariantId}
             `
           }
+          // Por cada componente de cada combo, la cantidad a descontar es
+          // quantity del combo × quantity del componente en la receta —
+          // misma fórmula que se usó para reservar en createOrder.
+          for (const bundleItem of orderBundleItems) {
+            for (const detail of bundleItem.items) {
+              const qty = bundleItem.quantity * detail.quantity
+              await tx.$executeRaw`
+                UPDATE ProductVariant
+                SET stock         = stock - ${qty},
+                    reservedStock = GREATEST(reservedStock - ${qty}, 0)
+                WHERE id = ${detail.productVariantId}
+              `
+            }
+          }
 
           // El cupón (si el pedido tenía uno) recién "cuenta" para su límite
           // de usos ahora que el pago quedó confirmado — no al crear la orden.
           await confirmDiscountUsage(tx, updatedOrder)
-        } else {
-          // Pago rechazado o con error: liberar la reserva sin tocar el stock.
+          await confirmPromotionUsage(tx, updatedOrder)
+        } else if (!isPending) {
+          // Pago rechazado o con error (nunca para "Pendiente" — ese sigue en
+          // curso, p.ej. efectivo/PSE puede tardar horas en confirmarse, y la
+          // reserva debe seguir en pie mientras tanto): liberar sin tocar stock.
           for (const item of orderItems) {
             if (!item.productVariantId) continue
             await tx.$executeRaw`
@@ -183,7 +231,19 @@ const epaycoWebhook = async (req, res) => {
                 AND reservedStock >= ${item.quantity}
             `
           }
+          for (const bundleItem of orderBundleItems) {
+            for (const detail of bundleItem.items) {
+              const qty = bundleItem.quantity * detail.quantity
+              await tx.$executeRaw`
+                UPDATE ProductVariant
+                SET reservedStock = reservedStock - ${qty}
+                WHERE id = ${detail.productVariantId}
+                  AND reservedStock >= ${qty}
+              `
+            }
+          }
         }
+        // isPending (efectivo/PSE en curso): no se toca ni stock ni reservedStock.
       });
     } catch (err) {
       if (err instanceof WebhookAlreadyProcessed) {
@@ -194,6 +254,12 @@ const epaycoWebhook = async (req, res) => {
     }
 
     console.log("Orden y pago actualizados correctamente");
+
+    // Si la orden ya no estaba PENDING (ver ALERTA arriba), el pago quedó
+    // registrado pero deliberadamente no se tocó la orden ni el stock — por
+    // lo tanto tampoco se dispara envío ni notificaciones para no confirmarle
+    // al cliente/admin algo que el sistema no puede respaldar.
+    if (!orderClaimed) return res.status(200).send("OK");
 
     const order = await prisma.order.findUnique({
       where:  { id: payment.orderId },

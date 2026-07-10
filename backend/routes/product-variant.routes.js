@@ -5,6 +5,7 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const { requirePermission } = require('../middlewares/permission.middleware');
+const { safeFilename } = require('../utils/safe-upload');
 
 /**
  * Storage dinámico para variantes
@@ -19,10 +20,7 @@ const storage = multer.diskStorage({
     fs.mkdirSync(tempPath, { recursive: true });
     cb(null, tempPath);
   },
-  filename: (req, file, cb) => {
-    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
-    cb(null, Date.now() + '-' + safeName);
-  }
+  filename: safeFilename
 });
 
 const upload = multer({

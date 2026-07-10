@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient()
+const { buildSearchStems } = require("../../utils/search-stems");
 
 const createForm = async (req, res) => {
 
@@ -237,16 +238,20 @@ const searchForm = async (req, res) => {
 
     if (!q) return res.status(200).json({ data: [] });
 
+    const stems = buildSearchStems(q);
+
     const forms = await prisma.formResponse.findMany({
       where: {
-        OR: [
-          { firstName:      { contains: q } },
-          { lastName:       { contains: q } },
-          { documentNumber: { contains: q } },
-          { phoneNumber:    { contains: q } },
-          { municipality:   { contains: q } },
-          { departament:    { contains: q } },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { firstName:      { contains: s } },
+            { lastName:       { contains: s } },
+            { documentNumber: { contains: s } },
+            { phoneNumber:    { contains: s } },
+            { municipality:   { contains: s } },
+            { departament:    { contains: s } },
+          ],
+        })),
       },
       take: 20,
       orderBy: { updatedAt: 'desc' },

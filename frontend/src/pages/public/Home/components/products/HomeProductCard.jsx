@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import noPhotos from "@/assets/icons/no-fotos.png";
+import { getAvailableUnits } from "@/lib/stock";
 
 function getMainImage(images) {
   if (!images?.length) return null;
@@ -10,12 +11,14 @@ function getMainImage(images) {
 
 export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite, isFavorited = false, cartQty = 0, topSellerIds }) {
   const navigate = useNavigate();
-  const { product, price, stock, attributes, images } = variant;
+  const { product, price, attributes, images, finalPrice, promotion } = variant;
+  const hasPromotion = !!promotion;
 
   const rawImg     = getMainImage(images);
   const imgSrc     = rawImg ? `${import.meta.env.VITE_API_URL}${rawImg}` : noPhotos;
-  const outOfStock  = !stock || Number(stock) === 0;
-  const atLimit     = !outOfStock && cartQty >= Number(stock);
+  const available   = getAvailableUnits(variant);
+  const outOfStock  = available === 0;
+  const atLimit     = !outOfStock && cartQty >= available;
   const isTopSeller = topSellerIds?.has(variant.id) ?? false;
 
   return (
@@ -69,13 +72,25 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
 
         {/* Parte inferior: precio + botón — siempre al fondo */}
         <div className="mt-2 flex flex-col gap-3">
-          <p
-            className="text-base sm:text-lg font-semibold tracking-wide text-gray-700 leading-none"
-            style={{ fontFamily: "system-ui, 'Segoe UI', sans-serif" }}
-          >
-            ${Number(price).toLocaleString("es-CO")}{" "}
-            <span className="text-[10px] sm:text-xs font-normal text-gray-400">COP</span>
-          </p>
+          {hasPromotion ? (
+            <div className="flex flex-col leading-none gap-0.5" style={{ fontFamily: "system-ui, 'Segoe UI', sans-serif" }}>
+              <span className="text-[11px] text-gray-400 line-through opacity-70">
+                ${Number(price).toLocaleString("es-CO")}
+              </span>
+              <p className="text-base sm:text-lg font-semibold tracking-wide text-rose-600 leading-none">
+                ${Number(finalPrice).toLocaleString("es-CO")}{" "}
+                <span className="text-[10px] sm:text-xs font-normal text-gray-400">COP</span>
+              </p>
+            </div>
+          ) : (
+            <p
+              className="text-base sm:text-lg font-semibold tracking-wide text-gray-700 leading-none"
+              style={{ fontFamily: "system-ui, 'Segoe UI', sans-serif" }}
+            >
+              ${Number(price).toLocaleString("es-CO")}{" "}
+              <span className="text-[10px] sm:text-xs font-normal text-gray-400">COP</span>
+            </p>
+          )}
 
           <button
             onClick={(e) => {
@@ -89,7 +104,7 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
                 : "bg-rose-400/80 hover:bg-rose-400/95 active:bg-rose-500 disabled:opacity-50"
             }`}
           >
-            {outOfStock ? "Agotado" : atLimit ? "Límite de stock" : "Agregar al carrito"}
+            {outOfStock ? "Agotado" : "Agregar al carrito"}
           </button>
         </div>
 

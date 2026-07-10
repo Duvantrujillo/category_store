@@ -67,8 +67,6 @@ const branchRouter = require('./routes/brand.routes.js');
 const productRouter = require('./routes/product.routes.js');
 const productVariantRouter = require("./routes/product-variant.routes.js");
 const productVariantAttributeRouter = require('./routes/product-variant-attribute.routes.js');
-const cartRouter = require('./routes/cart.routes.js')
-const cartItemRouter = require('./routes/cart-item.routes.js')
 const orderRouter = require('./routes/order.routes.js')
 const paymentRouter = require('./routes/payment.routes.js')
 const webhookRouter = require('./routes/webhook.routes.js')
@@ -86,6 +84,7 @@ const paymentMethodRouter    = require('./routes/payment-method.routes.js')
 const bannerRouter           = require('./routes/banner.routes.js')
 const discountCodeRouter     = require('./routes/discount-code.routes.js')
 const productBundleRouter    = require('./routes/product-bundle.routes.js')
+const promotionRouter        = require('./routes/promotion.routes.js')
 
 /*
 |--------------------------------------------------------------------------
@@ -112,6 +111,7 @@ const {
   getTopSellers,
   getPublicSuggestions,
   getRelatedVariants,
+  getRelatedProductsForBundle,
   getPublicShowcase,
 } = require('./controllers/product-variant/product_variant.controller')
 app.get('/product-variant/public/top-sellers', getTopSellers)
@@ -124,8 +124,11 @@ app.get('/product-variant/public/:id',          getPublicVariantById)
 const { getPublicProductBySlug } = require('./controllers/product/product.controller')
 app.get('/product/public/:slug', getPublicProductBySlug)
 
-// Ruta pública de combo por slug — debe estar ANTES del guard porque no requiere sesión
-const { getPublicProductBundleBySlug } = require('./controllers/product-bundle/product_bundle.controller')
+// Rutas públicas de combo — deben estar ANTES del guard porque no requieren sesión.
+// /related y /related-products van antes de /:slug para que Express no las confunda con un slug literal.
+const { getPublicProductBundleBySlug, getRelatedBundles } = require('./controllers/product-bundle/product_bundle.controller')
+app.get('/bundle/public/related', getRelatedBundles)
+app.get('/bundle/public/related-products', getRelatedProductsForBundle)
 app.get('/bundle/public/:slug', getPublicProductBundleBySlug)
 
 // Rutas públicas (no requieren sesión)
@@ -167,8 +170,6 @@ app.use('/brand', branchRouter);
 app.use('/product', productRouter);
 app.use('/product-variant', productVariantRouter);
 app.use('/product-variant-attribute', productVariantAttributeRouter);
-app.use('/cart',cartRouter)
-app.use('/cart-item',cartItemRouter)
 app.use('/order',orderRouter)
 app.use('/payment',paymentRouter)
 app.use('/epayco',epaycoRouter)
@@ -185,6 +186,7 @@ app.use('/payment-method', paymentMethodRouter)
 app.use('/banner',         bannerRouter)
 app.use('/discount-code',  discountCodeRouter)
 app.use('/bundle',         productBundleRouter)
+app.use('/promotion',      promotionRouter)
 
 /*
 |--------------------------------------------------------------------------
@@ -199,12 +201,14 @@ app.listen(process.env.PORT, () => {
 /*
 |--------------------------------------------------------------------------
 | CRON: LIBERAR RESERVAS DE STOCK EXPIRADAS
-| Cancela órdenes PENDING sin pago después de 30 minutos y libera reservedStock.
-| Sin esto, un usuario que abandona el pago bloquea el stock indefinidamente.
+| Cancela órdenes PENDING sin pago después de RESERVATION_TTL_MS (10 min,
+| ver order.controller.js) y libera reservedStock. Corre cada 3 minutos para
+| que la liberación sea casi inmediata en cuanto se cumple el plazo — sin
+| esto, un usuario que abandona el pago bloquea el stock indefinidamente.
 |--------------------------------------------------------------------------
 */
 const { releaseExpiredReservations } = require('./controllers/order/order.controller')
-const CLEANUP_INTERVAL_MS = 15 * 60 * 1000 // cada 15 minutos
+const CLEANUP_INTERVAL_MS = 3 * 60 * 1000 // cada 3 minutos
 setInterval(() => {
   releaseExpiredReservations().catch(err => console.error('Error en cleanup de reservas:', err))
 }, CLEANUP_INTERVAL_MS)

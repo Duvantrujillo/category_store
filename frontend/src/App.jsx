@@ -28,6 +28,7 @@ import ListPermission from './pages/dashboard/admin/permission/pages/ListPermiss
 import ListBanner from './pages/dashboard/admin/banner/page/ListBanner'
 import ListDiscountCode from './pages/dashboard/admin/discount-code/page/ListDiscountCode'
 import ListProductBundle from './pages/dashboard/admin/product-bundle/page/ListProductBundle'
+import ListPromotion from './pages/dashboard/admin/promotion/page/ListPromotion'
 import AdminHome from './pages/dashboard/admin/home/AdminHome'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicLayout from './components/layouts/PublicLayout'
@@ -80,6 +81,7 @@ function App() {
         <Route path="list/banner"      element={<ListBanner />} />
         <Route path="list/discount-codes" element={<ListDiscountCode />} />
         <Route path="list/product-bundle" element={<ListProductBundle />} />
+        <Route path="list/promotions" element={<ListPromotion />} />
       </Route>
 
       {/* Panel de cliente */}

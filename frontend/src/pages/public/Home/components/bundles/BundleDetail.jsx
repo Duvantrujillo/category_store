@@ -6,11 +6,13 @@ import HomeFooter from "../footer/HomeFooter";
 import HomeCart from "../cart/HomeCart";
 import HomeWishlist from "../wishlist/HomeWishlist";
 import { usePublicCart, getBundleAvailableStock } from "../../hooks/usePublicCart";
+import { getAvailableUnits } from "@/lib/stock";
 import { usePublicWishlist } from "../../hooks/usePublicWishlist";
 import { usePublicBundle } from "../../hooks/usePublicBundle";
 import BundleDetailGallery from "./BundleDetailGallery";
 import BundleDetailItem from "./BundleDetailItem";
 import BundleVariantSelectorModal from "./BundleVariantSelectorModal";
+import RelatedBundlesSection from "./RelatedBundlesSection";
 
 const VISIBLE_ITEMS = 3;
 
@@ -30,7 +32,7 @@ export default function BundleDetail() {
 
   const {
     wishlistItems, wishlistOpen, setWishlistOpen,
-    removeFromWishlist,
+    toggleFavorite, removeFromWishlist,
   } = usePublicWishlist(cartUuid);
 
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0)
@@ -71,6 +73,9 @@ export default function BundleDetail() {
 
   const hasFreeSlots = bundle.items?.some((item) => !item.productVariantId) ?? false;
   const cartQty = cartBundleItems.find((i) => i.bundle.id === bundle.id)?.quantity ?? 0;
+  const bundleQtyById = Object.fromEntries(cartBundleItems.map((i) => [i.bundle.id, i.quantity]));
+  const productCartQtyById = Object.fromEntries(cartItems.map((i) => [i.variant.id, i.quantity]));
+  const favoritedIds = new Set(wishlistItems.map((v) => v.id));
   const available = getBundleAvailableStock(bundle);
   const outOfStock = available <= 0;
   const atLimit = !outOfStock && cartQty >= available;
@@ -81,7 +86,7 @@ export default function BundleDetail() {
     ...(bundle.items ?? []).flatMap((item) => {
       const variant = item.productVariantId
         ? item.productVariant
-        : (item.product.variants.find((v) => Number(v.stock) >= item.quantity) ?? item.product.variants[0]);
+        : (item.product.variants.find((v) => getAvailableUnits(v) >= item.quantity) ?? item.product.variants[0]);
       return (variant?.images ?? []).slice(0, 2);
     }),
   ];
@@ -179,12 +184,25 @@ export default function BundleDetail() {
               }`}
             >
               <ShoppingBag size={15} />
-              {outOfStock ? "Agotado" : atLimit ? "Límite de stock" : "Agregar al carrito"}
+              {outOfStock ? "Agotado" : "Agregar al carrito"}
             </button>
           </div>
 
         </div>
       </main>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="h-px bg-gray-100 mb-12" />
+        <RelatedBundlesSection
+          currentBundleId={bundle.id}
+          onAddBundleToCart={addBundleToCart}
+          bundleCartQtyById={bundleQtyById}
+          onAddProductToCart={addToCart}
+          onToggleFavorite={toggleFavorite}
+          favoritedIds={favoritedIds}
+          productCartQtyById={productCartQtyById}
+        />
+      </div>
 
       <HomeFooter />
 

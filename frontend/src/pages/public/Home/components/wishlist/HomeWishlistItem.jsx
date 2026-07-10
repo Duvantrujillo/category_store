@@ -1,5 +1,7 @@
+import { useNavigate } from "react-router-dom";
 import { Trash2, ShoppingBag, Plus } from "lucide-react";
 import noPhotos from "@/assets/icons/no-fotos.png";
+import { getAvailableUnits } from "@/lib/stock";
 
 function getMainImage(images) {
   if (!images?.length) return null;
@@ -7,17 +9,27 @@ function getMainImage(images) {
   return main?.imageUrl ?? images[0]?.imageUrl ?? null;
 }
 
-export default function HomeWishlistItem({ variant, onRemove, onAddToCart }) {
-  const { product, price, attributes, images, stock } = variant;
-  const outOfStock = !stock || Number(stock) === 0;
+export default function HomeWishlistItem({ variant, onRemove, onAddToCart, onClose }) {
+  const navigate = useNavigate();
+  const { product, price, attributes, images, finalPrice, promotion } = variant;
+  const hasPromotion = !!promotion;
+  const outOfStock = getAvailableUnits(variant) === 0;
 
   const rawImg = getMainImage(images);
   const imgSrc = rawImg
     ? `${import.meta.env.VITE_API_URL}${rawImg}`
     : noPhotos;
 
+  function goToProduct() {
+    onClose?.();
+    navigate(`/producto/${product?.slug ?? variant.id}`);
+  }
+
   return (
-    <div className="flex gap-3 py-4 border-b border-rose-50 last:border-0">
+    <div
+      onClick={goToProduct}
+      className="flex gap-3 py-4 border-b border-rose-50 last:border-0 cursor-pointer"
+    >
 
       {/* Imagen */}
       <div className="w-16 h-16 rounded-xl overflow-hidden bg-rose-50 border border-rose-100 shrink-0">
@@ -56,14 +68,25 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart }) {
 
         {/* Precio + botón */}
         <div className="flex items-center justify-between mt-1.5">
-          <span className="text-sm font-bold text-rose-700">
-            ${Number(price).toLocaleString("es-CO")}
-          </span>
+          {hasPromotion ? (
+            <span className="flex flex-col leading-none gap-0.5">
+              <span className="text-[10px] text-gray-400 line-through opacity-70">
+                ${Number(price).toLocaleString("es-CO")}
+              </span>
+              <span className="text-sm font-bold text-rose-700">
+                ${Number(finalPrice).toLocaleString("es-CO")}
+              </span>
+            </span>
+          ) : (
+            <span className="text-sm font-bold text-rose-700">
+              ${Number(price).toLocaleString("es-CO")}
+            </span>
+          )}
 
           <button
-            onClick={() => !outOfStock && onAddToCart(variant)}
+            onClick={(e) => { e.stopPropagation(); if (!outOfStock) onAddToCart(variant); }}
             disabled={outOfStock}
-            title={outOfStock ? "Sin stock" : "Agregar al carrito"}
+            title={outOfStock ? "Agotado" : "Agregar al carrito"}
             className="relative flex items-center justify-center w-8 h-8 rounded-full bg-rose-400 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors shadow-sm shadow-rose-200"
           >
             <ShoppingBag size={13} />
@@ -78,7 +101,7 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart }) {
 
       {/* Eliminar */}
       <button
-        onClick={() => onRemove(variant.id)}
+        onClick={(e) => { e.stopPropagation(); onRemove(variant.id); }}
         className="self-start mt-0.5 flex items-center justify-center w-6 h-6 rounded-lg text-rose-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0"
         aria-label="Quitar de favoritos"
       >

@@ -1,3 +1,5 @@
+import { getAvailableUnits } from "@/lib/stock";
+
 const API = import.meta.env.VITE_API_URL;
 function url(path) { return path ? `${API}${path}` : null; }
 
@@ -32,7 +34,7 @@ function VariantThumbs({ variant }) {
 export default function BundleDetailItem({ item }) {
   const isFree = !item.productVariantId;
   const representativeVariant = isFree
-    ? (item.product.variants.find((v) => Number(v.stock) >= item.quantity) ?? item.product.variants[0])
+    ? (item.product.variants.find((v) => getAvailableUnits(v) >= item.quantity) ?? item.product.variants[0])
     : item.productVariant;
 
   return (

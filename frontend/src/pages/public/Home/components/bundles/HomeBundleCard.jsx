@@ -73,7 +73,7 @@ export default function HomeBundleCard({ bundle, onAddToCart, cartQty = 0 }) {
                 : "bg-rose-400/80 hover:bg-rose-400/95 active:bg-rose-500 disabled:opacity-50"
             }`}
           >
-            {outOfStock ? "Agotado" : atLimit ? "Límite de stock" : "Agregar al carrito"}
+            {outOfStock ? "Agotado" : "Agregar al carrito"}
           </button>
         </div>
       </div>

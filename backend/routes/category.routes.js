@@ -6,6 +6,7 @@ const fs = require('fs')
 const categoryController = require('../controllers/category/category.controller')
 
 const { requirePermission } = require('../middlewares/permission.middleware')
+const { safeFilename } = require('../utils/safe-upload')
 
 const UPLOAD_DIR = path.join(__dirname, '../uploads/category')
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true })
@@ -16,12 +17,7 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, UPLOAD_DIR)
   },
-  filename: (req, file, cb) => {
-    // path.basename() descarta cualquier segmento de directorio (ej. "../../")
-    // que venga en el nombre original, evitando escribir fuera de UPLOAD_DIR.
-    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_')
-    cb(null, Date.now() + '-' + safeName)
-  }
+  filename: safeFilename
 })
 
 const upload = multer({

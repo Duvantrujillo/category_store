@@ -16,6 +16,9 @@ const ALL_PERMISSIONS = [
 
   // Pedidos + vista de envíos (GET /order/* y GET /shipment/*)
   { name: 'orders.view',             description: 'Ver pedidos y consultar envíos / número de guía' },
+  // Acción destructiva e irreversible (borra en bloque las órdenes canceladas)
+  // — separada de orders.view a propósito, no se asigna por defecto a nadie.
+  { name: 'orders.delete',           description: 'Eliminar en bloque las órdenes canceladas' },
 
   // Envíos — solo la acción de actualizar (estado, transportista, guía)
   { name: 'shipments.update',        description: 'Actualizar envío: estado, transportista y número de guía' },
@@ -83,8 +86,22 @@ const ALL_PERMISSIONS = [
   { name: 'bundles.update',          description: 'Editar combos de productos' },
   { name: 'bundles.delete',          description: 'Eliminar combos de productos' },
 
+  // Promociones
+  { name: 'promotions.view',         description: 'Ver promociones' },
+  { name: 'promotions.create',       description: 'Crear promociones' },
+  { name: 'promotions.update',       description: 'Editar promociones' },
+  { name: 'promotions.delete',       description: 'Eliminar promociones' },
+
   // Permisos — gestión de roles (solo super_admin puede asignarlo)
   { name: 'permissions.manage',      description: 'Gestionar permisos de roles' },
+
+  // Usuarios / administradores — usados por users.routes.js pero nunca
+  // habían quedado definidos aquí, así que ningún rol distinto de
+  // super_admin (que se salta requirePermission por completo) podía
+  // tenerlos asignados; el cleanup de abajo además los habría borrado.
+  { name: 'admins.view',             description: 'Ver usuarios y administradores' },
+  { name: 'admins.create',           description: 'Crear cuentas de administrador' },
+  { name: 'admins.update',           description: 'Editar cuentas de administrador (estado, contraseña, datos)' },
 ];
 
 // Permisos que el rol "admin" tiene por defecto al ejecutar el seed
@@ -103,6 +120,8 @@ const ADMIN_DEFAULT_PERMISSIONS = [
   'banners.view',
   'discount-codes.view',
   'bundles.view',
+  'promotions.view',
+  'admins.view',
 ];
 
 async function main() {

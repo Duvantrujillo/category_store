@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { getActivePromotions, attachPromotionPricing } = require('../../utils/promotion-pricing');
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT     = 50;
@@ -111,8 +112,11 @@ const publicSearch = async (req, res) => {
       prisma.productVariant.count({ where }),
     ]);
 
+    const activePromotions = await getActivePromotions();
+    const variantsWithPricing = attachPromotionPricing(variants, activePromotions);
+
     return res.status(200).json({
-      data:       variants,
+      data:       variantsWithPricing,
       total,
       page,
       limit,

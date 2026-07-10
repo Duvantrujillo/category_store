@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const { sendShipmentUpdatedEmail } = require("../../services/email.service");
+const { buildSearchStems } = require("../../utils/search-stems");
 
 const prisma = new PrismaClient();
 
@@ -184,14 +185,18 @@ const searchShipment = async (req, res) => {
 
     if (!q) return res.status(200).json({ data: [] });
 
+    const stems = buildSearchStems(q);
+
     const shipments = await prisma.shipment.findMany({
       where: {
-        OR: [
-          { trackingNumber: { contains: q } },
-          { order: { orderNumber: { contains: q } } },
-          { order: { firstName:   { contains: q } } },
-          { order: { lastName:    { contains: q } } },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { trackingNumber: { contains: s } },
+            { order: { orderNumber: { contains: s } } },
+            { order: { firstName:   { contains: s } } },
+            { order: { lastName:    { contains: s } } },
+          ],
+        })),
       },
       include: {
         order: { select: { orderNumber: true, firstName: true, lastName: true } },

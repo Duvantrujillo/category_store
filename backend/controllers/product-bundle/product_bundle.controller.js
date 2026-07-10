@@ -3,6 +3,7 @@ const prisma = new PrismaClient()
 const slugify = require('slugify')
 const fs = require("fs");
 const path = require("path");
+const { buildSearchStems } = require("../../utils/search-stems");
 
 const MAX_ITEMS_PER_BUNDLE = 20
 
@@ -470,12 +471,18 @@ const searchProductBundle = async (req, res) => {
         const q = (req.query.q || "").trim();
         if (!q) return res.status(200).json({ data: [] });
 
+        // AND de stems: cada palabra debe aparecer en algún campo, sin
+        // importar el orden.
+        const stems = buildSearchStems(q);
+
         const bundles = await prisma.productBundle.findMany({
             where: {
-                OR: [
-                    { name: { contains: q } },
-                    { slug: { contains: q } },
-                ],
+                AND: stems.map((s) => ({
+                    OR: [
+                        { name: { contains: s } },
+                        { slug: { contains: s } },
+                    ],
+                })),
             },
             include: BUNDLE_INCLUDE,
             take: 20,
@@ -530,6 +537,47 @@ const getPublicProductBundleBySlug = async (req, res) => {
     }
 };
 
+// GET /bundle/public/related?bundleId=X&limit=Y
+// Combos no tienen marca/categoría propia (a diferencia de los productos), así
+// que el criterio de "relacionado" es cuántos productos componentes comparte
+// con el combo actual — más solapamiento primero, y se rellena con el resto
+// de combos activos (más recientes primero) si no alcanza el límite.
+const getRelatedBundles = async (req, res) => {
+    try {
+        const bundleId = Number(req.query.bundleId)
+        const limit    = Math.min(Number(req.query.limit || 24), 48)
+
+        if (!bundleId || isNaN(bundleId)) {
+            return res.status(400).json({ message: 'bundleId requerido' })
+        }
+
+        const current = await prisma.productBundle.findUnique({
+            where: { id: bundleId },
+            select: { items: { select: { productId: true } } }
+        })
+        const currentProductIds = new Set((current?.items ?? []).map((i) => i.productId))
+
+        const others = await prisma.productBundle.findMany({
+            where: { isActive: true, NOT: { id: bundleId } },
+            include: BUNDLE_INCLUDE,
+            orderBy: { createdAt: 'desc' },
+        })
+
+        const reconciled  = await reconcileBundlesActiveState(others)
+        const stillActive = reconciled.filter((b) => b.isActive)
+
+        const overlapScore = (bundle) =>
+            bundle.items.filter((i) => currentProductIds.has(i.productId)).length
+
+        stillActive.sort((a, b) => overlapScore(b) - overlapScore(a))
+
+        return res.status(200).json({ data: stillActive.slice(0, limit) })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({ message: 'Error interno' })
+    }
+}
+
 module.exports = {
     createProductBundle,
     updateProductBundle,
@@ -538,4 +586,5 @@ module.exports = {
     searchProductBundle,
     getPublicProductBundles,
     getPublicProductBundleBySlug,
+    getRelatedBundles,
 }

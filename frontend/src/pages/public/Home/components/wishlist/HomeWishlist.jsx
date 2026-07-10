@@ -52,6 +52,7 @@ export default function HomeWishlist({ open, onClose, items, onRemove, onAddToCa
                 variant={variant}
                 onRemove={onRemove}
                 onAddToCart={onAddToCart}
+                onClose={onClose}
               />
             ))
           )}

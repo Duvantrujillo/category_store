@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const slugify = require('slugify')
 const prisma = new PrismaClient()
+const { buildSearchStems } = require("../../utils/search-stems");
 
 
 const createAtribute_Value = async (req, res) => {
@@ -16,6 +17,11 @@ const createAtribute_Value = async (req, res) => {
             return res.status(400).json({ message: "El nombre no puede superar 20 caracteres" })
         }
 
+        const attributeIdNumb = Number(attributeId)
+        if (!Number.isInteger(attributeIdNumb) || attributeIdNumb <= 0) {
+            return res.status(400).json({ message: "attributeId inválido" })
+        }
+
         const customerSlug = slugify(value, {
             lower: true,
             strict: true
@@ -23,7 +29,7 @@ const createAtribute_Value = async (req, res) => {
 
         const attributeIdExist = await prisma.attribute.findUnique({
             where: {
-                id: attributeId
+                id: attributeIdNumb
             }
         })
 
@@ -33,7 +39,7 @@ const createAtribute_Value = async (req, res) => {
 
         // Slug único dentro del mismo atributo (no global)
         const slugExist = await prisma.attributeValue.findFirst({
-            where: { slug: customerSlug, attributeId: Number(attributeId) }
+            where: { slug: customerSlug, attributeId: attributeIdNumb }
         })
         if (slugExist) {
             return res.status(400).json({ message: "El nombre ya existe para este atributo" })
@@ -44,7 +50,7 @@ const createAtribute_Value = async (req, res) => {
             data: {
                 value: value,
                 slug: customerSlug,
-                attributeId: Number(attributeId),
+                attributeId: attributeIdNumb,
             }
         })
 
@@ -82,6 +88,21 @@ const updateAtribute_Value = async (req, res) => {
             return res.status(400).json({ message: "El nombre no puede superar 20 caracteres" })
         }
 
+        // A diferencia de create, acá attributeId puede venir sin cambios —
+        // pero si viene, tiene que ser válido y existir de verdad; si no se
+        // manda, se conserva el que ya tenía la fila en vez de guardar NaN.
+        let attributeIdNumb = idExist.attributeId
+        if (typeof attributeId !== 'undefined' && attributeId !== null && attributeId !== '') {
+            attributeIdNumb = Number(attributeId)
+            if (!Number.isInteger(attributeIdNumb) || attributeIdNumb <= 0) {
+                return res.status(400).json({ message: "attributeId inválido" })
+            }
+            const attributeIdExist = await prisma.attribute.findUnique({ where: { id: attributeIdNumb } })
+            if (!attributeIdExist) {
+                return res.status(400).json({ message: "Atributo no encontrado" })
+            }
+        }
+
         const customerSlug = slugify(value, {
             lower: true,
             strict: true
@@ -90,7 +111,7 @@ const updateAtribute_Value = async (req, res) => {
         const slugExist = await prisma.attributeValue.findFirst({
             where: {
                 slug: customerSlug,
-                attributeId: Number(attributeId),
+                attributeId: attributeIdNumb,
                 NOT: { id: formId }
             }
         })
@@ -104,7 +125,7 @@ const updateAtribute_Value = async (req, res) => {
             data: {
                 value,
                 slug: customerSlug,
-                attributeId: Number(attributeId),
+                attributeId: attributeIdNumb,
             }
         })
 
@@ -189,13 +210,17 @@ const searchAttributeValue = async (req, res) => {
 
     if (!q) return res.status(200).json({ data: [] });
 
+    const stems = buildSearchStems(q);
+
     const values = await prisma.attributeValue.findMany({
       where: {
-        OR: [
-          { value:   { contains: q } },
-          { slug:    { contains: q } },
-          { attribute: { name: { contains: q } } },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { value:   { contains: s } },
+            { slug:    { contains: s } },
+            { attribute: { name: { contains: s } } },
+          ],
+        })),
       },
       include: { attribute: true },
       take: 20,

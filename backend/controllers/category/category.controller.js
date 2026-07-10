@@ -3,6 +3,7 @@ const slugify = require('slugify');
 const fs = require("fs");
 const path = require("path");
 const prisma = new PrismaClient();
+const { buildSearchStems } = require("../../utils/search-stems");
 
 const deleteUploadedFile = (file) => {
   if (!file) return;
@@ -195,6 +196,9 @@ const updateCategory = async (req, res) => {
 const deleteCategory = async (req, res) => {
   try {
     const formId = Number(req.params.id);
+    if (isNaN(formId)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
 
     const categoryExist = await prisma.category.findUnique({ where: { id: formId } });
     if (!categoryExist) return res.status(404).json({ message: "No encontrada" });
@@ -254,13 +258,17 @@ const searchCategory = async (req, res) => {
     const q = (req.query.q || "").trim();
     if (!q) return res.status(200).json({ data: [] });
 
+    const stems = buildSearchStems(q);
+
     const categories = await prisma.category.findMany({
       where: {
-        OR: [
-          { name: { contains: q } },
-          { slug: { contains: q } },
-          { description: { contains: q } },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { name: { contains: s } },
+            { slug: { contains: s } },
+            { description: { contains: s } },
+          ],
+        })),
       },
       include: { parent: true },
       take: 20,

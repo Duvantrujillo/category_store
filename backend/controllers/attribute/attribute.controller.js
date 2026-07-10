@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const slugify = require('slugify')
 const prisma = new PrismaClient()
+const { buildSearchStems } = require("../../utils/search-stems");
 
 
 
@@ -200,12 +201,16 @@ const searchAttribute = async (req, res) => {
 
     if (!q) return res.status(200).json({ data: [] });
 
+    const stems = buildSearchStems(q);
+
     const attributes = await prisma.attribute.findMany({
       where: {
-        OR: [
-          { name: { contains: q } },
-          { slug: { contains: q } },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { name: { contains: s } },
+            { slug: { contains: s } },
+          ],
+        })),
       },
       take: 20,
     });

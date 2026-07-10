@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { getAvailableUnits } from "@/lib/stock";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -28,12 +29,15 @@ export function selectionsToPayload(selections) {
   }));
 }
 
-// Stock disponible de un combo = el mínimo de (stock del componente / cantidad
-// que ese componente requiere por combo) entre todos sus componentes.
+// Stock disponible de un combo = el mínimo de (stock disponible del componente
+// / cantidad que ese componente requiere por combo) entre todos sus
+// componentes. "Disponible" = stock físico menos lo ya reservado por pedidos
+// pendientes (incluidos los que alguien empezó y no terminó de pagar) — así
+// un pedido abandonado no deja la unidad viéndose libre para todo el mundo.
 // Para un componente "libre" (sin variante fija) usa la variante elegida en
 // `selections` si hay una; si no (todavía no se configuró el combo), asume la
-// MEJOR variante posible — cualquiera con stock suficiente — en vez de
-// simplemente la primera de la lista. Así, si una opción está agotada pero
+// MEJOR variante posible — cualquiera con disponibilidad suficiente — en vez
+// de simplemente la primera de la lista. Así, si una opción está agotada pero
 // otra no, el combo no se marca como agotado antes de que el cliente
 // siquiera abra el selector.
 export function getBundleAvailableStock(bundle, selections = {}) {
@@ -44,11 +48,11 @@ export function getBundleAvailableStock(bundle, selections = {}) {
       if (!variant) {
         const chosenId = selections?.[item.id];
         variant = item.product?.variants?.find((v) => v.id === chosenId)
-          ?? item.product?.variants?.find((v) => Number(v.stock) >= item.quantity)
+          ?? item.product?.variants?.find((v) => getAvailableUnits(v) >= item.quantity)
           ?? item.product?.variants?.[0];
       }
       if (!variant) return 0;
-      return Math.floor(Number(variant.stock) / item.quantity);
+      return Math.floor(getAvailableUnits(variant) / item.quantity);
     })
   );
 }
@@ -112,7 +116,7 @@ export function usePublicCart() {
     setCartItems((prev) => {
       const existing = prev.find((i) => i.variant.id === variant.id);
       if (existing) {
-        if (existing.quantity >= variant.stock) return prev; // ya al límite
+        if (existing.quantity >= getAvailableUnits(variant)) return prev; // ya al límite
         return prev.map((i) =>
           i.variant.id === variant.id ? { ...i, quantity: i.quantity + 1 } : i
         );
@@ -153,7 +157,7 @@ export function usePublicCart() {
     if (!uuid || quantity < 1) return;
 
     const item = cartItems.find((i) => i.variant.id === variantId);
-    if (!item || quantity > item.variant.stock) return;
+    if (!item || quantity > getAvailableUnits(item.variant)) return;
 
     setCartItems((prev) =>
       prev.map((i) => (i.variant.id === variantId ? { ...i, quantity } : i))

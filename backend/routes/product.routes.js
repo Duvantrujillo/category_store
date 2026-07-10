@@ -3,16 +3,13 @@ const routes = express.Router()
 const productController = require('../controllers/product/product.controller')
 const { requirePermission } = require('../middlewares/permission.middleware')
 const multer = require('multer')
-const path = require('path')
+const { safeFilename } = require('../utils/safe-upload')
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp']
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/product'),
-  filename:    (req, file, cb) => {
-    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_')
-    cb(null, Date.now() + '-' + safeName)
-  },
+  filename:    safeFilename,
 })
 
 const upload = multer({
@@ -27,7 +24,7 @@ const upload = multer({
 const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE')
-      return res.status(400).json({ message: 'La imagen no puede superar 5 MB' })
+      return res.status(400).json({ message: 'La imagen no puede superar 300 KB' })
     return res.status(400).json({ message: 'Formato inválido. Solo jpg, jpeg, png o webp' })
   }
   next(err)

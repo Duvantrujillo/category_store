@@ -170,8 +170,12 @@ const checkStockNotifications = async (variantIds) => {
     const sku = variant.sku || `variante-${variant.id}`
 
     if (variant.stock <= 0) {
+      // El filtro por `message: { contains: sku }` es lo que hace el dedup
+      // específico de ESTA variante — sin él, la variante A agotada dejaba
+      // "silenciadas" las alertas de cualquier otra variante distinta
+      // mientras la notificación de A siguiera sin leer.
       const existing = await prisma.notification.findFirst({
-        where: { type: 'OUT_OF_STOCK', isRead: false, actionUrl: ROUTES.productVariants }
+        where: { type: 'OUT_OF_STOCK', isRead: false, actionUrl: ROUTES.productVariants, message: { contains: sku } }
       })
       if (existing) continue
 
@@ -183,7 +187,7 @@ const checkStockNotifications = async (variantIds) => {
       })
     } else if (variant.stock <= LOW_STOCK_THRESHOLD) {
       const existing = await prisma.notification.findFirst({
-        where: { type: 'LOW_STOCK', isRead: false, actionUrl: ROUTES.productVariants }
+        where: { type: 'LOW_STOCK', isRead: false, actionUrl: ROUTES.productVariants, message: { contains: sku } }
       })
       if (existing) continue
 

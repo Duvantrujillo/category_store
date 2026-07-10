@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from "react";
 import {
   FileText, TrendingUp, TrendingDown, DollarSign,
-  RotateCcw, Wallet, Package, MapPin, Phone, Mail, CreditCard, Truck,
+  RotateCcw, Wallet, Package, PackagePlus, MapPin, Phone, Mail, CreditCard, Truck,
 } from "lucide-react";
 
 import { useDetailedReport } from "../hooks/useReport";
@@ -73,6 +73,20 @@ function buildPdfHtml(data, period) {
       <td class="tc ${item.returnedQty > 0 ? "amber" : "muted"}">${item.returnedQty || "—"}</td>
       <td class="tr ${item.returnedSubtotal > 0 ? "red" : "muted"}">${item.returnedSubtotal > 0 ? "−" + fmtCOP(item.returnedSubtotal) : "—"}</td>
       <td class="tr green bold">${fmtCOP(item.netSubtotal)}</td>
+    </tr>`)
+  ).join("");
+
+  const hasBundles = orders.some((o) => o.bundleItems?.length > 0);
+
+  const bundleRows = orders.flatMap((o) =>
+    (o.bundleItems ?? []).map((bundleItem) => `
+    <tr>
+      <td class="mono">${escHtml(o.orderNumber)}</td>
+      <td><strong>${escHtml(bundleItem.bundleName)}</strong> <span class="badge badge-violet">Combo</span></td>
+      <td class="tc">${bundleItem.quantity}</td>
+      <td class="tr">${fmtCOP(bundleItem.unitPrice)}</td>
+      <td class="tr">${fmtCOP(bundleItem.subtotal)}</td>
+      <td class="muted">${bundleItem.components.map((c) => `${escHtml(c.productName)} ×${c.quantity}`).join(", ")}</td>
     </tr>`)
   ).join("");
 
@@ -270,6 +284,23 @@ function buildPdfHtml(data, period) {
   </table>
 </div>
 
+${hasBundles ? `
+<!-- BUNDLES TABLE -->
+<div class="sec new-page">
+  <div class="sec-title">Detalle por combo</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Orden</th><th>Combo</th>
+        <th class="tc">Qty vendida</th><th class="tr">Precio unit.</th><th class="tr">Subtotal</th>
+        <th>Incluye</th>
+      </tr>
+    </thead>
+    <tbody>${bundleRows}</tbody>
+  </table>
+</div>
+` : ""}
+
 ${hasReturns ? `
 <!-- RETURNS TABLE -->
 <div class="sec new-page">
@@ -321,9 +352,10 @@ export default function DetailedReport({ filters }) {
 
   const [orderPage,  setOrderPage]  = useState(1);
   const [itemPage,   setItemPage]   = useState(1);
+  const [bundlePage, setBundlePage] = useState(1);
   const [returnPage, setReturnPage] = useState(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setOrderPage(1); setItemPage(1); setReturnPage(1); }, [JSON.stringify(filters)]);
+  useEffect(() => { setOrderPage(1); setItemPage(1); setBundlePage(1); setReturnPage(1); }, [JSON.stringify(filters)]);
 
   const handlePdf = useCallback(() => {
     if (data) printPdf(data, period);
@@ -341,6 +373,15 @@ export default function DetailedReport({ filters }) {
     o.items.map((item) => ({ ...item, _orderNumber: o.orderNumber, _key: `${o.id}-${item.productName}` }))
   );
   const pagedItems = allItems.slice((itemPage - 1) * PAGE_SIZE, itemPage * PAGE_SIZE);
+
+  const allBundles = orders.flatMap((o) =>
+    (o.bundleItems ?? []).map((bundleItem, bi) => ({
+      ...bundleItem,
+      _orderNumber: o.orderNumber,
+      _key: `${o.id}-b${bi}-${bundleItem.bundleName}`,
+    }))
+  );
+  const pagedBundles = allBundles.slice((bundlePage - 1) * PAGE_SIZE, bundlePage * PAGE_SIZE);
 
   const allReturns   = orders.flatMap((o) =>
     o.returns.map((r, ri) => ({ ...r, _orderNumber: o.orderNumber, _firstName: o.firstName, _lastName: o.lastName, _key: `${o.id}-r${ri}` }))
@@ -592,6 +633,55 @@ export default function DetailedReport({ filters }) {
           onPageChange={setItemPage}
         />
       </ReportSection>
+
+      {/* ── Tabla por combo ── */}
+      {allBundles.length > 0 && (
+        <ReportSection title="Detalle por combo" icon={PackagePlus} noPad>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-800 text-white text-[11px] uppercase tracking-wider">
+                <tr>
+                  {["Orden","Combo","Qty vendida","Precio unit.","Subtotal","Incluye"].map((h) => (
+                    <th key={h} className="text-left px-3 py-3 font-semibold whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {pagedBundles.map((bundleItem) => (
+                    <tr key={bundleItem._key} className="hover:bg-slate-50/80">
+                      <td className="px-3 py-2.5 font-mono text-[11px] font-semibold text-indigo-600 whitespace-nowrap">{bundleItem._orderNumber}</td>
+                      <td className="px-3 py-2.5 max-w-52">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-slate-700 line-clamp-2">{bundleItem.bundleName}</span>
+                          <span className="shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset bg-indigo-50 text-indigo-600 ring-indigo-200">
+                            Combo
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 text-center font-medium tabular-nums">{bundleItem.quantity}</td>
+                      <td className="px-3 py-2.5 text-right text-slate-500 tabular-nums whitespace-nowrap">{fmtCOP(bundleItem.unitPrice)}</td>
+                      <td className="px-3 py-2.5 text-right font-bold text-slate-700 tabular-nums whitespace-nowrap">{fmtCOP(bundleItem.subtotal)}</td>
+                      <td className="px-3 py-2.5 text-xs text-slate-500 max-w-64">
+                        {bundleItem.components.map((c) => (
+                          <div key={c.productName} className="flex items-baseline gap-1">
+                            <span className="font-medium">{c.productName}</span>
+                            <span className="text-slate-400">×{c.quantity}</span>
+                          </div>
+                        ))}
+                      </td>
+                    </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <TablePagination
+            page={bundlePage}
+            pageSize={PAGE_SIZE}
+            totalItems={allBundles.length}
+            onPageChange={setBundlePage}
+          />
+        </ReportSection>
+      )}
 
       {/* ── Devoluciones detalladas ── */}
       {hasReturns && (

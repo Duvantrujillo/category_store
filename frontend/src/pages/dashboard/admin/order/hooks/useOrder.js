@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
-import { allOrder, searchOrder, filterOrderByDate } from "../api/orderApi";
+import { allOrder, searchOrder, filterOrderByDate, deleteCancelledOrders } from "../api/orderApi";
 
 
 
@@ -68,6 +69,27 @@ export const useSearchOrder = (delay = 400) => {
   }, [query, delay]);
 
   return { query, setQuery, results, loading };
+};
+
+export const useDeleteCancelledOrders = () => {
+  const [loading, setLoading] = useState(false);
+
+  const submitDelete = async () => {
+    try {
+      setLoading(true);
+      const res = await deleteCancelledOrders();
+      toast.success(res.message || "Órdenes canceladas eliminadas");
+      return res;
+    } catch (err) {
+      const msg = err.response?.data?.message || "Error al eliminar las órdenes canceladas";
+      if (!err._handled) toast.error(msg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { submitDelete, loading };
 };
 
 export const useFilterOrderByDate = (delay = 400) => {

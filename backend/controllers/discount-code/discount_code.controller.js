@@ -1,5 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const { buildSearchStems } = require("../../utils/search-stems");
+const { getActivePromotions, attachPromotionPricing } = require("../../utils/promotion-pricing");
 
 const DISCOUNT_TYPES = ["PERCENTAGE", "FIXED", "FREE_SHIPPING"];
 
@@ -183,10 +185,12 @@ const validateDiscountCode = async (req, res) => {
       .map((i) => parseInt(i.productVariantId, 10))
       .filter((n) => Number.isInteger(n) && n > 0);
 
-    const variants = await prisma.productVariant.findMany({
+    const rawVariants = await prisma.productVariant.findMany({
       where: { id: { in: variantIds }, isActive: true },
       select: { id: true, price: true, product: { select: { id: true, categoryId: true, brandId: true } } },
     });
+    const activePromotions = await getActivePromotions();
+    const variants = attachPromotionPricing(rawVariants, activePromotions);
     const variantMap = Object.fromEntries(variants.map((v) => [v.id, v]));
 
     const cartLines = items
@@ -194,7 +198,7 @@ const validateDiscountCode = async (req, res) => {
         const variant = variantMap[parseInt(i.productVariantId, 10)];
         const quantity = parseInt(i.quantity, 10);
         if (!variant || !Number.isInteger(quantity) || quantity <= 0) return null;
-        return { variantId: variant.id, unitPrice: variant.price, quantity, product: variant.product };
+        return { variantId: variant.id, unitPrice: variant.finalPrice, quantity, product: variant.product };
       })
       .filter(Boolean);
 
@@ -519,12 +523,16 @@ const searchDiscountCode = async (req, res) => {
     const q = (req.query.q || "").trim();
     if (!q) return res.status(200).json({ data: [] });
 
+    const stems = buildSearchStems(q);
+
     const discountCodes = await prisma.discountCode.findMany({
       where: {
-        OR: [
-          { code: { contains: q.toUpperCase() } },
-          { description: { contains: q } },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { code: { contains: s.toUpperCase() } },
+            { description: { contains: s } },
+          ],
+        })),
       },
       include: RESTRICTIONS_INCLUDE,
       take: 20,

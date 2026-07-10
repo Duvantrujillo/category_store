@@ -3,6 +3,7 @@ const prisma = new PrismaClient()
 const slugify = require('slugify')
 const fs = require("fs");
 const path = require("path");
+const { buildSearchStems } = require("../../utils/search-stems");
 
 
 const deleteUploadedFile = (file, folder = 'brand') => {
@@ -274,20 +275,19 @@ const searchBrand = async (req, res) => {
       });
     }
 
+    // AND de stems: cada palabra debe aparecer en algún campo, sin importar
+    // el orden — así una búsqueda de varias palabras no exige que el campo
+    // contenga la frase completa como un solo substring.
+    const stems = buildSearchStems(q);
+
     const brands = await prisma.brand.findMany({
       where: {
-        OR: [
-          {
-            name: {
-              contains: q,
-            },
-          },
-          {
-            slug: {
-              contains: q,
-            },
-          },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { name: { contains: s } },
+            { slug: { contains: s } },
+          ],
+        })),
       },
 
       take: 20,

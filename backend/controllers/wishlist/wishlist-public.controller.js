@@ -1,5 +1,18 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
+const { getActivePromotions, attachPromotionPricing } = require('../../utils/promotion-pricing')
+
+async function enrichWishlist(wishlist) {
+  if (!wishlist) return wishlist
+  const activePromotions = await getActivePromotions()
+  return {
+    ...wishlist,
+    items: wishlist.items.map((item) => ({
+      ...item,
+      productVariant: attachPromotionPricing(item.productVariant, activePromotions),
+    })),
+  }
+}
 
 const VARIANT_INCLUDE = {
   product: {
@@ -38,7 +51,7 @@ const getPublicWishlist = async (req, res) => {
     const { cartUuid } = req.params
     const wishlist = await findOrCreateWishlist(cartUuid)
     if (!wishlist) return res.status(404).json({ message: 'Carrito no encontrado' })
-    return res.json(wishlist)
+    return res.json(await enrichWishlist(wishlist))
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: 'Error interno' })
@@ -84,7 +97,7 @@ const addPublicWishlistItem = async (req, res) => {
       where: { id: wishlist.id },
       include: WISHLIST_INCLUDE
     })
-    return res.json(updated)
+    return res.json(await enrichWishlist(updated))
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: 'Error interno' })
@@ -110,7 +123,7 @@ const removePublicWishlistItem = async (req, res) => {
       where: { id: wishlist.id },
       include: WISHLIST_INCLUDE
     })
-    return res.json(updated)
+    return res.json(await enrichWishlist(updated))
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: 'Error interno' })

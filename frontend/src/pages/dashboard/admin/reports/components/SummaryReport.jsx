@@ -1,4 +1,4 @@
-import { ShoppingCart, DollarSign, RotateCcw, Wallet, Package, ArrowRight } from "lucide-react";
+import { ShoppingCart, DollarSign, RotateCcw, Wallet, Package, PackagePlus, ArrowRight } from "lucide-react";
 
 import { useSummaryReport } from "../hooks/useReport";
 import ReportCard            from "./ReportCard";
@@ -35,6 +35,8 @@ function SummaryReport({ filters }) {
   const donutSegments = ORDER_SEGMENTS.map((s) => ({ ...s, value: orderValues[s.key] })).filter((s) => s.value > 0);
 
   const maxQty = Math.max(...data.topProducts.map((p) => p.quantity), 1);
+  const topBundles = data.topBundles ?? [];
+  const maxBundleQty = Math.max(...topBundles.map((b) => b.quantity), 1);
 
   return (
     <div className="space-y-5">
@@ -126,24 +128,45 @@ function SummaryReport({ filters }) {
         </ReportSection>
       </div>
 
-      {/* Top productos */}
-      {data.topProducts.length > 0 && (
-        <ReportSection title="Top 5 productos más vendidos" icon={Package}>
-          <div className="space-y-0.5">
-            {data.topProducts.map((p, i) => (
-              <HBar
-                key={p.name}
-                rank={i + 1}
-                label={p.name}
-                value={p.quantity}
-                max={maxQty}
-                displayValue={`${p.quantity} uds · ${fmtCOP(p.revenue)}`}
-                color="#6366f1"
-              />
-            ))}
-          </div>
-        </ReportSection>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Top productos */}
+        {data.topProducts.length > 0 && (
+          <ReportSection title="Top 5 productos más vendidos" icon={Package}>
+            <div className="space-y-0.5">
+              {data.topProducts.map((p, i) => (
+                <HBar
+                  key={p.name}
+                  rank={i + 1}
+                  label={p.name}
+                  value={p.quantity}
+                  max={maxQty}
+                  displayValue={`${p.quantity} uds · ${fmtCOP(p.revenue)}`}
+                  color="#6366f1"
+                />
+              ))}
+            </div>
+          </ReportSection>
+        )}
+
+        {/* Top combos */}
+        {topBundles.length > 0 && (
+          <ReportSection title="Top 5 combos más vendidos" icon={PackagePlus}>
+            <div className="space-y-0.5">
+              {topBundles.map((b, i) => (
+                <HBar
+                  key={b.name}
+                  rank={i + 1}
+                  label={b.name}
+                  value={b.quantity}
+                  max={maxBundleQty}
+                  displayValue={`${b.quantity} uds · ${fmtCOP(b.revenue)}`}
+                  color="#818cf8"
+                />
+              ))}
+            </div>
+          </ReportSection>
+        )}
+      </div>
     </div>
   );
 }

@@ -4,12 +4,34 @@ const prisma = new PrismaClient()
 const { notifyOrderCreated } = require('../../services/notification.service')
 const { resolveDiscount } = require('../discount-code/discount_code.controller')
 const { resolveBundleComponents } = require('../cart/cart-public.controller')
+const { getActivePromotions, attachPromotionPricing } = require('../../utils/promotion-pricing')
+const { buildSearchStems } = require('../../utils/search-stems')
 
 // ── Constantes de negocio ──────────────────────────────────────────────────────
 const ALLOWED_CURRENCIES = new Set(['COP', 'USD'])
 const MAX_ITEMS_PER_ORDER = 50
 const MAX_BUNDLES_PER_ORDER = 20
 const SHIPPING_COST = 11000
+
+// Combos de una orden, para las vistas admin (listado/búsqueda/filtro) — sin
+// esto el admin nunca ve que una orden incluye un combo, solo sus productos
+// sueltos. `items` es el desglose de qué productos componen cada combo.
+const ORDER_BUNDLE_ITEMS_INCLUDE = {
+  select: {
+    id: true,
+    bundleName: true,
+    quantity: true,
+    unitPrice: true,
+    subtotal: true,
+    items: {
+      select: {
+        productName: true,
+        quantity: true,
+        productVariant: { select: { sku: true } }
+      }
+    }
+  }
+}
 
 // ── createOrder ───────────────────────────────────────────────────────────────
 const createOrder = async (req, res) => {
@@ -121,18 +143,34 @@ const createOrder = async (req, res) => {
       // FIX 5 — PRECIO DESDE BD (dentro de la transacción)
       // Leer aquí garantiza que usamos el precio comprometido al momento exacto
       // del pedido, no una lectura previa que pudo haber quedado desactualizada.
-      const variants = await tx.productVariant.findMany({
+      const rawVariants = await tx.productVariant.findMany({
         where: { id: { in: variantIds }, isActive: true },
         select: { id: true, price: true, product: { select: { id: true, name: true, categoryId: true, brandId: true } } }
       })
+      // Precio ya con la promoción activa aplicada (si corresponde) — es el
+      // único precio que se valida y se cobra de acá en adelante.
+      const activePromotions = await getActivePromotions(tx)
+      const variants = attachPromotionPricing(rawVariants, activePromotions)
       const variantMap = Object.fromEntries(variants.map(v => [v.id, v]))
 
       for (const item of rawItems) {
         const variant = variantMap[item.productVariantId]
-        if (!variant) throw new Error(`VARIANT_NOT_FOUND:${item.productVariantId}`)
+        if (!variant) {
+          // No vino en la consulta de arriba (no existe o quedó inactiva) —
+          // se busca aparte, sin el filtro isActive, solo para poder decir
+          // a qué producto pertenecía en vez de mostrar nada más que el id.
+          const missing = await tx.productVariant.findUnique({
+            where: { id: item.productVariantId },
+            select: { sku: true, product: { select: { name: true } } }
+          })
+          const label = missing?.product?.name
+            ? `${missing.product.name}${missing.sku ? ` (${missing.sku})` : ''}`
+            : ''
+          throw new Error(`VARIANT_NOT_FOUND:${item.productVariantId}:${label}`)
+        }
         // Comparar en centavos enteros evita falsos positivos/negativos por IEEE 754
-        if (Math.round(Number(variant.price) * 100) !== Math.round(Number(item.unitPrice) * 100)) {
-          throw new Error(`PRICE_MISMATCH:${item.productVariantId}:${Number(variant.price)}`)
+        if (Math.round(Number(variant.finalPrice) * 100) !== Math.round(Number(item.unitPrice) * 100)) {
+          throw new Error(`PRICE_MISMATCH:${item.productVariantId}:${Number(variant.finalPrice)}`)
         }
       }
 
@@ -218,9 +256,9 @@ const createOrder = async (req, res) => {
         }
       }
 
-      // Subtotal calculado con precios de BD, nunca con los del cliente
+      // Subtotal calculado con precios de BD (ya con promoción aplicada), nunca con los del cliente
       const itemsSubtotal = rawItems.reduce((acc, item) => {
-        return acc + Number(variantMap[item.productVariantId].price) * Number(item.quantity)
+        return acc + Number(variantMap[item.productVariantId].finalPrice) * Number(item.quantity)
       }, 0)
       const bundlesSubtotal = rawBundleItems.reduce((acc, bundleItem) => {
         return acc + Number(bundleMap[bundleItem.bundleId].price) * Number(bundleItem.quantity)
@@ -234,7 +272,7 @@ const createOrder = async (req, res) => {
       if (discountCode && rawItems.length > 0) {
         const cartLines = rawItems.map(item => ({
           variantId: item.productVariantId,
-          unitPrice: variantMap[item.productVariantId].price,
+          unitPrice: variantMap[item.productVariantId].finalPrice,
           quantity: Number(item.quantity),
           product: variantMap[item.productVariantId].product
         }))
@@ -273,12 +311,17 @@ const createOrder = async (req, res) => {
           items: {
             create: rawItems.map(item => {
               const variant = variantMap[item.productVariantId]
+              const quantity = Number(item.quantity)
               return {
                 productVariantId: item.productVariantId,
                 productName: variant.product.name,
-                quantity: Number(item.quantity),
-                unitPrice: variant.price,
-                subtotal: Number(variant.price) * Number(item.quantity)
+                quantity,
+                unitPrice: variant.finalPrice,
+                subtotal: Number(variant.finalPrice) * quantity,
+                promotionId: variant.promotion?.id ?? null,
+                promotionDiscount: variant.promotion
+                  ? (Number(variant.price) - Number(variant.finalPrice)) * quantity
+                  : 0,
               }
             })
           },
@@ -317,8 +360,12 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ message: error.message.slice('INVALID_COUPON:'.length) })
     }
     if (error.message?.startsWith('VARIANT_NOT_FOUND:')) {
-      const variantId = error.message.split(':')[1]
-      return res.status(400).json({ message: `Variante ${variantId} no encontrada` })
+      const [, variantId, ...rest] = error.message.split(':')
+      const label = rest.join(':')
+      return res.status(400).json({
+        message: label ? `"${label}" ya no está disponible` : `Variante ${variantId} no encontrada`,
+        productVariantId: Number(variantId)
+      })
     }
     if (error.message?.startsWith('BUNDLE_NOT_FOUND:')) {
       const bundleId = error.message.split(':')[1]
@@ -377,6 +424,7 @@ const allOrder = async (req, res) => {
             }
           }
         },
+        bundleItems: ORDER_BUNDLE_ITEMS_INCLUDE,
         discountCode: { select: { code: true, type: true, value: true } }
       },
       orderBy: {
@@ -406,15 +454,20 @@ const searchOrder = async (req, res) => {
       return res.status(400).json({ ok: false, message: 'Query requerida' });
     }
 
-    const term = q.trim();
+    // AND de stems: busca "juan perez" encontrando la orden aunque el nombre
+    // esté partido en columnas separadas (firstName/lastName) — cada palabra
+    // debe aparecer en ALGÚN campo, no necesariamente en el mismo.
+    const stems = buildSearchStems(q);
     const orders = await prisma.order.findMany({
       where: {
-        OR: [
-          { orderNumber: { contains: term } },
-          { email:       { contains: term } },
-          { firstName:   { contains: term } },
-          { lastName:    { contains: term } },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { orderNumber: { contains: s } },
+            { email:       { contains: s } },
+            { firstName:   { contains: s } },
+            { lastName:    { contains: s } },
+          ],
+        })),
       },
       include: {
         user: { select: { id: true, name: true, email: true } },
@@ -425,6 +478,7 @@ const searchOrder = async (req, res) => {
             returnItems: { select: { quantity: true } },
           },
         },
+        bundleItems: ORDER_BUNDLE_ITEMS_INCLUDE,
         discountCode: { select: { code: true, type: true, value: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -541,6 +595,7 @@ const filterOrderByDate = async (req, res) => {
             returnItems: { select: { quantity: true } },
           },
         },
+        bundleItems: ORDER_BUNDLE_ITEMS_INCLUDE,
         discountCode: { select: { code: true, type: true, value: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -553,15 +608,125 @@ const filterOrderByDate = async (req, res) => {
   }
 };
 
-// Llama a esta función desde un cron cada 15 minutos.
-// Cancela órdenes PENDING sin pago después de RESERVATION_TTL_MS y libera el stock reservado.
-const RESERVATION_TTL_MS = 30 * 60 * 1000 // 30 minutos
+// Solo se borran canceladas con al menos este tiempo de antigüedad — nunca
+// las recientes. Evita que una cancelación de hace 5 minutos (por error, o
+// que el cliente todavía podría reclamar) desaparezca junto con las viejas.
+// Fijo en el backend a propósito: el cliente no puede mandar un umbral
+// distinto, así que esta regla siempre se cumple sin importar qué pida el
+// frontend.
+const CANCELLED_ORDER_RETENTION_MS = 15 * 24 * 60 * 60 * 1000 // 15 días
+
+// DELETE /order/cancelled — borra en bloque las órdenes con status CANCELLED
+// que llevan canceladas más de CANCELLED_ORDER_RETENTION_MS. Acción
+// irreversible y de alto impacto: por eso vive detrás de un permiso separado
+// (orders.delete) que nadie tiene por defecto, ni siquiera el rol admin — hay
+// que asignarlo explícitamente.
+//
+// Antes de borrar la orden hay que borrar, en este orden, todo lo que
+// referencia su id (MySQL no tiene ON DELETE CASCADE configurado para estas
+// relaciones): ReturnItem/Refund (cuelgan de ReturnRequest), ReturnRequest,
+// ShipmentHistory, Shipment, Payment, OrderBundleItem (esto sí cascadea a
+// OrderBundleItemDetail solo), OrderItem y DiscountCodeUsage. En la práctica
+// una orden CANCELLED normalmente solo tiene OrderItem/OrderBundleItem y tal
+// vez un Payment — pero se limpia todo por si acaso, sin asumir nada.
+//
+// Excepción de seguridad: si el pago de la orden quedó APPROVED (el cliente
+// SÍ pagó) mientras la orden se quedó en CANCELLED, es el caso límite que ya
+// documentamos en webhook.controller.js — el cron canceló la orden por
+// demora justo antes de que la confirmación del pago llegara tarde, y esa
+// orden queda marcada con un ALERTA en los logs para revisión manual. Borrar
+// esa orden destruiría la única evidencia de que se cobró sin entregar nada,
+// así que se excluye del borrado en bloque sin importar la antigüedad —
+// tiene que revisarla un humano primero (reembolso o reconciliación).
+const deleteCancelledOrders = async (req, res) => {
+  try {
+    const cutoff = new Date(Date.now() - CANCELLED_ORDER_RETENTION_MS)
+
+    const cancelledOrders = await prisma.order.findMany({
+      where: {
+        status: 'CANCELLED',
+        createdAt: { lt: cutoff },
+        OR: [
+          { payment: null },
+          { payment: { status: { not: 'APPROVED' } } },
+        ],
+      },
+      select: { id: true },
+    })
+    const orderIds = cancelledOrders.map((o) => o.id)
+
+    if (orderIds.length === 0) {
+      return res.status(200).json({ message: 'No hay órdenes canceladas antiguas para eliminar', deletedCount: 0 })
+    }
+
+    const returnRequests = await prisma.returnRequest.findMany({
+      where: { orderId: { in: orderIds } },
+      select: { id: true },
+    })
+    const returnRequestIds = returnRequests.map((r) => r.id)
+
+    const shipments = await prisma.shipment.findMany({
+      where: { orderId: { in: orderIds } },
+      select: { id: true },
+    })
+    const shipmentIds = shipments.map((s) => s.id)
+
+    await prisma.$transaction(async (tx) => {
+      await tx.refund.deleteMany({ where: { returnRequestId: { in: returnRequestIds } } })
+      await tx.returnItem.deleteMany({ where: { returnRequestId: { in: returnRequestIds } } })
+      await tx.returnRequest.deleteMany({ where: { id: { in: returnRequestIds } } })
+
+      await tx.shipmentHistory.deleteMany({ where: { shipmentId: { in: shipmentIds } } })
+      await tx.shipment.deleteMany({ where: { id: { in: shipmentIds } } })
+
+      await tx.payment.deleteMany({ where: { orderId: { in: orderIds } } })
+
+      // OrderBundleItemDetail cascadea sola al borrar OrderBundleItem (onDelete: Cascade en el schema).
+      await tx.orderBundleItem.deleteMany({ where: { orderId: { in: orderIds } } })
+      await tx.orderItem.deleteMany({ where: { orderId: { in: orderIds } } })
+
+      await tx.discountCodeUsage.deleteMany({ where: { orderId: { in: orderIds } } })
+
+      await tx.order.deleteMany({ where: { id: { in: orderIds } } })
+    })
+
+    return res.status(200).json({
+      message: `${orderIds.length} orden${orderIds.length === 1 ? '' : 'es'} cancelada${orderIds.length === 1 ? '' : 's'} eliminada${orderIds.length === 1 ? '' : 's'}`,
+      deletedCount: orderIds.length,
+    })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: 'Error interno' })
+  }
+}
+
+// Llama a esta función desde un cron cada 3 minutos (ver CLEANUP_INTERVAL_MS en app.js).
+// Cancela órdenes PENDING sin pago y libera el stock reservado — pero no todas
+// con el mismo plazo:
+//   · Sin pago registrado, o con pago pero sin transactionId todavía (tarjeta,
+//     o la persona nunca llegó a elegir un método en ePayco): 10 min alcanzan
+//     de sobra a un comprador real, y no dejan un producto con poco stock
+//     "secuestrado" por alguien que ya se fue.
+//   · Con transactionId (ePayco ya confirmó la transacción con estado
+//     "Pendiente" — típico de efectivo/PSE, que puede tardar horas en
+//     confirmarse en un punto físico o el banco): 48 horas de margen, para no
+//     cancelarle la compra a alguien que todavía va a pagar.
+const RESERVATION_TTL_MS = 10 * 60 * 1000        // 10 minutos
+const PENDING_PAYMENT_TTL_MS = 48 * 60 * 60 * 1000 // 48 horas
 
 const releaseExpiredReservations = async () => {
-  const cutoff = new Date(Date.now() - RESERVATION_TTL_MS)
+  const shortCutoff = new Date(Date.now() - RESERVATION_TTL_MS)
+  const longCutoff  = new Date(Date.now() - PENDING_PAYMENT_TTL_MS)
 
   const expiredOrders = await prisma.order.findMany({
-    where: { status: 'PENDING', createdAt: { lt: cutoff } },
+    where: {
+      status: 'PENDING',
+      OR: [
+        { createdAt: { lt: shortCutoff }, payment: null },
+        { createdAt: { lt: shortCutoff }, payment: { is: { transactionId: null } } },
+        { createdAt: { lt: longCutoff },  payment: { is: { transactionId: { not: null } } } },
+      ]
+    },
     include: {
       items: { select: { productVariantId: true, quantity: true } },
       bundleItems: {
@@ -618,5 +783,6 @@ module.exports = {
   searchOrder,
   filterOrderByDate,
   trackOrder,
+  deleteCancelledOrders,
   releaseExpiredReservations,
 }

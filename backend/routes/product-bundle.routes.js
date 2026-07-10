@@ -5,6 +5,7 @@ const path = require('path')
 const fs = require('fs')
 const productBundleController = require('../controllers/product-bundle/product_bundle.controller')
 const { requirePermission } = require('../middlewares/permission.middleware')
+const { safeFilename } = require('../utils/safe-upload')
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp']
 
@@ -15,10 +16,7 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, UPLOAD_DIR)
   },
-  filename: (req, file, cb) => {
-    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_')
-    cb(null, Date.now() + '-' + safeName)
-  }
+  filename: safeFilename
 })
 
 const upload = multer({

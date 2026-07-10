@@ -50,7 +50,7 @@ function SocialBtn({ href, label, children }) {
 
 export default function HomeFooter() {
   return (
-    <footer className="bg-white border-t border-rose-100 mt-16">
+    <footer className="bg-white border-t border-rose-100">
 
       {/* Banda decorativa */}
       <div className="h-1 w-full bg-linear-to-r from-pink-200 via-rose-300 to-fuchsia-200" />

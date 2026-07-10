@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TrendingUp, DollarSign, Receipt, ShoppingBag } from "lucide-react";
+import { TrendingUp, DollarSign, Receipt, ShoppingBag, PackagePlus } from "lucide-react";
 
 import { useSalesReport } from "../hooks/useReport";
 import ReportCard         from "./ReportCard";
@@ -38,6 +38,8 @@ function SalesReport({ filters }) {
     color: STATUS_META[s.status]?.color ?? "#94a3b8",
   }));
   const maxRev    = Math.max(...data.topProducts.map((p) => p.revenue), 1);
+  const topBundles = data.topBundles ?? [];
+  const maxBundleRev = Math.max(...topBundles.map((b) => b.revenue), 1);
 
   return (
     <div className="space-y-5">
@@ -105,13 +107,32 @@ function SalesReport({ filters }) {
         </ReportSection>
       </div>
 
+      {/* Top combos por ingresos */}
+      {topBundles.length > 0 && (
+        <ReportSection title="Top 10 combos · ingresos" icon={PackagePlus}>
+          <div className="space-y-0.5">
+            {topBundles.map((b, i) => (
+              <HBar
+                key={b.name}
+                rank={i + 1}
+                label={b.name}
+                value={b.revenue}
+                max={maxBundleRev}
+                displayValue={fmtCOP(b.revenue)}
+                color="#818cf8"
+              />
+            ))}
+          </div>
+        </ReportSection>
+      )}
+
       {/* Tabla detalle órdenes */}
       <ReportSection title="Detalle de órdenes" icon={Receipt} noPad>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-100">
               <tr>
-                {["Orden", "Cliente", "Estado", "Subtotal", "Envío", "Total", "Fecha"].map((h) => (
+                {["Orden", "Cliente", "Estado", "Combos", "Subtotal", "Envío", "Total", "Fecha"].map((h) => (
                   <th key={h} className="text-left px-5 py-3 font-semibold whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -119,6 +140,7 @@ function SalesReport({ filters }) {
             <tbody className="divide-y divide-slate-50">
               {pagedRecords.map((o) => {
                 const meta = STATUS_META[o.status];
+                const bundleItems = o.bundleItems ?? [];
                 return (
                   <tr key={o.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-5 py-3 font-mono text-[11px] font-semibold text-indigo-600">{o.orderNumber}</td>
@@ -127,6 +149,16 @@ function SalesReport({ filters }) {
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${meta?.badge ?? "bg-slate-50 text-slate-500 ring-slate-200"}`}>
                         {meta?.label ?? o.status}
                       </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      {bundleItems.length > 0 ? (
+                        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset bg-indigo-50 text-indigo-600 ring-indigo-200">
+                          <PackagePlus size={10} />
+                          {bundleItems.length}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300 text-xs">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-slate-500 tabular-nums">{fmtCOP(o.subtotal)}</td>
                     <td className="px-5 py-3 text-sky-600 tabular-nums">{fmtCOP(o.shippingCost ?? 11000)}</td>

@@ -1,5 +1,7 @@
+import { useNavigate } from "react-router-dom";
 import { Trash2, Plus, Minus } from "lucide-react";
 import noPhotos from "@/assets/icons/no-fotos.png";
+import { getAvailableUnits } from "@/lib/stock";
 
 function getMainImage(images) {
   if (!images?.length) return null;
@@ -7,20 +9,32 @@ function getMainImage(images) {
   return main?.imageUrl ?? images[0]?.imageUrl ?? null;
 }
 
-export default function HomeCartItem({ item, onRemove, onUpdateQty }) {
+export default function HomeCartItem({ item, onRemove, onUpdateQty, onClose }) {
+  const navigate = useNavigate();
   const { variant, quantity } = item;
-  const { product, price, attributes, images, stock } = variant;
-  const atLimit = quantity >= Number(stock ?? 0);
+  const { product, price, attributes, images, finalPrice, promotion } = variant;
+  const hasPromotion = !!promotion;
+  const available = getAvailableUnits(variant);
+  const atLimit = quantity >= available;
 
   const rawImg = getMainImage(images);
   const imgSrc = rawImg
     ? `${import.meta.env.VITE_API_URL}${rawImg}`
     : noPhotos;
 
-  const subtotal = Number(price) * quantity;
+  const subtotal = Number(hasPromotion ? finalPrice : price) * quantity;
+  const originalSubtotal = Number(price) * quantity;
+
+  function goToProduct() {
+    onClose?.();
+    navigate(`/producto/${product?.slug ?? variant.id}`);
+  }
 
   return (
-    <div className="flex gap-3 py-4 border-b border-gray-100 last:border-0">
+    <div
+      onClick={goToProduct}
+      className="flex gap-3 py-4 border-b border-gray-100 last:border-0 cursor-pointer"
+    >
 
       {/* Imagen */}
       <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
@@ -59,7 +73,10 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty }) {
 
         {/* Cantidad + precio */}
         <div className="flex items-center justify-between mt-1.5">
-          <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden"
+          >
             <button
               onClick={() => onUpdateQty(variant.id, quantity - 1)}
               className="flex items-center justify-center w-8 h-8 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-30"
@@ -74,21 +91,32 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty }) {
               onClick={() => onUpdateQty(variant.id, quantity + 1)}
               disabled={atLimit}
               className="flex items-center justify-center w-8 h-8 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title={atLimit ? `Máximo disponible: ${stock}` : undefined}
+              title={atLimit ? `Máximo disponible: ${available}` : undefined}
             >
               <Plus size={12} />
             </button>
           </div>
 
-          <span className="text-sm font-bold text-gray-900">
-            ${subtotal.toLocaleString("es-CO")}
-          </span>
+          {hasPromotion ? (
+            <span className="flex flex-col items-end leading-none">
+              <span className="text-[10px] text-gray-400 line-through opacity-70">
+                ${originalSubtotal.toLocaleString("es-CO")}
+              </span>
+              <span className="text-sm font-bold text-rose-600 mt-0.5">
+                ${subtotal.toLocaleString("es-CO")}
+              </span>
+            </span>
+          ) : (
+            <span className="text-sm font-bold text-gray-900">
+              ${subtotal.toLocaleString("es-CO")}
+            </span>
+          )}
         </div>
       </div>
 
       {/* Eliminar */}
       <button
-        onClick={() => onRemove(variant.id)}
+        onClick={(e) => { e.stopPropagation(); onRemove(variant.id); }}
         className="self-start mt-0.5 flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0"
         aria-label="Eliminar del carrito"
       >

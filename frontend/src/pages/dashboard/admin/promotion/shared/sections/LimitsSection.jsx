@@ -1,0 +1,152 @@
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const STATUS_OPTIONS = [
+  { value: "DRAFT",  label: "Borrador", cls: "text-slate-500" },
+  { value: "ACTIVE", label: "Activa",   cls: "text-green-600" },
+  { value: "PAUSED", label: "Pausada",  cls: "text-amber-600" },
+];
+
+export default function LimitsSection({ form, handleChange }) {
+  return (
+    <div className="space-y-4">
+
+      <div>
+        <h3 className="text-sm font-semibold">Vigencia y límites</h3>
+        <p className="text-xs text-muted-foreground">Fechas de validez, compra mínima, prioridad y topes de uso.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        {/* Compra mínima */}
+        <div className="space-y-1.5">
+          <Label>Compra mínima</Label>
+          <Input
+            type="number"
+            min={0}
+            value={form.minimumPurchase ?? "0"}
+            onChange={(e) => handleChange("minimumPurchase", e.target.value)}
+            placeholder="0"
+          />
+        </div>
+
+        {/* Prioridad */}
+        <div className="space-y-1.5">
+          <Label>Prioridad</Label>
+          <Input
+            type="number"
+            min={1}
+            value={form.priority ?? "1"}
+            onChange={(e) => handleChange("priority", e.target.value)}
+            placeholder="1"
+          />
+        </div>
+
+        {/* Límite de usos total */}
+        <div className="space-y-1.5">
+          <Label>
+            Límite de usos{" "}
+            <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
+          </Label>
+          <Input
+            type="number"
+            min={1}
+            value={form.usageLimit ?? ""}
+            onChange={(e) => handleChange("usageLimit", e.target.value)}
+            placeholder="Ilimitado"
+          />
+        </div>
+
+        {/* Límite de usos por cliente */}
+        <div className="space-y-1.5">
+          <Label>
+            Usos por cliente{" "}
+            <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
+          </Label>
+          <Input
+            type="number"
+            min={1}
+            value={form.usagePerCustomer ?? ""}
+            onChange={(e) => handleChange("usagePerCustomer", e.target.value)}
+            placeholder="Ilimitado"
+          />
+        </div>
+
+        {/* Fecha inicio */}
+        <div className="space-y-1.5">
+          <Label>Fecha de inicio <span className="text-red-400">*</span></Label>
+          <DatePicker
+            value={form.startsAt || ""}
+            onChange={(v) => handleChange("startsAt", v)}
+            placeholder="Seleccionar fecha"
+            className="w-full"
+          />
+        </div>
+
+        {/* Fecha expiración */}
+        <div className="space-y-1.5">
+          <Label>Fecha de expiración <span className="text-red-400">*</span></Label>
+          <DatePicker
+            value={form.expiresAt || ""}
+            onChange={(v) => handleChange("expiresAt", v)}
+            placeholder="Seleccionar fecha"
+            className="w-full"
+          />
+        </div>
+
+      </div>
+
+      {/* Combinable */}
+      <div className="flex items-center justify-between rounded-lg border bg-muted/20 px-4 py-3">
+        <div className="space-y-0.5">
+          <Label className="text-sm font-medium">Combinable</Label>
+          <p className="text-xs text-muted-foreground">Permite aplicar esta promoción junto a otras</p>
+        </div>
+        <Select
+          value={form.allowCombination ? "true" : "false"}
+          onValueChange={(val) => handleChange("allowCombination", val === "true")}
+        >
+          <SelectTrigger className="h-9 w-32 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="true">Sí</SelectItem>
+            <SelectItem value="false">No</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Estado */}
+      <div className="flex items-center justify-between rounded-lg border bg-muted/20 px-4 py-3">
+        <div className="space-y-0.5">
+          <Label className="text-sm font-medium">Estado</Label>
+          <p className="text-xs text-muted-foreground">Estado editorial de la promoción</p>
+        </div>
+        <Select
+          value={form.status || "DRAFT"}
+          onValueChange={(val) => handleChange("status", val)}
+        >
+          <SelectTrigger className="h-9 w-32 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                <span className={`font-medium ${opt.cls}`}>{opt.label}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+    </div>
+  );
+}

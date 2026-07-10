@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { buildSearchStems } = require('../../utils/search-stems');
 
 const LIMIT = 5;
 
@@ -11,7 +12,10 @@ const globalSearch = async (req, res) => {
       return res.status(200).json({ results: {}, total: 0 });
     }
 
-    const contains = q;
+    // AND de stems: cada palabra debe aparecer en algún campo, sin importar
+    // el orden — una búsqueda de varias palabras ("porton rojo") no debe
+    // exigir que el campo contenga la frase completa como un solo substring.
+    const stems = buildSearchStems(q);
     // Los pedidos contienen datos personales de clientes — solo se buscan
     // si el usuario realmente tiene permiso para ver órdenes, no por el
     // simple hecho de estar autenticado.
@@ -21,7 +25,7 @@ const globalSearch = async (req, res) => {
       prisma.category.findMany({
         where: {
           isActive: true,
-          OR: [{ name: { contains } }, { slug: { contains } }],
+          AND: stems.map((s) => ({ OR: [{ name: { contains: s } }, { slug: { contains: s } }] })),
         },
         select: { id: true, name: true, slug: true },
         take: LIMIT,
@@ -29,7 +33,7 @@ const globalSearch = async (req, res) => {
 
       prisma.brand.findMany({
         where: {
-          OR: [{ name: { contains } }, { slug: { contains } }],
+          AND: stems.map((s) => ({ OR: [{ name: { contains: s } }, { slug: { contains: s } }] })),
         },
         select: { id: true, name: true, slug: true },
         take: LIMIT,
@@ -37,7 +41,7 @@ const globalSearch = async (req, res) => {
 
       prisma.product.findMany({
         where: {
-          OR: [{ name: { contains } }, { slug: { contains } }],
+          AND: stems.map((s) => ({ OR: [{ name: { contains: s } }, { slug: { contains: s } }] })),
         },
         select: { id: true, name: true, slug: true },
         take: LIMIT,
@@ -46,12 +50,14 @@ const globalSearch = async (req, res) => {
       canViewOrders
         ? prisma.order.findMany({
             where: {
-              OR: [
-                { orderNumber: { contains } },
-                { email: { contains } },
-                { firstName: { contains } },
-                { lastName: { contains } },
-              ],
+              AND: stems.map((s) => ({
+                OR: [
+                  { orderNumber: { contains: s } },
+                  { email: { contains: s } },
+                  { firstName: { contains: s } },
+                  { lastName: { contains: s } },
+                ],
+              })),
             },
             select: {
               id: true,

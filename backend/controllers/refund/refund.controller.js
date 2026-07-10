@@ -85,15 +85,26 @@ const createRefund = async (req, res) => {
     const shippingAmount = isFullRefund ? Number(returnRequest.order.shippingCost) : 0
     if (isFullRefund) totalRefund += shippingAmount
 
-    const refund = await prisma.refund.create({
-      data: {
-        returnRequestId: returnRequest.id,
-        paymentId: returnRequest.order.payment.id,
-        amount: totalRefund,
-        status: "PENDING",
-        reference: null,
+    let refund
+    try {
+      refund = await prisma.refund.create({
+        data: {
+          returnRequestId: returnRequest.id,
+          paymentId: returnRequest.order.payment.id,
+          amount: totalRefund,
+          status: "PENDING",
+          reference: null,
+        }
+      })
+    } catch (err) {
+      // Backstop real contra el TOCTOU del chequeo `returnRequest.refunds.length`
+      // de arriba (dos requests casi simultáneas) — la restricción única en
+      // BD (@@unique([returnRequestId]) en Refund) es la que realmente lo evita.
+      if (err.code === 'P2002') {
+        return res.status(409).json({ message: "Reembolso ya registrado" })
       }
-    })
+      throw err
+    }
 
     return res.status(201).json({
       message: "Reembolso creado",
@@ -113,8 +124,16 @@ const processRefund = async (req, res) => {
   try {
     const { refundId, method, reference } = req.body
 
-    const refund = await prisma.refund.update({
-      where: { id: refundId },
+    const refundIdNum = Number(refundId)
+    if (!Number.isInteger(refundIdNum) || refundIdNum <= 0) {
+      return res.status(400).json({ message: "refundId inválido" })
+    }
+
+    // CAS: solo procesa un reembolso que siga PENDING — evita que dos
+    // requests concurrentes (o un doble clic) lo procesen dos veces, y evita
+    // reabrir uno ya FAILED/PROCESSED con una referencia nueva.
+    const claimed = await prisma.refund.updateMany({
+      where: { id: refundIdNum, status: "PENDING" },
       data: {
         status: "PROCESSED",
         method,
@@ -123,6 +142,12 @@ const processRefund = async (req, res) => {
         processedById: req.user.id,
       }
     })
+
+    if (claimed.count === 0) {
+      return res.status(409).json({ message: "El reembolso ya fue procesado o no está pendiente" })
+    }
+
+    const refund = await prisma.refund.findUnique({ where: { id: refundIdNum } })
 
     notifyRefundProcessed(refund).catch((err) => {
       console.error('Error notificando REFUND_PROCESSED', err)

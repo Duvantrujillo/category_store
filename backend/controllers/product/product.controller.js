@@ -3,6 +3,8 @@ const prisma = new PrismaClient()
 const slugify = require('slugify')
 const fs = require('fs');
 const path = require('path');
+const { buildSearchStems } = require('../../utils/search-stems');
+const { getActivePromotions, attachPromotionPricing } = require('../../utils/promotion-pricing');
 
 const deleteUploadedFile = (file) => {
   if (!file) return;
@@ -15,6 +17,11 @@ const deleteStoredImage = (imageUrl) => {
   const filePath = path.join(__dirname, '../../', imageUrl);
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 };
+
+// Debe coincidir con el enum ProductStatus de schema.prisma. Sin este
+// whitelist, un valor inválido (typo, string vacío) llegaba directo a
+// Prisma y volaba como una excepción de validación no manejada (500).
+const ALLOWED_STATUS = new Set(['ACTIVE', 'INACTIVE', 'DRAFT']);
 
 const createProduct = async (req, res) => {
   try {
@@ -36,6 +43,11 @@ const createProduct = async (req, res) => {
     if (!categoryId) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "La categoría es obligatoria" });
+    }
+
+    if (status && !ALLOWED_STATUS.has(status)) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: `Estado inválido. Permitidos: ${[...ALLOWED_STATUS].join(', ')}` });
     }
 
     const categoryIdNumb = Number(categoryId);
@@ -131,6 +143,11 @@ const updateProduct = async (req, res) => {
     if (!categoryId) {
       deleteUploadedFile(file);
       return res.status(400).json({ message: "La categoría es obligatoria" });
+    }
+
+    if (status && !ALLOWED_STATUS.has(status)) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: `Estado inválido. Permitidos: ${[...ALLOWED_STATUS].join(', ')}` });
     }
 
     const categoryIdNumb = Number(categoryId);
@@ -331,14 +348,21 @@ const searchProduct = async (req, res) => {
       return res.status(200).json({ data: active });
     }
 
+    // AND de stems: cada palabra de la búsqueda debe aparecer en ALGÚN campo
+    // (nombre, slug, categoría o marca), sin importar el orden — así "porton
+    // rojo" encuentra "Portón Rojo" igual que buscar solo "porton".
+    const stems = buildSearchStems(q);
+
     const products = await prisma.product.findMany({
       where: {
-        OR: [
-          { name:     { contains: q } },
-          { slug:     { contains: q } },
-          { category: { name: { contains: q } } },
-          { brand:    { name: { contains: q } } },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { name:     { contains: s } },
+            { slug:     { contains: s } },
+            { category: { name: { contains: s } } },
+            { brand:    { name: { contains: s } } },
+          ],
+        })),
       },
       include: { category: true, brand: true, variants: true },
       take: 20,
@@ -391,7 +415,14 @@ const getPublicProductBySlug = async (req, res) => {
       });
     });
 
-    return res.json({ ...product, attributeOptions });
+    const activePromotions = await getActivePromotions();
+    const variantsWithPricing = attachPromotionPricing(product.variants, activePromotions, {
+      productId: product.id,
+      categoryId: product.categoryId,
+      brandId: product.brandId,
+    });
+
+    return res.json({ ...product, variants: variantsWithPricing, attributeOptions });
   } catch (error) {
     console.error('Error en getPublicProductBySlug:', error);
     return res.status(500).json({ message: 'Error interno' });

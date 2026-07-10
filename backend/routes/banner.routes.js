@@ -1,18 +1,15 @@
 const express    = require("express");
 const router     = express.Router();
 const multer     = require("multer");
-const path       = require("path");
 const ctrl       = require("../controllers/banner/banner.controller");
 const { requirePermission } = require("../middlewares/permission.middleware");
+const { safeFilename } = require("../utils/safe-upload");
 
 const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp"];
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/banner"),
-  filename:    (req, file, cb) => {
-    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, "_");
-    cb(null, Date.now() + "-" + safeName);
-  },
+  filename:    safeFilename,
 });
 
 const upload = multer({

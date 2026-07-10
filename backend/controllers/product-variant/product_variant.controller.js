@@ -3,6 +3,8 @@ const prisma = new PrismaClient()
 const slugify = require('slugify')
 const fs = require("fs");
 const path = require("path");
+const { buildSearchStems } = require("../../utils/search-stems");
+const { getActivePromotions, attachPromotionPricing } = require("../../utils/promotion-pricing");
 
 const getVariantFolder = (variantId) =>
   path.join(__dirname, "../../uploads/product-variant", String(variantId));
@@ -19,6 +21,30 @@ const deleteTempFiles = (files) => {
     if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
   });
 };
+
+// Valida el array `attributes` (cada uno { valueId }) antes de tocar la BD:
+// que cada valueId sea un entero válido, que no se repita (violaría
+// @@unique([productVariantId, attributeValueId])) y que exista de verdad en
+// AttributeValue — sin esto, un valueId inventado o duplicado terminaba en
+// un error de Prisma sin manejar (500 genérico) en vez de un 400 claro.
+async function validateAttributesPayload(attributes) {
+  if (!Array.isArray(attributes) || attributes.length === 0) return { ok: true }
+
+  const ids = attributes.map(av => Number(av.valueId))
+  if (ids.some(id => !Number.isInteger(id) || id <= 0)) {
+    return { error: "Uno de los atributos seleccionados es inválido" }
+  }
+  if (new Set(ids).size !== ids.length) {
+    return { error: "Hay atributos duplicados en la selección" }
+  }
+
+  const found = await prisma.attributeValue.count({ where: { id: { in: ids } } })
+  if (found !== ids.length) {
+    return { error: "Uno de los atributos seleccionados no existe" }
+  }
+
+  return { ok: true }
+}
 
 const createProductVariant = async (req, res) => {
   try {
@@ -117,27 +143,40 @@ const createProductVariant = async (req, res) => {
       }
     }
 
-    const newVariant = await prisma.productVariant.create({
-      data: { productId, barcode, price, stock, isDefault, isActive }
+    const attributesCheck = await validateAttributesPayload(attributes);
+    if (attributesCheck.error) {
+      deleteTempFiles(files);
+      return res.status(400).json({ message: attributesCheck.error });
+    }
+
+    // Variante + atributos en una sola transacción: si la creación de
+    // atributos falla (ej. FK inesperada), la variante tampoco queda creada
+    // a medias.
+    const { newVariant, attributeValues } = await prisma.$transaction(async (tx) => {
+      const newVariant = await tx.productVariant.create({
+        data: { productId, barcode, price, stock, isDefault, isActive }
+      });
+
+      let attributeValues = [];
+
+      if (Array.isArray(attributes) && attributes.length) {
+        await tx.productVariantAttribute.createMany({
+          data: attributes.map(av => ({
+            productVariantId: newVariant.id,
+            attributeValueId: Number(av.valueId)
+          }))
+        });
+
+        attributeValues = await tx.attributeValue.findMany({
+          where: { id: { in: attributes.map(a => Number(a.valueId)) } },
+          include: { attribute: true }
+        });
+      }
+
+      return { newVariant, attributeValues };
     });
 
     const variantId = newVariant.id;
-
-    let attributeValues = [];
-
-    if (Array.isArray(attributes) && attributes.length) {
-      await prisma.productVariantAttribute.createMany({
-        data: attributes.map(av => ({
-          productVariantId: variantId,
-          attributeValueId: av.valueId
-        }))
-      });
-
-      attributeValues = await prisma.attributeValue.findMany({
-        where: { id: { in: attributes.map(a => a.valueId) } },
-        include: { attribute: true }
-      });
-    }
 
     if (files?.length) {
       const folder = path.join(__dirname, `../../uploads/product-variant/${variantId}`);
@@ -183,6 +222,12 @@ const createProductVariant = async (req, res) => {
 
   } catch (error) {
     deleteTempFiles(req.files);
+    // Backstop real contra el TOCTOU del chequeo de barcode de arriba (dos
+    // creaciones casi simultáneas con el mismo código) — la restricción
+    // única en BD (barcode @unique en schema.prisma) es la que lo evita.
+    if (error.code === 'P2002' && error.meta?.target?.includes('barcode')) {
+      return res.status(409).json({ message: "Código de barras ya registrado" });
+    }
     console.error("Error en createProductVariant:", error);
     return res.status(500).json({ message: "Error interno" });
   }
@@ -317,16 +362,28 @@ const updateProductVariant = async (req, res) => {
       }
     }
 
+    const attributesCheck = await validateAttributesPayload(attributes);
+    if (attributesCheck.error) {
+      deleteTempFiles(files);
+      return res.status(400).json({ message: attributesCheck.error });
+    }
+
     if (Array.isArray(attributes)) {
-      await prisma.productVariantAttribute.deleteMany({ where: { productVariantId: formId } });
-      if (attributes.length) {
-        await prisma.productVariantAttribute.createMany({
-          data: attributes.map(av => ({
-            productVariantId: formId,
-            attributeValueId: av.valueId
-          }))
-        });
-      }
+      // deleteMany + createMany en una sola transacción: antes, si createMany
+      // fallaba (valueId inválido/duplicado), el deleteMany ya había
+      // confirmado y la variante quedaba sin NINGÚN atributo — ahora ambos
+      // pasos se revierten juntos si algo falla.
+      await prisma.$transaction([
+        prisma.productVariantAttribute.deleteMany({ where: { productVariantId: formId } }),
+        ...(attributes.length
+          ? [prisma.productVariantAttribute.createMany({
+              data: attributes.map(av => ({
+                productVariantId: formId,
+                attributeValueId: Number(av.valueId)
+              }))
+            })]
+          : [])
+      ]);
     }
 
     const folder = getVariantFolder(formId);
@@ -373,6 +430,9 @@ const updateProductVariant = async (req, res) => {
 
   } catch (error) {
     deleteTempFiles(req.files);
+    if (error.code === 'P2002' && error.meta?.target?.includes('barcode')) {
+      return res.status(409).json({ message: "Código de barras ya registrado" });
+    }
     console.error("Error en updateProductVariant:", error);
     return res.status(500).json({ message: "Error interno" });
   }
@@ -465,12 +525,20 @@ const searchSkuBarcode = async (req, res) => {
 
     if (!q) return res.status(200).json({ data: [] });
 
+    // AND de stems (una condición OR por palabra): una búsqueda de varias
+    // palabras encuentra resultados sin importar el orden, en vez de exigir
+    // que el SKU/producto contenga la frase completa como un solo substring.
+    const stems = buildSearchStems(q);
+
     const variants = await prisma.productVariant.findMany({
       where: {
-        OR: [
-          { sku:     { contains: q } },
-          { barcode: { contains: q } },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { sku:     { contains: s } },
+            { barcode: { contains: s } },
+            { product: { name: { contains: s } } },
+          ],
+        })),
       },
       include: {
         images: true,
@@ -493,19 +561,6 @@ const searchSkuBarcode = async (req, res) => {
   }
 };
 
-// ── helpers de búsqueda ──────────────────────────────────────────────────────
-function normSearch(s) {
-  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-}
-function stemES(word) {
-  if (word.length > 4 && word.endsWith("es")) return word.slice(0, -2);
-  if (word.length > 3 && word.endsWith("s"))  return word.slice(0, -1);
-  return word;
-}
-function buildSearchStems(query) {
-  return query.trim().split(/\s+/).filter(Boolean).map((w) => stemES(normSearch(w)));
-}
-
 // Deduplica variantes por producto (una por producto; ya vienen ordenadas con
 // isDefault primero). Si la variante que le tocaría a un producto (isDefault
 // o la más reciente) está agotada pero otra variante del mismo producto sí
@@ -515,7 +570,7 @@ function buildSearchStems(query) {
 // para no repetir un producto ya usado en la anterior.
 function dedupeByProduct(variants, { limit = Infinity, seen = new Set() } = {}) {
   const firstOverall = new Map(); // productId -> primera variante vista (fallback si ninguna tiene stock)
-  const firstInStock = new Map(); // productId -> primera variante vista CON stock
+  const firstInStock = new Map(); // productId -> primera variante vista CON stock disponible
   const order = [];               // orden de aparición de cada producto nuevo
 
   for (const v of variants) {
@@ -524,7 +579,11 @@ function dedupeByProduct(variants, { limit = Infinity, seen = new Set() } = {}) 
       firstOverall.set(v.productId, v);
       order.push(v.productId);
     }
-    if (!firstInStock.has(v.productId) && Number(v.stock) > 0) {
+    // Disponible = stock - reservedStock: si un pedido pendiente (incluso uno
+    // que alguien abandonó sin pagar) ya reservó todo el stock, esta variante
+    // no cuenta como "con stock" solo porque la columna stock sea > 0.
+    const available = Number(v.stock) - Number(v.reservedStock ?? 0);
+    if (!firstInStock.has(v.productId) && available > 0) {
       firstInStock.set(v.productId, v);
     }
   }
@@ -597,7 +656,10 @@ const getPublicVariants = async (req, res) => {
     // Un único resultado por producto: la variante isDefault (o la primera activa)
     const deduped = dedupeByProduct(variants);
 
-    return res.status(200).json({ data: deduped });
+    const activePromotions = await getActivePromotions();
+    const withPricing = attachPromotionPricing(deduped, activePromotions);
+
+    return res.status(200).json({ data: withPricing });
   } catch (error) {
     console.error("Error en getPublicVariants:", error);
     return res.status(500).json({ message: "Error interno" });
@@ -618,7 +680,11 @@ const getPublicVariantById = async (req, res) => {
       },
     })
     if (!variant) return res.status(404).json({ message: "No encontrado" })
-    return res.json(variant)
+
+    const activePromotions = await getActivePromotions();
+    const withPricing = attachPromotionPricing(variant, activePromotions);
+
+    return res.json(withPricing)
   } catch (error) {
     console.error("Error en getPublicVariantById:", error)
     return res.status(500).json({ message: "Error interno" })
@@ -695,6 +761,8 @@ const getPublicSuggestions = async (req, res) => {
           select: {
             name: true,
             slug: true,
+            brandId: true,
+            categoryId: true,
             brand: { select: { name: true } },
           },
         },
@@ -706,7 +774,10 @@ const getPublicSuggestions = async (req, res) => {
     // Un resultado por producto
     const deduped = dedupeByProduct(variants, { limit: 6 });
 
-    return res.status(200).json({ data: deduped });
+    const activePromotions = await getActivePromotions();
+    const withPricing = attachPromotionPricing(deduped, activePromotions);
+
+    return res.status(200).json({ data: withPricing });
   } catch (error) {
     console.error("Error en getPublicSuggestions:", error);
     return res.status(500).json({ message: "Error interno" });
@@ -759,8 +830,10 @@ const getRelatedVariants = async (req, res) => {
       (categoryId && v.product.categoryId === categoryId ? 1 : 0);
     dedupedRelated.sort((a, b) => score(b) - score(a));
 
+    const activePromotions = await getActivePromotions();
+
     if (dedupedRelated.length >= limit) {
-      return res.status(200).json({ data: dedupedRelated.slice(0, limit) });
+      return res.status(200).json({ data: attachPromotionPricing(dedupedRelated.slice(0, limit), activePromotions) });
     }
 
     // 2. Rellenar con otros productos si faltan
@@ -780,9 +853,91 @@ const getRelatedVariants = async (req, res) => {
     // Deduplica fillers también
     const dedupedFillers = dedupeByProduct(fillers, { limit: needed, seen: seenProducts });
 
-    return res.status(200).json({ data: [...dedupedRelated, ...dedupedFillers] });
+    return res.status(200).json({ data: attachPromotionPricing([...dedupedRelated, ...dedupedFillers], activePromotions) });
   } catch (error) {
     console.error("Error en getRelatedVariants:", error);
+    return res.status(500).json({ message: "Error interno" });
+  }
+};
+
+// GET /bundle/public/related-products?bundleId=X&limit=Y
+// Productos relacionados a los que COMPONEN un combo (misma marca o
+// categoría de cualquiera de sus productos) — se usa como respaldo cuando un
+// combo no tiene otros combos relacionados, para que la sección de "descubre
+// más" en el detalle del combo nunca quede vacía.
+const getRelatedProductsForBundle = async (req, res) => {
+  try {
+    const bundleId = Number(req.query.bundleId);
+    const limit     = Math.min(Number(req.query.limit || 24), 48);
+
+    if (!bundleId || isNaN(bundleId)) {
+      return res.status(400).json({ message: "bundleId requerido" });
+    }
+
+    const bundle = await prisma.productBundle.findUnique({
+      where: { id: bundleId },
+      select: {
+        items: { select: { productId: true, product: { select: { brandId: true, categoryId: true } } } },
+      },
+    });
+    if (!bundle) return res.status(404).json({ message: "Combo no encontrado" });
+
+    const componentProductIds = bundle.items.map((i) => i.productId);
+    const brandIds    = [...new Set(bundle.items.map((i) => i.product.brandId).filter(Boolean))];
+    const categoryIds = [...new Set(bundle.items.map((i) => i.product.categoryId).filter(Boolean))];
+
+    const brandCatOR = [
+      ...(brandIds.length    ? [{ brandId:    { in: brandIds } }]    : []),
+      ...(categoryIds.length ? [{ categoryId: { in: categoryIds } }] : []),
+    ];
+
+    // 1. Variantes de productos relacionados a cualquiera de los componentes
+    const related = brandCatOR.length
+      ? await prisma.productVariant.findMany({
+          where: {
+            isActive: true,
+            NOT: { productId: { in: componentProductIds } },
+            product: { status: "ACTIVE", OR: brandCatOR },
+          },
+          include: RELATED_INCLUDE,
+          orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+        })
+      : [];
+
+    const seenProducts = new Set(componentProductIds);
+    const dedupedRelated = dedupeByProduct(related, { seen: seenProducts });
+
+    // Ordenar: marca (2 pts) > categoría (1 pt), sumando contra cualquier componente
+    const score = (v) =>
+      (brandIds.includes(v.product.brandId)       ? 2 : 0) +
+      (categoryIds.includes(v.product.categoryId) ? 1 : 0);
+    dedupedRelated.sort((a, b) => score(b) - score(a));
+
+    const activePromotions = await getActivePromotions();
+
+    if (dedupedRelated.length >= limit) {
+      return res.status(200).json({ data: attachPromotionPricing(dedupedRelated.slice(0, limit), activePromotions) });
+    }
+
+    // 2. Rellenar con otros productos si faltan — así la sección nunca queda vacía
+    const needed         = limit - dedupedRelated.length;
+    const excludeProdIds = [...seenProducts];
+
+    const fillers = await prisma.productVariant.findMany({
+      where: {
+        isActive: true,
+        NOT: { productId: { in: excludeProdIds } },
+        product: { status: "ACTIVE" },
+      },
+      include: RELATED_INCLUDE,
+      orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+    });
+
+    const dedupedFillers = dedupeByProduct(fillers, { limit: needed, seen: seenProducts });
+
+    return res.status(200).json({ data: attachPromotionPricing([...dedupedRelated, ...dedupedFillers], activePromotions) });
+  } catch (error) {
+    console.error("Error en getRelatedProductsForBundle:", error);
     return res.status(500).json({ message: "Error interno" });
   }
 };
@@ -808,13 +963,14 @@ const SHOWCASE_SELECT = {
   price: true,
   isDefault: true,
   stock: true,
+  reservedStock: true,
   images: { select: { imageUrl: true, slot: true }, orderBy: { slot: "asc" }, take: 2 },
   product: {
-    select: { id: true, name: true, slug: true, brand: { select: { name: true } } },
+    select: { id: true, name: true, slug: true, brandId: true, categoryId: true, brand: { select: { name: true } } },
   },
 };
 
-async function fetchGroupVariants(where) {
+async function fetchGroupVariants(where, activePromotions) {
   const variants = await prisma.productVariant.findMany({
     where: { isActive: true, product: { status: "ACTIVE", ...where } },
     select: SHOWCASE_SELECT,
@@ -824,13 +980,14 @@ async function fetchGroupVariants(where) {
     take: SHOWCASE_ITEMS_PER_GROUP * 5,
   });
 
-  return dedupeByProduct(variants, { limit: SHOWCASE_ITEMS_PER_GROUP });
+  const deduped = dedupeByProduct(variants, { limit: SHOWCASE_ITEMS_PER_GROUP });
+  return attachPromotionPricing(deduped, activePromotions);
 }
 
 // Fila "Más vendidos" — misma ventana de tiempo (mes en curso) y criterio
 // (cantidad vendida en órdenes PAID) que usa el badge de getTopSellers,
 // pero trayendo la data completa de la variante para armar una fila entera.
-async function fetchTopSellerGroupVariants() {
+async function fetchTopSellerGroupVariants(activePromotions) {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -860,12 +1017,14 @@ async function fetchTopSellerGroupVariants() {
   const rank = new Map(variantIds.map((id, i) => [id, i]));
   variants.sort((a, b) => rank.get(a.id) - rank.get(b.id));
 
-  return dedupeByProduct(variants, { limit: SHOWCASE_ITEMS_PER_GROUP });
+  const deduped = dedupeByProduct(variants, { limit: SHOWCASE_ITEMS_PER_GROUP });
+  return attachPromotionPricing(deduped, activePromotions);
 }
 
 const getPublicShowcase = async (req, res) => {
   try {
-    const topSellerVariants = await fetchTopSellerGroupVariants();
+    const activePromotions = await getActivePromotions();
+    const topSellerVariants = await fetchTopSellerGroupVariants(activePromotions);
     const topSellerGroup = topSellerVariants.length >= SHOWCASE_MIN_PRODUCTS
       ? { type: "topSellers", id: "top-sellers", title: "Los más vendidos", variants: topSellerVariants }
       : null;
@@ -915,13 +1074,13 @@ const getPublicShowcase = async (req, res) => {
         type: "brand",
         id: b.id,
         title: `Más de ${b.name}`,
-        variants: await fetchGroupVariants({ brandId: b.id }),
+        variants: await fetchGroupVariants({ brandId: b.id }, activePromotions),
       }))),
       Promise.all(categories.map(async (c) => ({
         type: "category",
         id: c.id,
         title: `Explora ${c.name}`,
-        variants: await fetchGroupVariants({ categoryId: c.id }),
+        variants: await fetchGroupVariants({ categoryId: c.id }, activePromotions),
       }))),
     ]);
 
@@ -956,5 +1115,6 @@ module.exports = {
   getTopSellers,
   getPublicSuggestions,
   getRelatedVariants,
+  getRelatedProductsForBundle,
   getPublicShowcase,
 }

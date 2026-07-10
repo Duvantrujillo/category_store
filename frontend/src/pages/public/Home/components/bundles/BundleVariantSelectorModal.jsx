@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { X, Check, PackageX } from "lucide-react";
 import { getBundleAvailableStock } from "../../hooks/usePublicCart";
+import { getAvailableUnits } from "@/lib/stock";
 
 function variantLabel(variant) {
   if (!variant) return "";
@@ -18,8 +19,9 @@ export default function BundleVariantSelectorModal({ bundle, onClose, onConfirm 
     const initial = {};
     for (const item of freeItems) {
       // Solo se preselecciona una opción que realmente alcance para el combo
-      // (stock suficiente para la cantidad que pide la receta), no cualquiera.
-      const firstUsable = item.product.variants.find((v) => Number(v.stock) >= item.quantity)
+      // (stock disponible suficiente para la cantidad que pide la receta),
+      // no cualquiera.
+      const firstUsable = item.product.variants.find((v) => getAvailableUnits(v) >= item.quantity)
         ?? item.product.variants[0];
       if (firstUsable) initial[item.id] = firstUsable.id;
     }
@@ -69,7 +71,7 @@ export default function BundleVariantSelectorModal({ bundle, onClose, onConfirm 
         <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
           {bundle.items.map((item, idx) => {
             const isFree = !item.productVariantId;
-            const fixedOutOfStock = !isFree && Number(item.productVariant?.stock ?? 0) < item.quantity;
+            const fixedOutOfStock = !isFree && getAvailableUnits(item.productVariant) < item.quantity;
 
             return (
               <div key={item.id} className="rounded-2xl border border-gray-100 bg-white p-3 flex flex-col gap-2.5 shadow-sm">
@@ -89,9 +91,9 @@ export default function BundleVariantSelectorModal({ bundle, onClose, onConfirm 
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Elige una opción</p>
                     {item.product.variants.map((variant) => {
                       const selected = selections[item.id] === variant.id;
-                      // Agotado = no alcanza el stock para la cantidad que este
-                      // combo necesita de esta variante (no solo "stock > 0").
-                      const outOfStock = Number(variant.stock) < item.quantity;
+                      // Agotado = no alcanza el stock disponible para la
+                      // cantidad que este combo necesita de esta variante.
+                      const outOfStock = getAvailableUnits(variant) < item.quantity;
                       return (
                         <button
                           key={variant.id}
@@ -150,7 +152,7 @@ export default function BundleVariantSelectorModal({ bundle, onClose, onConfirm 
         <div className="px-5 py-4 border-t border-gray-100 flex flex-col gap-2">
           {available <= 0 && (
             <p className="text-[11px] text-rose-500 font-medium text-center">
-              Sin stock disponible con esta configuración.
+              Agotado con esta configuración.
             </p>
           )}
           {error && (

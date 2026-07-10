@@ -75,6 +75,35 @@ const getPaymentMethods = async (req, res) => {
     }
 }
 
+// Recorre los ítems (sueltos y de combo) de la orden y devuelve el nombre del
+// primer producto que ya no se pueda vender: la variante o el producto se
+// desactivaron, o el stock actual (revisado en este momento, no la reserva
+// original) ya no alcanza para lo que esta orden pidió. La reserva atómica
+// (reservedStock) garantiza que nadie más se lleve esas unidades mientras la
+// orden siga PENDING, pero no protege contra que un admin desactive el
+// producto/variante o corrija el stock hacia abajo mientras el cliente tiene
+// la pasarela abierta — por eso esto se revisa aparte, en cada reintento.
+function findUnavailableProductInOrder(order) {
+    for (const item of order.items ?? []) {
+        const v = item.productVariant;
+        if (!v || !v.isActive || v.product?.status !== "ACTIVE" || Number(v.stock) < item.quantity) {
+            return v?.product?.name ?? item.productName;
+        }
+    }
+
+    for (const bundleItem of order.bundleItems ?? []) {
+        for (const detail of bundleItem.items ?? []) {
+            const v = detail.productVariant;
+            const required = bundleItem.quantity * detail.quantity;
+            if (!v || !v.isActive || v.product?.status !== "ACTIVE" || Number(v.stock) < required) {
+                return v?.product?.name ?? detail.productName;
+            }
+        }
+    }
+
+    return null;
+}
+
 const verifyPayment = async (req, res) => {
     try {
         const { reference, cartUuid } = req.query;
@@ -82,7 +111,38 @@ const verifyPayment = async (req, res) => {
 
         const payment = await prisma.payment.findUnique({
             where: { reference },
-            select: { status: true, order: { select: { cartUuid: true, status: true } } }
+            select: {
+                status: true,
+                order: {
+                    select: {
+                        cartUuid: true,
+                        status: true,
+                        items: {
+                            select: {
+                                quantity: true,
+                                productName: true,
+                                productVariant: {
+                                    select: { isActive: true, stock: true, product: { select: { name: true, status: true } } }
+                                }
+                            }
+                        },
+                        bundleItems: {
+                            select: {
+                                quantity: true,
+                                items: {
+                                    select: {
+                                        quantity: true,
+                                        productName: true,
+                                        productVariant: {
+                                            select: { isActive: true, stock: true, product: { select: { name: true, status: true } } }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         if (!payment) return res.status(404).json({ message: "Pago no encontrado" });
@@ -100,7 +160,18 @@ const verifyPayment = async (req, res) => {
         // un reintento — si el pedido expiró/se canceló (releaseExpiredReservations
         // lo pasa a CANCELLED y libera el stock a los 30 min sin pago), no debe
         // reabrir la pasarela con datos obsoletos, sino forzar un pedido nuevo.
-        return res.json({ status: payment.status, orderStatus: payment.order?.status });
+        //
+        // unavailableProduct: aunque la orden siga PENDING, revisa en vivo si
+        // algún producto/variante de la orden se desactivó o se quedó sin
+        // stock desde que se creó — si el admin lo hizo mientras el cliente
+        // tenía la pasarela abierta, el reintento debe bloquearse igual.
+        const unavailableProduct = payment.order ? findUnavailableProductInOrder(payment.order) : null;
+
+        return res.json({
+            status: payment.status,
+            orderStatus: payment.order?.status,
+            unavailableProduct,
+        });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Error interno" });

@@ -8,6 +8,7 @@ import HomeWishlist from "../wishlist/HomeWishlist";
 import { usePublicCart } from "../../hooks/usePublicCart";
 import { usePublicWishlist } from "../../hooks/usePublicWishlist";
 import { usePublicProduct } from "../../hooks/usePublicProduct";
+import { getAvailableUnits } from "@/lib/stock";
 import ProductDetailGallery from "./ProductDetailGallery";
 import ProductDetailDescription from "./ProductDetailDescription";
 import ProductDetailBrand from "./ProductDetailBrand";
@@ -50,12 +51,13 @@ export default function ProductDetail() {
   // nunca hay un render intermedio con imágenes vacías
   const selectedVariant = useMemo(() => {
     if (!product?.variants?.length) return null;
-    // Preferir la variante marcada como default, pero solo si tiene stock —
-    // si esa se agotó, cae a cualquier otra variante disponible del producto
+    // Preferir la variante marcada como default, pero solo si tiene stock
+    // disponible (descontando lo ya reservado por pedidos pendientes) — si
+    // esa se agotó, cae a cualquier otra variante disponible del producto
     // antes de mostrarlo como agotado. Solo si NINGUNA tiene stock se usa la
-    // default (agotada) o la primera, para que ahí sí se vea "Sin stock".
-    const def = product.variants.find((v) => v.isDefault && Number(v.stock) > 0)
-      ?? product.variants.find((v) => Number(v.stock) > 0)
+    // default (agotada) o la primera, para que ahí sí se vea "Agotado".
+    const def = product.variants.find((v) => v.isDefault && getAvailableUnits(v) > 0)
+      ?? product.variants.find((v) => getAvailableUnits(v) > 0)
       ?? product.variants.find((v) => v.isDefault)
       ?? product.variants[0];
     if (!selectedAttrs) return def;
@@ -151,10 +153,11 @@ export default function ProductDetail() {
 
   // ── Datos de la variante seleccionada ─────────────────────────────────────
 
-  const { price, stock } = selectedVariant ?? {};
-  const outOfStock = !stock || Number(stock) === 0;
+  const { price, finalPrice, promotion } = selectedVariant ?? {};
+  const available  = getAvailableUnits(selectedVariant);
+  const outOfStock = available === 0;
   const cartQty    = cartQtyById[selectedVariant?.id] ?? 0;
-  const atLimit    = !outOfStock && cartQty >= Number(stock);
+  const atLimit    = !outOfStock && cartQty >= available;
   const isFav      = favoritedIds.has(selectedVariant?.id);
 
   return (
@@ -202,7 +205,7 @@ export default function ProductDetail() {
               onSelectAttr={handleSelectAttr}
             />
 
-            <ProductDetailPrice price={price} stock={stock} outOfStock={outOfStock} />
+            <ProductDetailPrice price={price} finalPrice={finalPrice} promotion={promotion} outOfStock={outOfStock} />
             <ProductDetailActions
               variant={enrichedVariant}
               outOfStock={outOfStock}

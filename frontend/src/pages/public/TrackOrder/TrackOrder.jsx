@@ -2,7 +2,7 @@ import { useState, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
-  ArrowLeft, PackageSearch, Loader2, AlertCircle, MapPin, Truck,
+  ArrowLeft, Loader2, AlertCircle, MapPin, Truck,
   CheckCircle2, Clock, XCircle, RotateCcw, Copy, Package, ClipboardList,
   CreditCard, History, ChevronDown, Receipt,
 } from "lucide-react";
@@ -243,9 +243,6 @@ export default function TrackOrder() {
           >
             <ArrowLeft size={13} /> Volver
           </button>
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-rose-100 shadow-sm">
-            <PackageSearch size={26} className="text-rose-500" />
-          </div>
           <h1
             className="text-2xl sm:text-3xl lg:text-4xl font-black"
             style={{ color: "#4b5563", WebkitTextStroke: "1.5px #4b5563", letterSpacing: "0.1em" }}
@@ -307,7 +304,7 @@ export default function TrackOrder() {
             disabled={loading}
             className="w-full h-11 rounded-xl flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold tracking-widest uppercase transition-colors shadow-sm shadow-rose-200"
           >
-            {loading ? <><Loader2 size={15} className="animate-spin" /> Consultando…</> : <><PackageSearch size={15} /> Consultar pedido</>}
+            {loading ? <><Loader2 size={15} className="animate-spin" /> Consultando…</> : "Consultar pedido"}
           </button>
         </form>
 

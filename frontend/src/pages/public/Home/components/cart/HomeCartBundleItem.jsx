@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Trash2, Plus, Minus } from "lucide-react";
 import noPhotos from "@/assets/icons/no-fotos.png";
 import { getBundleAvailableStock } from "../../hooks/usePublicCart";
@@ -11,7 +12,8 @@ function variantLabel(variant) {
   return attrs || variant.sku || "";
 }
 
-export default function HomeCartBundleItem({ item, onRemove, onUpdateQty }) {
+export default function HomeCartBundleItem({ item, onRemove, onUpdateQty, onClose }) {
+  const navigate = useNavigate();
   const { bundle, quantity, selections } = item;
   const available = getBundleAvailableStock(bundle, selections);
   const atLimit = quantity >= available;
@@ -28,8 +30,16 @@ export default function HomeCartBundleItem({ item, onRemove, onUpdateQty }) {
     })
     .filter(Boolean);
 
+  function goToBundle() {
+    onClose?.();
+    navigate(`/combo/${bundle.slug ?? bundle.id}`);
+  }
+
   return (
-    <div className="flex gap-3 py-4 border-b border-gray-100 last:border-0">
+    <div
+      onClick={goToBundle}
+      className="flex gap-3 py-4 border-b border-gray-100 last:border-0 cursor-pointer"
+    >
 
       {/* Imagen */}
       <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
@@ -56,7 +66,10 @@ export default function HomeCartBundleItem({ item, onRemove, onUpdateQty }) {
 
         {/* Cantidad + precio */}
         <div className="flex items-center justify-between mt-1.5">
-          <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden"
+          >
             <button
               onClick={() => onUpdateQty(bundle.id, quantity - 1)}
               className="flex items-center justify-center w-8 h-8 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-30"
@@ -85,7 +98,7 @@ export default function HomeCartBundleItem({ item, onRemove, onUpdateQty }) {
 
       {/* Eliminar */}
       <button
-        onClick={() => onRemove(bundle.id)}
+        onClick={(e) => { e.stopPropagation(); onRemove(bundle.id); }}
         className="self-start mt-0.5 flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0"
         aria-label="Eliminar del carrito"
       >

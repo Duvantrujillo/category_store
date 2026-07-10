@@ -19,6 +19,7 @@ import {
   Paintbrush,
   TicketPercent,
   PackagePlus,
+  BadgePercent,
 } from "lucide-react";
 
 const ALL_SECTIONS = [
@@ -59,6 +60,7 @@ const ALL_SECTIONS = [
     items: [
       { title: "Banners", url: "/dashboard/admin/list/banner", icon: Paintbrush },
       { title: "Cupones", url: "/dashboard/admin/list/discount-codes", icon: TicketPercent },
+      { title: "Promociones", url: "/dashboard/admin/list/promotions", icon: BadgePercent },
     ],
   },
   {

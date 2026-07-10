@@ -1,6 +1,8 @@
 import { PackageX } from "lucide-react";
 
-export default function ProductDetailPrice({ price, outOfStock }) {
+export default function ProductDetailPrice({ price, finalPrice, promotion, outOfStock }) {
+  const hasPromotion = !!promotion;
+
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
       <div className="flex items-end justify-between gap-4">
@@ -8,8 +10,13 @@ export default function ProductDetailPrice({ price, outOfStock }) {
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 mb-1.5">
             Precio
           </p>
+          {hasPromotion && (
+            <p className="text-lg text-gray-400 line-through opacity-70 leading-none mb-1">
+              ${Number(price).toLocaleString("es-CO")}
+            </p>
+          )}
           <p className={`text-5xl font-black leading-none tracking-tight ${outOfStock ? "text-gray-400" : "text-rose-600"}`}>
-            ${Number(price).toLocaleString("es-CO")}
+            ${Number(hasPromotion ? finalPrice : price).toLocaleString("es-CO")}
           </p>
           <p className="mt-1.5 text-xs text-gray-400 font-medium">Impuestos incluidos</p>
         </div>

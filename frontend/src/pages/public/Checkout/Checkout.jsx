@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
-  ArrowLeft, ShoppingBag, Loader2, Package,
+  ArrowLeft, ShoppingBag, Loader2,
   AlertCircle, CheckCircle2, Plus, Minus, Trash2, Truck, ChevronDown,
   User, MapPin,
 } from "lucide-react";
@@ -10,6 +10,7 @@ import HomeHeader from "../Home/components/header/HomeHeader";
 import HomeFooter from "../Home/components/footer/HomeFooter";
 import HomeCart from "../Home/components/cart/HomeCart";
 import { usePublicCart, getBundleAvailableStock, selectionsToPayload } from "../Home/hooks/usePublicCart";
+import { getAvailableUnits } from "@/lib/stock";
 import { usePublicWishlist } from "../Home/hooks/usePublicWishlist";
 import useCreateShippingLocations from "../../dashboard/admin/form_response/hooks/useCreateShippingLocations";
 
@@ -236,17 +237,17 @@ function CollapsibleSection({ title, icon: Icon, open, onToggle, disabled, hasEr
 
 function OrderSummary({
   items, bundleItems, pendingPayment, onPay, onRetryPayment, retrying, loading, onUpdateQty, onRemove,
-  onUpdateBundleQty, onRemoveBundle,
+  onUpdateBundleQty, onRemoveBundle, orderError,
   couponInput, setCouponInput, coupon, couponLoading, couponError, onApplyCoupon, onRemoveCoupon,
 }) {
-  const itemsSubtotal   = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0);
+  const itemsSubtotal   = items.reduce((s, i) => s + Number(i.variant.finalPrice ?? i.variant.price) * i.quantity, 0);
   const bundlesSubtotal = bundleItems.reduce((s, i) => s + Number(i.bundle.price) * i.quantity, 0);
   const subtotal        = itemsSubtotal + bundlesSubtotal;
   const shippingCost     = coupon?.freeShipping ? 0 : SHIPPING_COST;
   const discountAmount  = coupon?.discountAmount ?? 0;
   const totalLines      = items.length + bundleItems.length;
   const total           = totalLines > 0 ? Math.max(0, subtotal + shippingCost - discountAmount) : 0;
-  const hasStockIssue = items.some(({ variant, quantity }) => quantity > Number(variant.stock ?? 0))
+  const hasStockIssue = items.some(({ variant, quantity }) => quantity > getAvailableUnits(variant))
     || bundleItems.some(({ bundle, quantity, selections }) => quantity > getBundleAvailableStock(bundle, selections));
 
   return (
@@ -317,6 +318,12 @@ function OrderSummary({
                       {available === 0 ? "Combo agotado" : `Solo quedan ${available} disponibles`}
                     </p>
                   )}
+                  {orderError?.bundleId === bundle.id && (
+                    <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1">
+                      <AlertCircle size={11} className="shrink-0" />
+                      {orderError.message}
+                    </p>
+                  )}
 
                   <div className="flex items-center justify-between">
                     {pendingPayment ? (
@@ -356,7 +363,7 @@ function OrderSummary({
               .map((a) => a.attributeValue?.value).filter(Boolean).join(", ");
             const rawImg   = variant.images?.find((i) => Number(i.slot) === 1)?.imageUrl
                           ?? variant.images?.[0]?.imageUrl ?? null;
-            const maxStock = Number(variant.stock ?? 0);
+            const maxStock = getAvailableUnits(variant);
             const atMax    = quantity >= maxStock;
             const overStock = quantity > maxStock;
             const lineTotal = Number(variant.price) * quantity;
@@ -365,6 +372,10 @@ function OrderSummary({
             // (no se calcula acá cuánto "le toca" a cada línea).
             const lineDiscount = coupon?.lineDiscounts?.find((d) => d.variantId === variant.id);
             const hasLineDiscount = lineDiscount && lineDiscount.lineAmount < lineTotal;
+            // Promoción de producto (automática, sin cupón) — el cupón, si aplica
+            // a esta línea, ya incorpora este descuento (ver hasLineDiscount arriba).
+            const hasPromotionOnly = !hasLineDiscount && !!variant.promotion;
+            const promoLineAmount = Number(variant.finalPrice ?? variant.price) * quantity;
 
             return (
               <div key={variant.id} className="flex gap-3 px-5 py-4">
@@ -406,6 +417,12 @@ function OrderSummary({
                       {maxStock === 0 ? "Producto agotado" : `Solo quedan ${maxStock} disponibles`}
                     </p>
                   )}
+                  {orderError?.productVariantId === variant.id && (
+                    <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1">
+                      <AlertCircle size={11} className="shrink-0" />
+                      {orderError.message}
+                    </p>
+                  )}
 
                   {/* Cantidad + precio */}
                   <div className="flex items-center justify-between">
@@ -436,6 +453,13 @@ function OrderSummary({
                         <span className="text-[10px] text-rose-300 line-through">${sub}</span>
                         <span className="text-[13px] font-bold text-gray-800 mt-0.5">
                           ${lineDiscount.lineAmount.toLocaleString("es-CO")}
+                        </span>
+                      </span>
+                    ) : hasPromotionOnly ? (
+                      <span className="flex flex-col items-end shrink-0 leading-none">
+                        <span className="text-[10px] text-gray-400 line-through opacity-70">${sub}</span>
+                        <span className="text-[13px] font-bold text-rose-600 mt-0.5">
+                          ${promoLineAmount.toLocaleString("es-CO")}
                         </span>
                       </span>
                     ) : (
@@ -593,6 +617,10 @@ export default function Checkout() {
   // pendingPayment se setea luego de crear la orden exitosamente
   const [pendingPayment, setPendingPayment] = useState(null);
   const [retrying, setRetrying] = useState(false);
+  // Error de creación de orden atado a un producto/combo puntual (p.ej. se
+  // agotó, cambió de precio o ya no existe) — se muestra junto a esa línea
+  // del resumen en vez de un toast genérico, { productVariantId|bundleId, message }
+  const [orderError, setOrderError] = useState(null);
 
   // ── Cupón de descuento ──
   const [couponInput, setCouponInput]   = useState("");
@@ -610,6 +638,11 @@ export default function Checkout() {
 
   const cartCount   = cartItems.reduce((s, i) => s + i.quantity, 0)
     + cartBundleItems.reduce((s, i) => s + i.quantity, 0);
+
+  // Si ya hay un pago en curso, la orden ya se creó con lo que había en el
+  // carrito — no hay que mostrar el estado vacío aunque el carrito local
+  // ahora esté en 0 (el resumen de esa orden sigue siendo válido).
+  const cartIsEmpty = cartItems.length === 0 && cartBundleItems.length === 0 && !pendingPayment;
 
   // Restaurar el departamento seleccionado cuando los datos de localidad cargan
   useEffect(() => {
@@ -639,6 +672,17 @@ export default function Checkout() {
 
       if (data.orderStatus && data.orderStatus !== "PENDING") {
         toast.error("Tu pedido anterior ya no está disponible (expiró o cambió de estado). Arma el pedido de nuevo para validar el stock actual.");
+        setPendingPayment(null);
+        keyRef.current = uid();
+        return;
+      }
+
+      // Aunque la orden siga vigente, el backend revisa en vivo si algún
+      // producto/variante de la orden se desactivó o se quedó sin stock
+      // mientras el cliente tenía la pasarela abierta (p.ej. un admin lo
+      // desactivó o corrigió el inventario) — si pasó, no se puede pagar.
+      if (data.unavailableProduct) {
+        toast.error(`"${data.unavailableProduct}" ya no está disponible. Arma el pedido de nuevo para validar el stock actual.`);
         setPendingPayment(null);
         keyRef.current = uid();
         return;
@@ -727,6 +771,29 @@ export default function Checkout() {
     });
   }
 
+  // Decide a qué línea del resumen pertenece un error de /order/create: si
+  // trae bundleId, directo a ese combo; si trae productVariantId, puede ser
+  // un ítem suelto o el componente de un combo (fijo o elegido en selections)
+  // — en ese caso el error se muestra en el combo, no en una línea que no
+  // existe en el resumen.
+  function resolveOrderErrorTarget({ productVariantId, bundleId }) {
+    if (bundleId) return { bundleId };
+    if (!productVariantId) return null;
+
+    const isPlainItem = cartItems.some((i) => i.variant.id === productVariantId);
+    if (isPlainItem) return { productVariantId };
+
+    const owningBundle = cartBundleItems.find((bi) =>
+      bi.bundle.items?.some((recipeItem) => {
+        const resolvedId = recipeItem.productVariantId ?? bi.selections?.[recipeItem.id];
+        return resolvedId === productVariantId;
+      })
+    );
+    if (owningBundle) return { bundleId: owningBundle.bundle.id };
+
+    return { productVariantId };
+  }
+
   async function handlePay() {
     if (cartItems.length === 0 && cartBundleItems.length === 0) {
       toast.error("Tu carrito está vacío. Agrega productos antes de continuar.");
@@ -740,6 +807,7 @@ export default function Checkout() {
       return;
     }
 
+    setOrderError(null);
     setSubmitting(true);
 
     try {
@@ -758,7 +826,7 @@ export default function Checkout() {
           items: cartItems.map(({ variant, quantity }) => ({
             productVariantId: variant.id,
             quantity,
-            unitPrice: Number(variant.price),
+            unitPrice: Number(variant.finalPrice ?? variant.price),
           })),
           bundleItems: cartBundleItems.map(({ bundle, quantity, selections }) => ({
             bundleId: bundle.id,
@@ -774,19 +842,21 @@ export default function Checkout() {
       const orderData = await orderRes.json();
 
       if (orderRes.status === 429) throw new Error("Demasiados intentos. Espera unos minutos e intenta de nuevo.");
-      if (orderRes.status === 409) {
-        if (orderData.currentPrice !== undefined)
-          throw new Error("El precio de un producto cambió. Vuelve al inicio para ver los precios actualizados.");
-        if (orderData.message?.toLowerCase().includes("stock"))
-          throw new Error(orderData.message);
-        throw new Error(orderData.message ?? "Conflicto al procesar el pedido.");
+
+      if (!orderRes.ok) {
+        // Errores atados a un producto o combo puntual (agotado, precio
+        // cambiado, ya no existe) — se muestran junto a esa línea del
+        // resumen en vez de un toast genérico, y no se sigue con el pago.
+        if (orderData.productVariantId || orderData.bundleId) {
+          setOrderError({ ...resolveOrderErrorTarget(orderData), message: orderData.message });
+          return;
+        }
+        if (orderRes.status === 400 && orderData.message) {
+          // Cupón inválido/expirado detectado en el servidor al crear la orden
+          setCoupon(null);
+        }
+        throw new Error(orderData.message ?? "Error al crear la orden.");
       }
-      if (orderRes.status === 400 && orderData.message) {
-        // Cupón inválido/expirado detectado en el servidor al crear la orden
-        setCoupon(null);
-        throw new Error(orderData.message);
-      }
-      if (!orderRes.ok) throw new Error(orderData.message ?? "Error al crear la orden.");
 
       const order = orderData.order;
       // Monto autoritativo: el total ya recalculado por el servidor (incluye
@@ -843,26 +913,43 @@ export default function Checkout() {
         onSearch={() => navigate("/")}
       />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-8">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 pt-4 sm:pt-5 pb-8">
 
         {/* Encabezado */}
-        <div className="flex items-center gap-3 mb-8">
+        <div className="mb-6">
           <button
             onClick={() => navigate(-1)}
             disabled={!!pendingPayment}
-            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300 transition-colors shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300 transition-colors shadow-sm disabled:opacity-30 disabled:cursor-not-allowed mb-3"
             aria-label="Volver"
           >
             <ArrowLeft size={15} />
           </button>
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-rose-50">
-              <Package size={15} className="text-rose-400" />
-            </div>
-            <h1 className="text-lg font-bold text-gray-900 tracking-tight">Finalizar pedido</h1>
-          </div>
+          <h1
+            className="text-2xl sm:text-3xl font-black text-center"
+            style={{ color: "#4b5563", WebkitTextStroke: "1.5px #4b5563", letterSpacing: "0.1em" }}
+          >
+            Detalle de la compra
+          </h1>
         </div>
 
+        {cartIsEmpty ? (
+          <div className="flex flex-col items-center justify-center text-center py-20 gap-4">
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-rose-50 border border-rose-100 text-rose-300">
+              <ShoppingBag size={28} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Tu carrito está vacío</h2>
+            <p className="text-sm text-gray-400 max-w-xs">
+              Para seguir comprando, navega por las categorías en el sitio o busca tu producto.
+            </p>
+            <button
+              onClick={() => navigate("/")}
+              className="mt-2 px-6 py-2.5 rounded-full bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white text-sm font-semibold tracking-wide transition-colors shadow-sm shadow-rose-200"
+            >
+              Elegir productos
+            </button>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 items-start">
 
           {/* ── Formulario ── */}
@@ -975,6 +1062,7 @@ export default function Checkout() {
               onRemove={removeFromCart}
               onUpdateBundleQty={updateBundleQty}
               onRemoveBundle={removeBundleFromCart}
+              orderError={orderError}
               couponInput={couponInput}
               setCouponInput={setCouponInput}
               coupon={coupon}
@@ -985,6 +1073,7 @@ export default function Checkout() {
             />
           </div>
         </div>
+        )}
       </main>
 
       <HomeFooter />

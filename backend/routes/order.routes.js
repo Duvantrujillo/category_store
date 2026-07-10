@@ -32,4 +32,7 @@ routes.get('/all',        requirePermission('orders.view'),   ordenController.al
 routes.get('/search',     requirePermission('orders.view'),   ordenController.searchOrder)
 routes.get('/by-date',    requirePermission('orders.view'),   ordenController.filterOrderByDate)
 
+// Acción destructiva e irreversible — permiso separado, no incluido en orders.view
+routes.delete('/cancelled', requirePermission('orders.delete'), ordenController.deleteCancelledOrders)
+
 module.exports = routes

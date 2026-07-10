@@ -20,7 +20,7 @@ function buildWhatsAppUrl(items, bundleItems) {
       .map((a) => a.attributeValue?.value)
       .filter(Boolean)
       .join(", ");
-    const subtotal = (Number(variant.price) * quantity).toLocaleString("es-CO");
+    const subtotal = (Number(variant.finalPrice ?? variant.price) * quantity).toLocaleString("es-CO");
     return `• ${brand ? brand + " - " : ""}${name}${attrs ? ` (${attrs})` : ""} × ${quantity} → $${subtotal} COP`;
   });
 
@@ -30,7 +30,7 @@ function buildWhatsAppUrl(items, bundleItems) {
   });
 
   const total = items
-    .reduce((s, { variant, quantity }) => s + Number(variant.price) * quantity, 0)
+    .reduce((s, { variant, quantity }) => s + Number(variant.finalPrice ?? variant.price) * quantity, 0)
     + bundleItems.reduce((s, { bundle, quantity }) => s + Number(bundle.price) * quantity, 0);
   const totalFormatted = total.toLocaleString("es-CO");
 
@@ -53,7 +53,7 @@ export default function HomeCart({
   bundleItems = [], onRemoveBundle, onUpdateBundleQty,
   onCheckout,
 }) {
-  const total = items.reduce((s, i) => s + Number(i.variant.price) * i.quantity, 0)
+  const total = items.reduce((s, i) => s + Number(i.variant.finalPrice ?? i.variant.price) * i.quantity, 0)
     + bundleItems.reduce((s, i) => s + Number(i.bundle.price) * i.quantity, 0);
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0)
     + bundleItems.reduce((s, i) => s + i.quantity, 0);
@@ -106,6 +106,7 @@ export default function HomeCart({
                   item={item}
                   onRemove={onRemoveBundle}
                   onUpdateQty={onUpdateBundleQty}
+                  onClose={onClose}
                 />
               ))}
               {items.map((item) => (
@@ -114,6 +115,7 @@ export default function HomeCart({
                   item={item}
                   onRemove={onRemove}
                   onUpdateQty={onUpdateQty}
+                  onClose={onClose}
                 />
               ))}
             </>

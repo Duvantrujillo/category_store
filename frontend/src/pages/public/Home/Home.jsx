@@ -23,6 +23,7 @@ import HomeWishlist from "./components/wishlist/HomeWishlist";
 import HomeFooter from "./components/footer/HomeFooter";
 import HomeHeroCarousel from "./components/hero/HomeHeroCarousel";
 import HomeBrandMarquee from "./components/brands/HomeBrandMarquee";
+import HomeTrustMarquee from "./components/trust/HomeTrustMarquee";
 import { useHomeCategories } from "./hooks/useHomeCategories";
 import { useHomeBrands } from "./hooks/useHomeBrands";
 import { useHomeProducts } from "./hooks/useHomeProducts";
@@ -190,6 +191,8 @@ export default function Home() {
           />
         </main>
       </div>
+
+      <HomeTrustMarquee />
 
       <HomeFooter />
 

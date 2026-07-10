@@ -13,7 +13,7 @@ export default function ProductDetailActions({ variant, outOfStock, atLimit, isF
         }`}
       >
         <ShoppingBag size={22} />
-        {outOfStock ? "Agotado" : atLimit ? "Límite de stock" : "Agregar al carrito"}
+        {outOfStock ? "Agotado" : "Agregar al carrito"}
       </button>
 
       <button

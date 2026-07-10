@@ -1,5 +1,20 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
+const { getActivePromotions, attachPromotionPricing } = require('../../utils/promotion-pricing')
+
+// Adjunta finalPrice/promotion a cada productVariant de items[] — no toca
+// bundleItems (Promotion no soporta scope BUNDLES).
+async function enrichCart(cart) {
+  if (!cart) return cart
+  const activePromotions = await getActivePromotions()
+  return {
+    ...cart,
+    items: cart.items.map((item) => ({
+      ...item,
+      productVariant: attachPromotionPricing(item.productVariant, activePromotions),
+    })),
+  }
+}
 
 // Todo lo que llega del cliente (ids, cantidades) pasa por acá antes de
 // tocar la BD — nunca se confía en que ya venga como número entero válido.
@@ -7,6 +22,25 @@ function parsePositiveInt(value, max = Infinity) {
   const n = Number(value)
   if (!Number.isInteger(n) || n <= 0 || n > max) return null
   return n
+}
+
+// Lanzarlo dentro de $transaction hace rollback sin ser un error de
+// infraestructura — se captura afuera para devolver un 400 normal.
+class InsufficientStockError extends Error {
+  constructor(available, current) {
+    super('insufficient_stock')
+    this.name = 'InsufficientStockError'
+    this.available = available
+    this.current = current
+  }
+}
+
+class BundleValidationError extends Error {
+  constructor(message, available) {
+    super(message)
+    this.name = 'BundleValidationError'
+    this.available = available
+  }
 }
 
 const VARIANT_INCLUDE = {
@@ -83,7 +117,7 @@ const createPublicCart = async (req, res) => {
       data: { status: 'ACTIVE' },
       include: CART_INCLUDE
     })
-    return res.json(cart)
+    return res.json(await enrichCart(cart))
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: 'Error interno' })
@@ -99,7 +133,7 @@ const getPublicCart = async (req, res) => {
       include: CART_INCLUDE
     })
     if (!cart) return res.status(404).json({ message: 'Carrito no encontrado' })
-    return res.json(cart)
+    return res.json(await enrichCart(cart))
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: 'Error interno' })
@@ -126,53 +160,71 @@ const addPublicCartItem = async (req, res) => {
 
     const variant = await prisma.productVariant.findUnique({
       where: { id: variantIdNum },
-      select: { id: true, stock: true, isActive: true }
+      select: { id: true, stock: true, reservedStock: true, isActive: true }
     })
     if (!variant || !variant.isActive) {
       return res.status(404).json({ message: 'Variante no disponible' })
     }
 
-    const existing = await prisma.cartItem.findUnique({
-      where: {
-        cartId_productVariantId: {
-          cartId: cart.id,
-          productVariantId: variantIdNum
+    // Todo dentro de una transacción con lock sobre la fila del carrito: sin
+    // esto, dos clics casi simultáneos en "agregar" pueden leer la misma
+    // `currentQty` antes de que cualquiera escriba, y el segundo upsert
+    // pisa al primero (se pierde una unidad en vez de sumar las dos).
+    let updated
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM Cart WHERE id = ${cart.id} FOR UPDATE`
+
+        const existing = await tx.cartItem.findUnique({
+          where: {
+            cartId_productVariantId: {
+              cartId: cart.id,
+              productVariantId: variantIdNum
+            }
+          }
+        })
+
+        const currentQty = existing?.quantity ?? 0
+        const newQty = currentQty + qtyNum
+
+        // Disponible = stock - reservedStock: si un pedido pendiente (incluso
+        // uno abandonado sin pagar) ya reservó unidades, no cuentan como
+        // libres para un carrito nuevo — solo se liberan cuando esa orden
+        // expira o se cancela.
+        const available = variant.stock - variant.reservedStock
+        if (newQty > available) {
+          throw new InsufficientStockError(available, currentQty)
         }
-      }
-    })
 
-    const currentQty = existing?.quantity ?? 0
-    const newQty = currentQty + qtyNum
+        await tx.cartItem.upsert({
+          where: {
+            cartId_productVariantId: {
+              cartId: cart.id,
+              productVariantId: variantIdNum
+            }
+          },
+          update: { quantity: newQty },
+          create: {
+            cartId: cart.id,
+            productVariantId: variantIdNum,
+            quantity: qtyNum
+          }
+        })
 
-    if (newQty > variant.stock) {
-      return res.status(400).json({
-        message: 'Stock insuficiente',
-        available: variant.stock,
-        current: currentQty
+        return tx.cart.findUnique({ where: { id: cart.id }, include: CART_INCLUDE })
       })
+    } catch (err) {
+      if (err instanceof InsufficientStockError) {
+        return res.status(400).json({
+          message: 'Stock insuficiente',
+          available: err.available,
+          current: err.current
+        })
+      }
+      throw err
     }
 
-    await prisma.cartItem.upsert({
-      where: {
-        cartId_productVariantId: {
-          cartId: cart.id,
-          productVariantId: variantIdNum
-        }
-      },
-      update: { quantity: newQty },
-      create: {
-        cartId: cart.id,
-        productVariantId: variantIdNum,
-        quantity: qtyNum
-      }
-    })
-
-    const updated = await prisma.cart.findUnique({
-      where: { id: cart.id },
-      include: CART_INCLUDE
-    })
-
-    return res.json(updated)
+    return res.json(await enrichCart(updated))
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: 'Error interno' })
@@ -199,12 +251,13 @@ const updatePublicCartItem = async (req, res) => {
 
     const variant = await prisma.productVariant.findUnique({
       where: { id: variantIdNum },
-      select: { stock: true }
+      select: { stock: true, reservedStock: true }
     })
     if (!variant) return res.status(404).json({ message: 'Variante no encontrada' })
 
-    if (qty > variant.stock) {
-      return res.status(400).json({ message: 'Stock insuficiente', available: variant.stock })
+    const available = variant.stock - variant.reservedStock
+    if (qty > available) {
+      return res.status(400).json({ message: 'Stock insuficiente', available })
     }
 
     await prisma.cartItem.update({
@@ -222,7 +275,7 @@ const updatePublicCartItem = async (req, res) => {
       include: CART_INCLUDE
     })
 
-    return res.json(updated)
+    return res.json(await enrichCart(updated))
   } catch (error) {
     // El ítem ya no está en el carrito (lo quitaron desde otra pestaña, etc.)
     if (error.code === 'P2025') {
@@ -255,7 +308,7 @@ const removePublicCartItem = async (req, res) => {
       include: CART_INCLUDE
     })
 
-    return res.json(updated)
+    return res.json(await enrichCart(updated))
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: 'Error interno' })
@@ -293,7 +346,10 @@ function resolveBundleComponents(bundle, selections) {
       productVariantId: variant.id,
       productName: item.product.name,
       recipeQuantity: item.quantity,
-      stock: variant.stock,
+      // Disponible = stock - reservedStock (si el llamador no trae
+      // reservedStock, como order.controller.js, cae a 0 y queda igual que
+      // antes — ese flujo ya reserva de forma atómica por su cuenta).
+      stock: Number(variant.stock) - Number(variant.reservedStock ?? 0),
     })
   }
 
@@ -364,27 +420,42 @@ const addPublicBundleItem = async (req, res) => {
     const cart = await prisma.cart.findUnique({ where: { uuid, status: 'ACTIVE' } })
     if (!cart) return res.status(404).json({ message: 'Carrito no encontrado' })
 
-    const existing = await prisma.cartBundleItem.findUnique({
-      where: { cartId_bundleId: { cartId: cart.id, bundleId: bundleIdNum } }
-    })
+    // Mismo problema que en addPublicCartItem: leer currentQty y escribir
+    // newQty en pasos separados permite que dos clics casi simultáneos
+    // pisen la cantidad del otro. El lock sobre la fila del carrito serializa
+    // ambas operaciones para este mismo carrito.
+    let updated
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM Cart WHERE id = ${cart.id} FOR UPDATE`
 
-    const currentQty = existing?.quantity ?? 0
-    const newQty = currentQty + qtyNum
+        const existing = await tx.cartBundleItem.findUnique({
+          where: { cartId_bundleId: { cartId: cart.id, bundleId: bundleIdNum } }
+        })
 
-    const { error, available, resolved } = await validateBundleAvailability(bundleIdNum, newQty, selections)
-    if (error) return res.status(400).json({ message: error, available })
+        const currentQty = existing?.quantity ?? 0
+        const newQty = currentQty + qtyNum
 
-    await prisma.$transaction(async (tx) => {
-      const cartBundleItem = await tx.cartBundleItem.upsert({
-        where: { cartId_bundleId: { cartId: cart.id, bundleId: bundleIdNum } },
-        update: { quantity: newQty },
-        create: { cartId: cart.id, bundleId: bundleIdNum, quantity: qtyNum }
+        const { error, available, resolved } = await validateBundleAvailability(bundleIdNum, newQty, selections)
+        if (error) throw new BundleValidationError(error, available)
+
+        const cartBundleItem = await tx.cartBundleItem.upsert({
+          where: { cartId_bundleId: { cartId: cart.id, bundleId: bundleIdNum } },
+          update: { quantity: newQty },
+          create: { cartId: cart.id, bundleId: bundleIdNum, quantity: qtyNum }
+        })
+        await replaceCartBundleSelections(tx, cartBundleItem.id, resolved)
+
+        return tx.cart.findUnique({ where: { id: cart.id }, include: CART_INCLUDE })
       })
-      await replaceCartBundleSelections(tx, cartBundleItem.id, resolved)
-    })
+    } catch (err) {
+      if (err instanceof BundleValidationError) {
+        return res.status(400).json({ message: err.message, available: err.available })
+      }
+      throw err
+    }
 
-    const updated = await prisma.cart.findUnique({ where: { id: cart.id }, include: CART_INCLUDE })
-    return res.json(updated)
+    return res.json(await enrichCart(updated))
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: 'Error interno' })
@@ -421,7 +492,7 @@ const updatePublicBundleItem = async (req, res) => {
     })
 
     const updated = await prisma.cart.findUnique({ where: { id: cart.id }, include: CART_INCLUDE })
-    return res.json(updated)
+    return res.json(await enrichCart(updated))
   } catch (error) {
     // El combo ya no está en el carrito (lo quitaron desde otra pestaña, etc.)
     if (error.code === 'P2025') {
@@ -451,7 +522,7 @@ const removePublicBundleItem = async (req, res) => {
     })
 
     const updated = await prisma.cart.findUnique({ where: { id: cart.id }, include: CART_INCLUDE })
-    return res.json(updated)
+    return res.json(await enrichCart(updated))
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: 'Error interno' })

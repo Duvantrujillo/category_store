@@ -6,6 +6,7 @@ const {
   notifyReturnRejected,
   notifyReturnCompleted
 } = require('../../services/notification.service')
+const { buildSearchStems } = require('../../utils/search-stems')
 
 const VALID_STATUSES    = ['PENDING', 'APPROVED', 'REJECTED', 'RECEIVED', 'COMPLETED']
 const VALID_RESOLUTIONS = ['REFUND', 'EXCHANGE', 'STORE_CREDIT']
@@ -249,14 +250,18 @@ const searchReturnRequest = async (req, res) => {
 
     if (!q) return res.status(200).json({ data: [] });
 
+    const stems = buildSearchStems(q);
+
     const requests = await prisma.returnRequest.findMany({
       where: {
-        OR: [
-          { reason: { contains: q } },
-          { order: { orderNumber: { contains: q } } },
-          { order: { firstName:   { contains: q } } },
-          { order: { lastName:    { contains: q } } },
-        ],
+        AND: stems.map((s) => ({
+          OR: [
+            { reason: { contains: s } },
+            { order: { orderNumber: { contains: s } } },
+            { order: { firstName:   { contains: s } } },
+            { order: { lastName:    { contains: s } } },
+          ],
+        })),
       },
       include: {
         order: {
