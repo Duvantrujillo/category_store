@@ -14,6 +14,9 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart, onClo
   const { product, price, attributes, images, finalPrice, promotion } = variant;
   const hasPromotion = !!promotion;
   const outOfStock = getAvailableUnits(variant) === 0;
+  const discountPercent = hasPromotion && Number(price) > 0
+    ? Math.round((1 - Number(finalPrice) / Number(price)) * 100)
+    : 0;
 
   const rawImg = getMainImage(images);
   const imgSrc = rawImg
@@ -32,12 +35,17 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart, onClo
     >
 
       {/* Imagen */}
-      <div className="w-16 h-16 rounded-xl overflow-hidden bg-rose-50 border border-rose-100 shrink-0">
+      <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-rose-50 border border-rose-100 shrink-0">
         <img
           src={imgSrc}
           alt={product?.name}
           className={`w-full h-full object-cover ${outOfStock ? "opacity-60 grayscale" : ""}`}
         />
+        {discountPercent > 0 && (
+          <span className="absolute top-0.5 right-0.5 text-[8px] font-black px-1 py-0.5 rounded bg-rose-500 text-white shadow-sm leading-none">
+            -{discountPercent}%
+          </span>
+        )}
       </div>
 
       {/* Info */}
@@ -70,7 +78,7 @@ export default function HomeWishlistItem({ variant, onRemove, onAddToCart, onClo
         <div className="flex items-center justify-between mt-1.5">
           {hasPromotion ? (
             <span className="flex flex-col leading-none gap-0.5">
-              <span className="text-[10px] text-gray-400 line-through opacity-70">
+              <span className="text-xs font-medium text-gray-400 line-through decoration-2 opacity-70">
                 ${Number(price).toLocaleString("es-CO")}
               </span>
               <span className="text-sm font-bold text-rose-700">

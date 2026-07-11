@@ -15,13 +15,13 @@ const STATUS_OPTIONS = [
   { value: "PAUSED", label: "Pausada",  cls: "text-amber-600" },
 ];
 
-export default function LimitsSection({ form, handleChange }) {
+export default function LimitsSection({ form, handleChange, errors = {} }) {
   return (
     <div className="space-y-4">
 
       <div>
         <h3 className="text-sm font-semibold">Vigencia y límites</h3>
-        <p className="text-xs text-muted-foreground">Fechas de validez, compra mínima, prioridad y topes de uso.</p>
+        <p className="text-xs text-muted-foreground">Fechas de validez, compra mínima y topes de uso.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -35,18 +35,6 @@ export default function LimitsSection({ form, handleChange }) {
             value={form.minimumPurchase ?? "0"}
             onChange={(e) => handleChange("minimumPurchase", e.target.value)}
             placeholder="0"
-          />
-        </div>
-
-        {/* Prioridad */}
-        <div className="space-y-1.5">
-          <Label>Prioridad</Label>
-          <Input
-            type="number"
-            min={1}
-            value={form.priority ?? "1"}
-            onChange={(e) => handleChange("priority", e.target.value)}
-            placeholder="1"
           />
         </div>
 
@@ -88,7 +76,9 @@ export default function LimitsSection({ form, handleChange }) {
             onChange={(v) => handleChange("startsAt", v)}
             placeholder="Seleccionar fecha"
             className="w-full"
+            invalid={!!errors.startsAt}
           />
+          {errors.startsAt && <p className="text-xs text-destructive">{errors.startsAt}</p>}
         </div>
 
         {/* Fecha expiración */}
@@ -99,7 +89,9 @@ export default function LimitsSection({ form, handleChange }) {
             onChange={(v) => handleChange("expiresAt", v)}
             placeholder="Seleccionar fecha"
             className="w-full"
+            invalid={!!errors.expiresAt}
           />
+          {errors.expiresAt && <p className="text-xs text-destructive">{errors.expiresAt}</p>}
         </div>
 
       </div>

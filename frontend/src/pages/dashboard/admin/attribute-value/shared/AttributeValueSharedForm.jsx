@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,28 @@ export default function AttributeValueSharedForm({
 }) {
 
   const isEdit = mode === "edit";
+  const [attempted, setAttempted] = useState(false);
+
+  // Mismas reglas que valida el backend (atrtribute-value.controller.js).
+  const getErrors = () => {
+    const errors = {};
+    const value = (form.value || "").trim();
+    if (!value) errors.value = "El valor es obligatorio";
+    else if (value.length > 20) errors.value = "El valor no puede superar 20 caracteres";
+
+    if (!form.attributeId) errors.attributeId = "Selecciona un atributo";
+    return errors;
+  };
+
+  const errors = attempted ? getErrors() : {};
+
+  const handleSubmit = () => {
+    if (Object.keys(getErrors()).length > 0) {
+      setAttempted(true);
+      return;
+    }
+    onSubmit();
+  };
 
   return (
 
@@ -21,7 +44,7 @@ export default function AttributeValueSharedForm({
       {/* VALUE */}
       <div>
 
-        <Label>Valor</Label>
+        <Label>Valor <span className="text-red-400">*</span></Label>
 
         <Input
           value={form.value || ""}
@@ -32,17 +55,22 @@ export default function AttributeValueSharedForm({
             )
           }
           placeholder="Ej: Rojo, XL, Algodón..."
+          maxLength={20}
+          aria-invalid={!!errors.value}
         />
+        {errors.value && <p className="text-xs text-destructive">{errors.value}</p>}
 
       </div>
 
       {/* ATTRIBUTE */}
       <div>
 
-        <Label>Atributo</Label>
+        <Label>Atributo <span className="text-red-400">*</span></Label>
 
         <select
-          className="w-full border rounded-md h-10 px-3 bg-background"
+          className={`w-full border rounded-md h-10 px-3 bg-background transition-colors ${
+            errors.attributeId ? "border-destructive ring-1 ring-destructive/20" : ""
+          }`}
           value={form.attributeId || ""}
           onChange={(e) =>
             handleChange(
@@ -68,6 +96,7 @@ export default function AttributeValueSharedForm({
           ))}
 
         </select>
+        {errors.attributeId && <p className="text-xs text-destructive">{errors.attributeId}</p>}
 
       </div>
 
@@ -82,7 +111,7 @@ export default function AttributeValueSharedForm({
         </Button>
 
         <Button
-          onClick={onSubmit}
+          onClick={handleSubmit}
           disabled={loading}
         >
 

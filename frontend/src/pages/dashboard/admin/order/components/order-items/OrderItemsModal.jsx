@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { Package, PackagePlus, ChevronRight } from "lucide-react";
+import { Package, PackagePlus, ChevronRight, TicketPercent } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,10 @@ function OrderItemsModal({ open, order, onClose }) {
 
   const totalLines = items.length + bundleItems.length;
 
+  // shippingCost solo queda en 0 cuando se aplicó un cupón de envío gratis
+  // (order.controller.js: shippingCost = discount?.freeShipping ? 0 : SHIPPING_COST).
+  const isFreeShipping = Number(order.shippingCost) === 0;
+
   const fmt = (value) =>
     Number(value).toLocaleString("es-CO", { minimumFractionDigits: 0 });
 
@@ -76,7 +80,7 @@ function OrderItemsModal({ open, order, onClose }) {
         {hasContent ? (
           <>
             {/* Stats */}
-            <div className="grid grid-cols-3 divide-x">
+            <div className="grid grid-cols-4 divide-x">
               <div className="px-6 py-4 space-y-1">
                 <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
                   Líneas
@@ -90,6 +94,14 @@ function OrderItemsModal({ open, order, onClose }) {
                   Unidades
                 </p>
                 <p className="text-2xl font-bold tabular-nums">{totalItems}</p>
+              </div>
+              <div className="px-6 py-4 space-y-1">
+                <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+                  Envío
+                </p>
+                <p className={`text-2xl font-bold tabular-nums ${isFreeShipping ? "text-blue-600" : ""}`}>
+                  {isFreeShipping ? "Gratis" : `$${fmt(order.shippingCost ?? 11000)}`}
+                </p>
               </div>
               <div className="px-6 py-4 space-y-1">
                 <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
@@ -242,7 +254,13 @@ function OrderItemsModal({ open, order, onClose }) {
                     );
                   })}
 
-                  {items.map((item, index) => (
+                  {items.map((item, index) => {
+                    const hasPromo = !!item.promotion;
+                    const hasCoupon = !!item.usedCoupon && Number(item.couponLineDiscount) > 0;
+                    const originalUnitPrice = Number(item.unitPrice) + (hasPromo ? Number(item.promotionDiscount) / item.quantity : 0);
+                    const finalUnitPrice = Number(item.unitPrice) - (hasCoupon ? Number(item.couponLineDiscount) / item.quantity : 0);
+
+                    return (
                     <TableRow
                       key={item.id}
                       className="hover:bg-muted/30 transition-colors"
@@ -260,11 +278,31 @@ function OrderItemsModal({ open, order, onClose }) {
                             <p className="text-sm font-medium truncate">
                               {item.productName}
                             </p>
-                            {item.productVariant?.sku && (
-                              <p className="text-[11px] text-muted-foreground font-mono truncate">
-                                SKU: {item.productVariant.sku}
-                              </p>
-                            )}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {item.productVariant?.sku && (
+                                <p className="text-[11px] text-muted-foreground font-mono truncate">
+                                  SKU: {item.productVariant.sku}
+                                </p>
+                              )}
+                              {item.promotion && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] px-1.5 py-0 border-green-200 text-green-600 bg-green-50 gap-1"
+                                >
+                                  <TicketPercent className="h-2.5 w-2.5" />
+                                  {item.promotion.name}
+                                </Badge>
+                              )}
+                              {item.usedCoupon && order.discountCode && order.discountCode.type !== "FREE_SHIPPING" && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] px-1.5 py-0 border-blue-200 text-blue-600 bg-blue-50 gap-1"
+                                >
+                                  <TicketPercent className="h-2.5 w-2.5" />
+                                  Cupón: {order.discountCode.code}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </TableCell>
@@ -275,15 +313,25 @@ function OrderItemsModal({ open, order, onClose }) {
                         </span>
                       </TableCell>
 
-                      <TableCell className="text-right text-sm tabular-nums text-muted-foreground font-mono">
-                        ${fmt(item.unitPrice)}
+                      <TableCell className="text-right text-sm tabular-nums font-mono">
+                        {(hasPromo || hasCoupon) ? (
+                          <div className="flex flex-col items-end leading-tight">
+                            <span className="text-[11px] line-through text-muted-foreground/60">
+                              ${fmt(originalUnitPrice)}
+                            </span>
+                            <span className="text-muted-foreground font-semibold">${fmt(finalUnitPrice)}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">${fmt(item.unitPrice)}</span>
+                        )}
                       </TableCell>
 
                       <TableCell className="text-right text-sm font-semibold tabular-nums font-mono">
-                        ${fmt(item.subtotal)}
+                        ${fmt(item.finalSubtotal ?? item.subtotal)}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
 
                 <TableFooter>

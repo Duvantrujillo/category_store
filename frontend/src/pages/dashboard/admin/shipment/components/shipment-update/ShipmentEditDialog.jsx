@@ -106,6 +106,25 @@ export default function ShipmentEditDialog({ shipment, open, onClose, onRefresh 
 
   /* Campo activo del picker: null | 'shippedAt' | 'deliveredAt' */
   const [activePicker, setActivePicker] = useState(null);
+  const [attempted, setAttempted] = useState(false);
+
+  // Mismas reglas que valida el backend (shipment.controller.js).
+  const getErrors = () => {
+    const errors = {};
+    if (form.trackingNumber) {
+      if (!/^\d+$/.test(form.trackingNumber)) {
+        errors.trackingNumber = "El número de rastreo solo puede contener dígitos";
+      } else if (form.trackingNumber.length > 35) {
+        errors.trackingNumber = "El número de rastreo no puede superar los 35 caracteres";
+      }
+    }
+    if (form.note && form.note.length > 200) {
+      errors.note = "La nota no puede superar los 200 caracteres";
+    }
+    return errors;
+  };
+
+  const errors = attempted ? getErrors() : {};
 
   useEffect(() => {
     if (open && shipment && !hasInitialized.current) {
@@ -131,6 +150,10 @@ export default function ShipmentEditDialog({ shipment, open, onClose, onRefresh 
   }, [activePicker]);
 
   const handleSubmit = async () => {
+    if (Object.keys(getErrors()).length > 0) {
+      setAttempted(true);
+      return;
+    }
     try {
       await submitUpdate(shipment.id);
       onRefresh?.();
@@ -208,10 +231,13 @@ export default function ShipmentEditDialog({ shipment, open, onClose, onRefresh 
           <div className="flex flex-col gap-1.5">
             <Label>Número de rastreo</Label>
             <Input
-              placeholder="Ej: SRV123456789"
+              placeholder="Ej: 123456789"
               value={form.trackingNumber}
               onChange={(e) => handleChange("trackingNumber", e.target.value)}
+              maxLength={35}
+              aria-invalid={!!errors.trackingNumber}
             />
+            {errors.trackingNumber && <p className="text-xs text-destructive">{errors.trackingNumber}</p>}
           </div>
 
           {/* FECHA DE ENVÍO */}
@@ -243,7 +269,10 @@ export default function ShipmentEditDialog({ shipment, open, onClose, onRefresh 
               placeholder="Observación sobre este cambio"
               value={form.note}
               onChange={(e) => handleChange("note", e.target.value)}
+              maxLength={200}
+              aria-invalid={!!errors.note}
             />
+            {errors.note && <p className="text-xs text-destructive">{errors.note}</p>}
           </div>
 
           {/* ACCIONES */}

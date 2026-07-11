@@ -6,7 +6,7 @@ import {
   SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
-export default function InfoSection({ form, handleChange }) {
+export default function InfoSection({ form, handleChange, errors = {} }) {
   return (
     <div className="space-y-6">
 
@@ -25,7 +25,9 @@ export default function InfoSection({ form, handleChange }) {
             onChange={(e) => handleChange("title", e.target.value)}
             placeholder="Ej: Nueva colección primavera"
             maxLength={40}
+            aria-invalid={!!errors.title}
           />
+          {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
         </div>
 
         {/* Link */}
@@ -40,7 +42,9 @@ export default function InfoSection({ form, handleChange }) {
             onChange={(e) => handleChange("link", e.target.value)}
             placeholder="https://..."
             maxLength={2048}
+            aria-invalid={!!errors.link}
           />
+          {errors.link && <p className="text-xs text-destructive">{errors.link}</p>}
         </div>
 
         {/* Fecha inicio */}
@@ -51,7 +55,9 @@ export default function InfoSection({ form, handleChange }) {
             onChange={(v) => handleChange("startDate", v)}
             placeholder="Seleccionar fecha"
             className="w-full"
+            invalid={!!errors.startDate}
           />
+          {errors.startDate && <p className="text-xs text-destructive">{errors.startDate}</p>}
         </div>
 
         {/* Fecha fin */}
@@ -62,7 +68,9 @@ export default function InfoSection({ form, handleChange }) {
             onChange={(v) => handleChange("endDate", v)}
             placeholder="Seleccionar fecha"
             className="w-full"
+            invalid={!!errors.endDate}
           />
+          {errors.endDate && <p className="text-xs text-destructive">{errors.endDate}</p>}
         </div>
 
         {/* Posición */}

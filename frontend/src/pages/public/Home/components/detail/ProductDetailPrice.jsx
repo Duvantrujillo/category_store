@@ -11,7 +11,7 @@ export default function ProductDetailPrice({ price, finalPrice, promotion, outOf
             Precio
           </p>
           {hasPromotion && (
-            <p className="text-lg text-gray-400 line-through opacity-70 leading-none mb-1">
+            <p className="text-xl font-medium text-gray-400 line-through decoration-2 opacity-70 leading-none mb-1">
               ${Number(price).toLocaleString("es-CO")}
             </p>
           )}

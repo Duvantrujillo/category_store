@@ -54,12 +54,12 @@ function CreateItemsSection({ orderItems, selectedItems, handleChange, errors = 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Selecciona los productos que el cliente desea devolver y ajusta la cantidad.{" "}
-          <span className="text-red-500 font-medium">*</span>
+          <span className="text-destructive font-medium">*</span>
         </p>
       </div>
 
       {errors.selectedItems && (
-        <p className="text-xs text-red-500 -mt-1">{errors.selectedItems}</p>
+        <p className="text-xs text-destructive -mt-1">{errors.selectedItems}</p>
       )}
 
       <div className="rounded-xl border overflow-hidden">

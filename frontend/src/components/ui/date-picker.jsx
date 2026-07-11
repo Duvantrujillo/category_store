@@ -19,7 +19,7 @@ function toDateString(date) {
   return `${y}-${m}-${d}`;
 }
 
-function DatePicker({ value, onChange, placeholder = "Seleccionar fecha", className }) {
+function DatePicker({ value, onChange, placeholder = "Seleccionar fecha", className, invalid = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -57,6 +57,7 @@ function DatePicker({ value, onChange, placeholder = "Seleccionar fecha", classN
           variant="outline"
           size="sm"
           onClick={() => setOpen((o) => !o)}
+          aria-invalid={invalid}
           className={cn(
             "h-9 w-full justify-start gap-2 text-sm font-normal",
             selected ? "pr-8" : "pr-3",

@@ -29,13 +29,56 @@ export default function ProductSharedForm({
 }) {
     const isEdit = mode === "edit";
     const [step, setStep] = useState(1);
+    const [attempted, setAttempted] = useState({});
 
-    const isStep1Valid = form.name && form.categoryId && form.status;
+    // Mismas reglas que valida el backend (product.controller.js).
+    const getInfoErrors = () => {
+        const errors = {};
+        const name = (form.name || "").trim();
+        if (!name) errors.name = "El nombre es obligatorio";
+        else if (name.length > 50) errors.name = "El nombre no puede superar 50 caracteres";
+
+        if (!form.categoryId) errors.categoryId = "La categoría es obligatoria";
+        return errors;
+    };
+
+    const getContentErrors = () => {
+        const errors = {};
+        if (form.description && form.description.length > 3000) {
+            errors.description = "La descripción no puede superar 3000 caracteres";
+        }
+        return errors;
+    };
+
+    const STEP_ERROR_GETTERS = { 1: getInfoErrors, 2: getContentErrors };
+    const getStepErrors = (n) => STEP_ERROR_GETTERS[n]?.() ?? {};
+    const isStepValid = (n) => Object.keys(getStepErrors(n)).length === 0;
+    const currentStepValid = isStepValid(step);
+    const currentStepErrors = attempted[step] ? getStepErrors(step) : {};
+
+    const goToStep = (target) => {
+        if (target <= step) { setStep(target); return; }
+        for (let s = step; s < target; s++) {
+            if (!isStepValid(s)) {
+                setAttempted((prev) => ({ ...prev, [s]: true }));
+                return;
+            }
+        }
+        setStep(target);
+    };
+
+    const handleSubmit = () => {
+        if (!currentStepValid) {
+            setAttempted((prev) => ({ ...prev, [step]: true }));
+            return;
+        }
+        onSubmit();
+    };
 
     return (
         <div className="grid gap-4">
 
-            <Stepper value={step} onValueChange={setStep} className="w-full mb-2">
+            <Stepper value={step} onValueChange={goToStep} className="w-full mb-2">
                 <StepperNav>
                     {STEPS.map((s) => (
                         <StepperItem key={s.id} step={s.id}>
@@ -65,6 +108,7 @@ export default function ProductSharedForm({
                     handleChange={handleChange}
                     categories={categories}
                     brands={brands}
+                    errors={currentStepErrors}
                 />
             )}
 
@@ -72,6 +116,7 @@ export default function ProductSharedForm({
                 <ContentSection
                     form={form}
                     handleChange={handleChange}
+                    errors={currentStepErrors}
                 />
             )}
 
@@ -81,7 +126,7 @@ export default function ProductSharedForm({
                     type="button"
                     variant="outline"
                     disabled={step === 1}
-                    onClick={() => setStep((prev) => prev - 1)}
+                    onClick={() => goToStep(step - 1)}
                 >
                     Anterior
                 </Button>
@@ -89,8 +134,7 @@ export default function ProductSharedForm({
                 {step < STEPS.length ? (
                     <Button
                         type="button"
-                        disabled={!isStep1Valid}
-                        onClick={() => setStep((prev) => prev + 1)}
+                        onClick={() => goToStep(step + 1)}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                         Siguiente
@@ -106,7 +150,7 @@ export default function ProductSharedForm({
                         </Button>
                         <Button
                             type="button"
-                            onClick={onSubmit}
+                            onClick={handleSubmit}
                             disabled={loading}
                             className="bg-green-600 hover:bg-green-700 text-white"
                         >

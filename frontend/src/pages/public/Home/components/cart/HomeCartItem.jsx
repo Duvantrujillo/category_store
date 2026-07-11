@@ -24,6 +24,9 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty, onClose }) {
 
   const subtotal = Number(hasPromotion ? finalPrice : price) * quantity;
   const originalSubtotal = Number(price) * quantity;
+  const discountPercent = hasPromotion && Number(price) > 0
+    ? Math.round((1 - Number(finalPrice) / Number(price)) * 100)
+    : 0;
 
   function goToProduct() {
     onClose?.();
@@ -37,12 +40,17 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty, onClose }) {
     >
 
       {/* Imagen */}
-      <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
+      <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
         <img
           src={imgSrc}
           alt={product?.name}
           className="w-full h-full object-cover"
         />
+        {discountPercent > 0 && (
+          <span className="absolute top-0.5 right-0.5 text-[8px] font-black px-1 py-0.5 rounded bg-rose-500 text-white shadow-sm leading-none">
+            -{discountPercent}%
+          </span>
+        )}
       </div>
 
       {/* Info */}
@@ -99,7 +107,7 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty, onClose }) {
 
           {hasPromotion ? (
             <span className="flex flex-col items-end leading-none">
-              <span className="text-[10px] text-gray-400 line-through opacity-70">
+              <span className="text-xs font-medium text-gray-400 line-through decoration-2 opacity-70">
                 ${originalSubtotal.toLocaleString("es-CO")}
               </span>
               <span className="text-sm font-bold text-rose-600 mt-0.5">

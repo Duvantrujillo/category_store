@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useDropzone } from "react-dropzone";
 
-export default function MediaSection({ form, handleChange }) {
+export default function MediaSection({ form, handleChange, errors = {} }) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { "image/*": [] },
     maxFiles: 1,
@@ -83,13 +83,19 @@ export default function MediaSection({ form, handleChange }) {
 
         {/* Descripción */}
         <div className="space-y-1.5">
-          <Label>Descripción</Label>
+          <Label>
+            Descripción{" "}
+            <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
+          </Label>
           <Textarea
             value={form.description || ""}
             onChange={(e) => handleChange("description", e.target.value)}
             placeholder="Describe brevemente el combo..."
             className="h-44 resize-none"
+            maxLength={800}
+            aria-invalid={!!errors.description}
           />
+          {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
         </div>
 
       </div>

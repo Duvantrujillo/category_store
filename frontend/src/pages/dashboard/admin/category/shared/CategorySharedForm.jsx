@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +17,32 @@ export default function CategorySharedForm({
   categories = [],
 }) {
   const isEdit = mode === "edit";
+  const [attempted, setAttempted] = useState(false);
+
+  // Mismas reglas que valida el backend (category.controller.js).
+  const getErrors = () => {
+    const errors = {};
+    const name = (form.name || "").trim();
+    if (!name) errors.name = "El nombre es obligatorio";
+    else if (name.length > 30) errors.name = "El nombre no puede superar 30 caracteres";
+
+    if (form.description && form.description.length > 1500) {
+      errors.description = "La descripción no puede superar 1500 caracteres";
+    }
+
+    if (!form.preview) errors.image = "La imagen es obligatoria";
+    return errors;
+  };
+
+  const errors = attempted ? getErrors() : {};
+
+  const handleSubmit = () => {
+    if (Object.keys(getErrors()).length > 0) {
+      setAttempted(true);
+      return;
+    }
+    onSubmit();
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { "image/*": [] },
@@ -39,7 +66,7 @@ export default function CategorySharedForm({
 
       {/* Imagen */}
       <div className="space-y-1.5">
-        <Label>Imagen</Label>
+        <Label>Imagen <span className="text-red-400">*</span></Label>
 
         {previewSrc ? (
           <div
@@ -68,6 +95,8 @@ export default function CategorySharedForm({
             className={`flex flex-col items-center justify-center gap-2 h-36 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
               isDragActive
                 ? "border-indigo-400 bg-indigo-50/60"
+                : errors.image
+                ? "border-destructive/60 hover:border-destructive"
                 : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
             }`}
           >
@@ -83,17 +112,21 @@ export default function CategorySharedForm({
             </div>
           </div>
         )}
+        {errors.image && <p className="text-xs text-destructive">{errors.image}</p>}
       </div>
 
       {/* Nombre + Estado */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>Nombre</Label>
+          <Label>Nombre <span className="text-red-400">*</span></Label>
           <Input
             value={form.name || ""}
             onChange={(e) => handleChange("name", e.target.value)}
             placeholder="Nombre de la categoría"
+            maxLength={30}
+            aria-invalid={!!errors.name}
           />
+          {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
         </div>
 
         <div className="space-y-1.5">
@@ -125,13 +158,19 @@ export default function CategorySharedForm({
 
       {/* Descripción */}
       <div className="space-y-1.5">
-        <Label>Descripción</Label>
+        <Label>
+          Descripción{" "}
+          <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
+        </Label>
         <Textarea
           value={form.description || ""}
           onChange={(e) => handleChange("description", e.target.value)}
           placeholder="Descripción de la categoría"
           className="resize-none min-h-20"
+          maxLength={1500}
+          aria-invalid={!!errors.description}
         />
+        {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
       </div>
 
       {/* Orden + Categoría padre */}
@@ -163,7 +202,7 @@ export default function CategorySharedForm({
       {/* Botones */}
       <div className="flex justify-end gap-2 pt-2">
         <Button variant="outline" type="button" onClick={onCancel}>Cancelar</Button>
-        <Button type="button" onClick={onSubmit} disabled={loading}>
+        <Button type="button" onClick={handleSubmit} disabled={loading}>
           {loading
             ? isEdit ? "Guardando..." : "Creando..."
             : isEdit ? "Guardar cambios" : "Crear categoría"}

@@ -6,7 +6,7 @@ function url(path) { return path ? `${API}${path}` : null; }
 
 // images: todas las imágenes de todas las variantes, cada una con variantId
 // selectedVariantId: la variante actualmente seleccionada
-export default function ProductDetailGallery({ images = [], selectedVariantId, outOfStock = false }) {
+export default function ProductDetailGallery({ images = [], selectedVariantId, outOfStock = false, discountPercent = 0 }) {
   const [active, setActive] = useState(null);
 
   // Cuando cambia la variante seleccionada, saltar a su primera imagen
@@ -56,6 +56,11 @@ export default function ProductDetailGallery({ images = [], selectedVariantId, o
         {outOfStock && (
           <span className="absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-full bg-gray-700/80 text-white tracking-wide uppercase">
             Agotado
+          </span>
+        )}
+        {discountPercent > 0 && (
+          <span className="absolute top-4 right-4 text-lg font-black px-4 py-2 rounded-xl bg-linear-to-br from-rose-500 to-pink-600 text-white shadow-lg ring-2 ring-white/70 tracking-wide">
+            -{discountPercent}%
           </span>
         )}
       </div>

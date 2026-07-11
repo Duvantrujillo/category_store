@@ -3,7 +3,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDropzone } from "react-dropzone";
 import { ImagePlus, X } from "lucide-react";
 
-export default function ContentSection({ form, handleChange }) {
+export default function ContentSection({ form, handleChange, errors = {} }) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { "image/*": [] },
     maxFiles: 1,
@@ -93,7 +93,10 @@ export default function ContentSection({ form, handleChange }) {
             onChange={(e) => handleChange("description", e.target.value)}
             placeholder="Detalles, características, especificaciones..."
             className="h-44 resize-none text-sm"
+            maxLength={3000}
+            aria-invalid={!!errors.description}
           />
+          {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
         </div>
 
       </div>

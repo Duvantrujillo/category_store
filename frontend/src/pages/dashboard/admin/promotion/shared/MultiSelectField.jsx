@@ -9,6 +9,7 @@ export default function MultiSelectField({
   onChange,
   placeholder = "Todos (sin restricción)",
   getLabel = (item) => item.name,
+  error = "",
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -43,7 +44,8 @@ export default function MultiSelectField({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
+        aria-invalid={!!error}
+        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors outline-none focus:ring-1 focus:ring-ring aria-invalid:border-destructive aria-invalid:ring-1 aria-invalid:ring-destructive/30"
       >
         <span className={selectedIds.length ? "text-slate-800" : "text-muted-foreground"}>
           {selectedIds.length ? `${selectedIds.length} seleccionado${selectedIds.length !== 1 ? "s" : ""}` : placeholder}
@@ -85,6 +87,8 @@ export default function MultiSelectField({
           </div>
         </div>
       )}
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
 
       {selectedItems.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-1">

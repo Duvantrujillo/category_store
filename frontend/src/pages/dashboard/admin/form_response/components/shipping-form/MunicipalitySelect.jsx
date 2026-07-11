@@ -9,6 +9,7 @@ function MunicipalitySelect({
   value,
   handleChange,
   labelClass,
+  invalid = false,
 }) {
   const handleMunicipalityChange = (e) => {
     handleChange("municipality", e.target.value);
@@ -24,7 +25,7 @@ function MunicipalitySelect({
           value={value || ""}
           onChange={handleMunicipalityChange}
           disabled={!selectedDepartment}
-          className={selectClass}
+          className={`${selectClass} ${invalid ? "border-destructive ring-1 ring-destructive/20" : ""}`}
         >
           <option value="" disabled>
             {selectedDepartment ? "Selecciona un municipio" : "Primero elige un departamento"}

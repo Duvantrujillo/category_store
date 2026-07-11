@@ -15,7 +15,7 @@ const TYPE_OPTIONS = [
   { value: "FREE_SHIPPING", label: "Envío gratis" },
 ];
 
-export default function InfoSection({ form, handleChange }) {
+export default function InfoSection({ form, handleChange, errors = {} }) {
   const isFreeShipping = form.type === "FREE_SHIPPING";
 
   return (
@@ -35,7 +35,9 @@ export default function InfoSection({ form, handleChange }) {
           placeholder="Ej: VERANO20"
           maxLength={30}
           className="font-mono"
+          aria-invalid={!!errors.code}
         />
+        {errors.code && <p className="text-xs text-destructive">{errors.code}</p>}
       </div>
 
       {/* Descripción */}
@@ -50,7 +52,9 @@ export default function InfoSection({ form, handleChange }) {
           placeholder="Descripción interna del cupón"
           className="resize-none min-h-16"
           maxLength={500}
+          aria-invalid={!!errors.description}
         />
+        {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -67,7 +71,7 @@ export default function InfoSection({ form, handleChange }) {
               if (val === "FREE_SHIPPING") handleChange("value", "0");
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-invalid={!!errors.type}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -76,6 +80,7 @@ export default function InfoSection({ form, handleChange }) {
               ))}
             </SelectContent>
           </Select>
+          {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}
         </div>
 
         {/* Valor */}
@@ -92,7 +97,9 @@ export default function InfoSection({ form, handleChange }) {
             onChange={(e) => handleChange("value", e.target.value)}
             placeholder={form.type === "PERCENTAGE" ? "Ej: 20" : "Ej: 10000"}
             disabled={isFreeShipping}
+            aria-invalid={!!errors.value}
           />
+          {errors.value && <p className="text-xs text-destructive">{errors.value}</p>}
         </div>
 
       </div>

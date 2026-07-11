@@ -9,6 +9,7 @@ function DepartmentSelect({
   setSelectedDepartment,
   handleChange,
   labelClass,
+  invalid = false,
 }) {
   const handleDepartmentChange = (e) => {
     const departmentId = e.target.value;
@@ -26,7 +27,7 @@ function DepartmentSelect({
         <select
           value={selectedDepartment || ""}
           onChange={handleDepartmentChange}
-          className={selectClass}
+          className={`${selectClass} ${invalid ? "border-destructive ring-1 ring-destructive/20" : ""}`}
         >
           <option value="" disabled>
             Selecciona un departamento

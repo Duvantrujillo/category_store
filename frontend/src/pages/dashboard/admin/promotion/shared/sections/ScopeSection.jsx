@@ -24,8 +24,26 @@ export default function ScopeSection({
   categories = [],
   brands = [],
   variants = [],
+  errors = {},
 }) {
   const scope = form.scope || "ALL_PRODUCTS";
+  const selectedProductIds = form.productIds || [];
+
+  const variantsOfSelectedProducts = selectedProductIds.length
+    ? variants.filter((v) => selectedProductIds.includes(v.productId ?? v.product?.id))
+    : [];
+
+  const handleProductIdsChange = (ids) => {
+    handleChange("productIds", ids);
+    // Quita variantes seleccionadas que ya no pertenezcan a los productos elegidos
+    const stillValidVariantIds = (form.variantIds || []).filter((id) => {
+      const variant = variants.find((v) => v.id === id);
+      return variant && ids.includes(variant.productId ?? variant.product?.id);
+    });
+    if (stillValidVariantIds.length !== (form.variantIds || []).length) {
+      handleChange("variantIds", stillValidVariantIds);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -56,17 +74,22 @@ export default function ScopeSection({
           <MultiSelectField
             label="Productos"
             items={products}
-            selectedIds={form.productIds || []}
-            onChange={(ids) => handleChange("productIds", ids)}
+            selectedIds={selectedProductIds}
+            onChange={handleProductIdsChange}
             placeholder="Selecciona productos"
+            error={errors.productIds}
           />
           <MultiSelectField
             label="Variantes (opcional)"
-            items={variants}
+            items={variantsOfSelectedProducts}
             selectedIds={form.variantIds || []}
             onChange={(ids) => handleChange("variantIds", ids)}
             getLabel={variantLabel}
-            placeholder="Todas las variantes de los productos elegidos"
+            placeholder={
+              selectedProductIds.length
+                ? "Todas las variantes de los productos elegidos"
+                : "Selecciona primero un producto"
+            }
           />
         </div>
       )}
@@ -78,6 +101,7 @@ export default function ScopeSection({
           selectedIds={form.categoryIds || []}
           onChange={(ids) => handleChange("categoryIds", ids)}
           placeholder="Selecciona categorías"
+          error={errors.categoryIds}
         />
       )}
 
@@ -88,6 +112,7 @@ export default function ScopeSection({
           selectedIds={form.brandIds || []}
           onChange={(ids) => handleChange("brandIds", ids)}
           placeholder="Selecciona marcas"
+          error={errors.brandIds}
         />
       )}
     </div>

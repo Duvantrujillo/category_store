@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useDropzone } from "react-dropzone";
 
-export default function MediaSection({ form, handleChange }) {
+export default function MediaSection({ form, handleChange, errors = {} }) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { "image/*": [] },
     maxFiles: 1,
@@ -34,7 +34,7 @@ export default function MediaSection({ form, handleChange }) {
 
         {/* Logo dropzone */}
         <div className="space-y-1.5">
-          <Label>Logo</Label>
+          <Label>Logo <span className="text-red-400">*</span></Label>
 
           {previewSrc ? (
             <div className="relative flex items-center justify-center rounded-xl border border-slate-200 bg-white overflow-hidden h-44"
@@ -64,6 +64,8 @@ export default function MediaSection({ form, handleChange }) {
               className={`flex flex-col items-center justify-center gap-3 h-44 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
                 isDragActive
                   ? "border-indigo-400 bg-indigo-50/60"
+                  : errors.logo
+                  ? "border-destructive/60 hover:border-destructive"
                   : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
@@ -79,17 +81,24 @@ export default function MediaSection({ form, handleChange }) {
               </div>
             </div>
           )}
+          {errors.logo && <p className="text-xs text-destructive">{errors.logo}</p>}
         </div>
 
         {/* Descripción */}
         <div className="space-y-1.5">
-          <Label>Descripción</Label>
+          <Label>
+            Descripción{" "}
+            <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
+          </Label>
           <Textarea
             value={form.description || ""}
             onChange={(e) => handleChange("description", e.target.value)}
             placeholder="Describe brevemente la marca..."
             className="h-44 resize-none"
+            maxLength={800}
+            aria-invalid={!!errors.description}
           />
+          {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
         </div>
 
       </div>

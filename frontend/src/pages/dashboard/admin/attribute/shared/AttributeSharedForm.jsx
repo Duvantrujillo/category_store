@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,26 @@ export default function AttributeSharedForm({
 }) {
 
   const isEdit = mode === "edit";
+  const [attempted, setAttempted] = useState(false);
+
+  // Misma regla que valida el backend (attribute.controller.js).
+  const getErrors = () => {
+    const errors = {};
+    const name = (form.name || "").trim();
+    if (!name) errors.name = "El nombre es obligatorio";
+    else if (name.length > 20) errors.name = "El nombre no puede superar 20 caracteres";
+    return errors;
+  };
+
+  const errors = attempted ? getErrors() : {};
+
+  const handleSubmit = () => {
+    if (Object.keys(getErrors()).length > 0) {
+      setAttempted(true);
+      return;
+    }
+    onSubmit();
+  };
 
   return (
     <div className="grid gap-4">
@@ -25,7 +46,7 @@ export default function AttributeSharedForm({
       {/* NAME */}
       <div>
 
-        <Label>Nombre</Label>
+        <Label>Nombre <span className="text-red-400">*</span></Label>
 
         <Input
           value={form.name || ""}
@@ -33,7 +54,10 @@ export default function AttributeSharedForm({
             handleChange("name", e.target.value)
           }
           placeholder="Nombre del atributo"
+          maxLength={20}
+          aria-invalid={!!errors.name}
         />
+        {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
 
       </div>
 
@@ -83,7 +107,7 @@ export default function AttributeSharedForm({
         </Button>
 
         <Button
-          onClick={onSubmit}
+          onClick={handleSubmit}
           disabled={loading}
         >
 

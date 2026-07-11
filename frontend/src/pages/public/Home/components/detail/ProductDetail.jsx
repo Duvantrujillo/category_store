@@ -154,6 +154,9 @@ export default function ProductDetail() {
   // ── Datos de la variante seleccionada ─────────────────────────────────────
 
   const { price, finalPrice, promotion } = selectedVariant ?? {};
+  const discountPercent = promotion && Number(price) > 0
+    ? Math.round((1 - Number(finalPrice) / Number(price)) * 100)
+    : 0;
   const available  = getAvailableUnits(selectedVariant);
   const outOfStock = available === 0;
   const cartQty    = cartQtyById[selectedVariant?.id] ?? 0;
@@ -183,7 +186,7 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 xl:gap-16 items-start">
 
           <div className="h-[380px] sm:h-[460px] md:h-[520px] lg:h-[620px] md:sticky md:top-8">
-            <ProductDetailGallery images={allImages} selectedVariantId={selectedVariant?.id} outOfStock={outOfStock} />
+            <ProductDetailGallery images={allImages} selectedVariantId={selectedVariant?.id} outOfStock={outOfStock} discountPercent={discountPercent} />
           </div>
 
           <div className="flex flex-col gap-7">

@@ -5,7 +5,7 @@ import { useDropzone } from "react-dropzone";
 
 const API = import.meta.env.VITE_API_URL;
 
-export default function MediaSection({ form, handleChange }) {
+export default function MediaSection({ form, handleChange, errors = {} }) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { "image/*": [] },
     maxFiles: 1,
@@ -57,6 +57,8 @@ export default function MediaSection({ form, handleChange }) {
             className={`flex flex-col items-center justify-center gap-3 h-52 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
               isDragActive
                 ? "border-indigo-400 bg-indigo-50/60"
+                : errors.image
+                ? "border-destructive/60 hover:border-destructive"
                 : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
             }`}
           >
@@ -72,6 +74,7 @@ export default function MediaSection({ form, handleChange }) {
             </div>
           </div>
         )}
+        {errors.image && <p className="text-xs text-destructive">{errors.image}</p>}
       </div>
 
     </div>

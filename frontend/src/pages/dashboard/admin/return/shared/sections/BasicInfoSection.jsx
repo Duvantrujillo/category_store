@@ -37,7 +37,7 @@ const RESOLUTION_OPTIONS = [
 
 function FieldError({ message }) {
   if (!message) return null;
-  return <p className="text-xs text-red-500 mt-1">{message}</p>;
+  return <p className="text-xs text-destructive mt-1">{message}</p>;
 }
 
 function OrderCombobox({ orders = [], value, onChange, error }) {
@@ -74,10 +74,11 @@ function OrderCombobox({ orders = [], value, onChange, error }) {
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
+        aria-invalid={!!error}
         className={cn(
           "flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm transition-colors outline-none",
           "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-          error ? "border-red-500 focus-visible:ring-red-500/50" : ""
+          "aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20"
         )}
       >
         <span className={cn("truncate", !selected && "text-muted-foreground")}>
@@ -218,7 +219,7 @@ export default function BasicInfoSection({ mode, form, handleChange, orders = []
               value={form.resolution || ""}
               onValueChange={(val) => handleChange("resolution", val)}
             >
-              <SelectTrigger className={errors.resolution ? "border-red-500 focus:ring-red-500" : ""}>
+              <SelectTrigger aria-invalid={!!errors.resolution}>
                 <SelectValue placeholder="Selecciona una resolución" />
               </SelectTrigger>
               <SelectContent>
@@ -249,11 +250,11 @@ export default function BasicInfoSection({ mode, form, handleChange, orders = []
           onChange={(e) => handleChange("reason", e.target.value)}
           maxLength={300}
           rows={3}
-          className={errors.reason ? "border-red-500 focus:ring-red-500" : ""}
+          aria-invalid={!!errors.reason}
         />
         <div className="flex justify-between items-start">
           <FieldError message={errors.reason} />
-          <span className={`text-xs ml-auto ${(form.reason?.length || 0) >= 300 ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
+          <span className={`text-xs ml-auto ${(form.reason?.length || 0) >= 300 ? "text-destructive font-medium" : "text-muted-foreground"}`}>
             {form.reason?.length || 0}/300
           </span>
         </div>

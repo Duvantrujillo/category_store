@@ -14,7 +14,7 @@ const TYPE_OPTIONS = [
   { value: "FIXED_AMOUNT",  label: "Monto fijo ($)" },
 ];
 
-export default function InfoSection({ form, handleChange }) {
+export default function InfoSection({ form, handleChange, errors = {} }) {
   return (
     <div className="space-y-4">
 
@@ -31,7 +31,9 @@ export default function InfoSection({ form, handleChange }) {
           onChange={(e) => handleChange("name", e.target.value)}
           placeholder="Ej: Rebajas de verano"
           maxLength={150}
+          aria-invalid={!!errors.name}
         />
+        {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
       </div>
 
       {/* Descripción */}
@@ -58,7 +60,7 @@ export default function InfoSection({ form, handleChange }) {
             value={form.type || "PERCENTAGE"}
             onValueChange={(val) => handleChange("type", val)}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-invalid={!!errors.type}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -67,6 +69,7 @@ export default function InfoSection({ form, handleChange }) {
               ))}
             </SelectContent>
           </Select>
+          {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}
         </div>
 
         {/* Valor */}
@@ -82,7 +85,9 @@ export default function InfoSection({ form, handleChange }) {
             value={form.value ?? ""}
             onChange={(e) => handleChange("value", e.target.value)}
             placeholder={form.type === "PERCENTAGE" ? "Ej: 20" : "Ej: 10000"}
+            aria-invalid={!!errors.value}
           />
+          {errors.value && <p className="text-xs text-destructive">{errors.value}</p>}
         </div>
 
       </div>

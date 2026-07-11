@@ -16,7 +16,7 @@ async function getActivePromotions(db = prisma) {
       brands: { select: { brandId: true } },
       variants: { select: { productVariantId: true } },
     },
-    orderBy: [{ priority: "desc" }, { id: "asc" }],
+    orderBy: [{ id: "asc" }],
   });
 
   return promotions.filter((p) => p.usageLimit == null || p._count.usages < p.usageLimit);
@@ -51,13 +51,49 @@ function computeDiscountedPrice(price, promotion) {
   return Math.max(0, Math.round(numericPrice - Number(promotion.value)));
 }
 
-// `activePromotions` ya viene ordenada por priority desc, id asc — la
-// primera que matchee el scope es la que gana (sin combinar promociones).
-function pickPromotion(context, activePromotions) {
-  for (const promotion of activePromotions) {
-    if (matchesScope(promotion, context)) return promotion;
+// Qué tan específica es una promoción para el ítem en cuestión. A mayor
+// número, más específica. Una promoción de variante/producto puntual
+// siempre debe ganarle a una de categoría, marca o todo el catálogo.
+function scopeSpecificity(promotion, { variantId }) {
+  if (promotion.scope === "PRODUCTS") {
+    const matchesVariant = promotion.variants.length > 0
+      && promotion.variants.some((v) => v.productVariantId === variantId);
+    return matchesVariant ? 3 : 2; // variante puntual > producto específico
   }
-  return null;
+  if (promotion.scope === "CATEGORIES" || promotion.scope === "BRANDS") return 1;
+  return 0; // ALL_PRODUCTS
+}
+
+// Entre todas las promociones cuyo scope aplica al ítem, gana la más
+// específica (variante > producto > categoría/marca > todo el catálogo).
+// Si dos quedan empatadas en especificidad, gana la que le da mejor precio
+// al cliente (menor precio final); si hasta el precio final empata, gana
+// la más antigua (id asc), solo para que el resultado sea determinista.
+function pickPromotion(context, price, activePromotions) {
+  let best = null;
+  let bestSpecificity = -1;
+  let bestPrice = Infinity;
+
+  for (const promotion of activePromotions) {
+    if (!matchesScope(promotion, context)) continue;
+
+    const specificity = scopeSpecificity(promotion, context);
+    const discountedPrice = computeDiscountedPrice(price, promotion);
+
+    const better =
+      !best
+      || specificity > bestSpecificity
+      || (specificity === bestSpecificity && discountedPrice < bestPrice)
+      || (specificity === bestSpecificity && discountedPrice === bestPrice && promotion.id < best.id);
+
+    if (better) {
+      best = promotion;
+      bestSpecificity = specificity;
+      bestPrice = discountedPrice;
+    }
+  }
+
+  return best;
 }
 
 // Acepta una variante o un array de variantes. `overrideContext`, si se
@@ -77,7 +113,7 @@ function attachPromotionPricing(variantOrList, activePromotions, overrideContext
       variantId: variant.id,
     };
 
-    const promotion = pickPromotion({ ...context, variantId: variant.id }, activePromotions);
+    const promotion = pickPromotion({ ...context, variantId: variant.id }, variant.price, activePromotions);
 
     return {
       ...variant,

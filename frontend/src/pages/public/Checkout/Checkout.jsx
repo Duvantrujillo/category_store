@@ -376,17 +376,25 @@ function OrderSummary({
             // a esta línea, ya incorpora este descuento (ver hasLineDiscount arriba).
             const hasPromotionOnly = !hasLineDiscount && !!variant.promotion;
             const promoLineAmount = Number(variant.finalPrice ?? variant.price) * quantity;
+            const discountPercent = hasPromotionOnly && Number(variant.price) > 0
+              ? Math.round((1 - Number(variant.finalPrice) / Number(variant.price)) * 100)
+              : 0;
 
             return (
               <div key={variant.id} className="flex gap-3 px-5 py-4">
                 {/* Imagen */}
-                <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 shrink-0 overflow-hidden">
+                <div className="relative w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 shrink-0 overflow-hidden">
                   {rawImg ? (
                     <img src={`${API_URL}${rawImg}`} alt={name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-200">
                       <ShoppingBag size={16} />
                     </div>
+                  )}
+                  {discountPercent > 0 && (
+                    <span className="absolute top-0.5 right-0.5 text-[8px] font-black px-1 py-0.5 rounded bg-rose-500 text-white shadow-sm leading-none">
+                      -{discountPercent}%
+                    </span>
                   )}
                 </div>
 
@@ -450,14 +458,14 @@ function OrderSummary({
                     )}
                     {hasLineDiscount ? (
                       <span className="flex flex-col items-end shrink-0 leading-none">
-                        <span className="text-[10px] text-rose-300 line-through">${sub}</span>
+                        <span className="text-xs font-medium text-rose-300 line-through decoration-2">${sub}</span>
                         <span className="text-[13px] font-bold text-gray-800 mt-0.5">
                           ${lineDiscount.lineAmount.toLocaleString("es-CO")}
                         </span>
                       </span>
                     ) : hasPromotionOnly ? (
                       <span className="flex flex-col items-end shrink-0 leading-none">
-                        <span className="text-[10px] text-gray-400 line-through opacity-70">${sub}</span>
+                        <span className="text-xs font-medium text-gray-400 line-through decoration-2 opacity-70">${sub}</span>
                         <span className="text-[13px] font-bold text-rose-600 mt-0.5">
                           ${promoLineAmount.toLocaleString("es-CO")}
                         </span>

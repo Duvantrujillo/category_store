@@ -1,5 +1,5 @@
 import {
-  FileText, TicketPercent, DollarSign, Layers, RotateCcw, Calendar, ListOrdered, Combine,
+  FileText, TicketPercent, DollarSign, Layers, RotateCcw, Calendar, Combine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -113,7 +113,6 @@ function PromotionDetailsDialog({ open, item, onClose }) {
                 : "Cualquier compra"}
               iconCls="bg-sky-50 text-sky-500"
             />
-            <Field icon={ListOrdered} label="Prioridad" value={item.priority} iconCls="bg-fuchsia-50 text-fuchsia-500" />
             <Field icon={Combine} label="Combinable" value={item.allowCombination ? "Sí" : "No"} iconCls="bg-cyan-50 text-cyan-500" />
             <Field
               icon={RotateCcw}

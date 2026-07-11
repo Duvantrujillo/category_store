@@ -20,6 +20,9 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
   const outOfStock  = available === 0;
   const atLimit     = !outOfStock && cartQty >= available;
   const isTopSeller = topSellerIds?.has(variant.id) ?? false;
+  const discountPercent = hasPromotion && Number(price) > 0
+    ? Math.round((1 - Number(finalPrice) / Number(price)) * 100)
+    : 0;
 
   return (
     <article
@@ -36,12 +39,19 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
           }`}
         />
 
-        {/* Badge MÁS VENDIDO */}
-        {isTopSeller && (
-          <span className="absolute top-2.5 right-2.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-600 shadow-sm tracking-wide uppercase">
-            Más vendido ⭐
-          </span>
-        )}
+        {/* Badges esquina superior derecha */}
+        <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-1.5">
+          {discountPercent > 0 && (
+            <span className="text-sm font-black px-3 py-1.5 rounded-lg bg-linear-to-br from-rose-500 to-pink-600 text-white shadow-md ring-2 ring-white/70 tracking-wide">
+              -{discountPercent}%
+            </span>
+          )}
+          {isTopSeller && (
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-600 shadow-sm tracking-wide uppercase">
+              Más vendido ⭐
+            </span>
+          )}
+        </div>
 
         {/* Favorito */}
         <button
@@ -74,7 +84,7 @@ export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite
         <div className="mt-2 flex flex-col gap-3">
           {hasPromotion ? (
             <div className="flex flex-col leading-none gap-0.5" style={{ fontFamily: "system-ui, 'Segoe UI', sans-serif" }}>
-              <span className="text-[11px] text-gray-400 line-through opacity-70">
+              <span className="text-[13px] font-medium text-gray-400 line-through decoration-2 opacity-70">
                 ${Number(price).toLocaleString("es-CO")}
               </span>
               <p className="text-base sm:text-lg font-semibold tracking-wide text-rose-600 leading-none">

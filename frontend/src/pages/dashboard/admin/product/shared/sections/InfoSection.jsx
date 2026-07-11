@@ -8,7 +8,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-export default function InfoSection({ form, handleChange, categories = [], brands = [] }) {
+export default function InfoSection({ form, handleChange, categories = [], brands = [], errors = {} }) {
     const leafCategories = categories.filter(
         (cat) => !categories.some((c) => c.parentId === cat.id)
     );
@@ -31,7 +31,10 @@ export default function InfoSection({ form, handleChange, categories = [], brand
                         value={form.name || ""}
                         onChange={(e) => handleChange("name", e.target.value)}
                         placeholder="Ej: Laptop Dell XPS 15"
+                        maxLength={50}
+                        aria-invalid={!!errors.name}
                     />
+                    {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                 </div>
             </section>
 
@@ -51,7 +54,7 @@ export default function InfoSection({ form, handleChange, categories = [], brand
                             value={form.categoryId ? String(form.categoryId) : ""}
                             onValueChange={(val) => handleChange("categoryId", val)}
                         >
-                            <SelectTrigger id="category">
+                            <SelectTrigger id="category" aria-invalid={!!errors.categoryId}>
                                 <SelectValue placeholder="Selecciona" />
                             </SelectTrigger>
                             <SelectContent>
@@ -68,6 +71,7 @@ export default function InfoSection({ form, handleChange, categories = [], brand
                                 )}
                             </SelectContent>
                         </Select>
+                        {errors.categoryId && <p className="text-xs text-destructive">{errors.categoryId}</p>}
                     </div>
 
                     <div className="grid gap-2">

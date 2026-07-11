@@ -887,8 +887,6 @@ model Promotion {
 
   minimumPurchase Decimal @db.Decimal(12,2) @default(0)
 
-  priority Int @default(1)
-
   allowCombination Boolean @default(false)
 
   usageLimit Int?
@@ -920,8 +918,6 @@ model Promotion {
   @@index([startsAt])
 
   @@index([expiresAt])
-
-  @@index([priority])
 
 }
 model PromotionProduct {

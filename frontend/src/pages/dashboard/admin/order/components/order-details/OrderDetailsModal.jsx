@@ -49,6 +49,25 @@ function OrderDetailsModal({ open, order, onClose }) {
 
   const { label: statusLabel, cls: statusCls } = STATUS_CONFIG[order.status] ?? { label: order.status, cls: "bg-slate-500/20 text-slate-300 border-slate-500/30" };
   const hasDiscount = Number(order.discountAmount) > 0;
+  const hasFreeShippingCoupon = order.discountCode?.type === "FREE_SHIPPING";
+
+  // Promociones automáticas de producto: viven en OrderItem.promotion (una
+  // promoción puntual por línea, ver schema.prisma). Acá se suman para el
+  // monto total en "Resumen financiero" y se agrupan por nombre — una misma
+  // promoción puede haber aplicado a varias líneas/productos del pedido.
+  const promoItems = (order.items ?? []).filter((i) => i.promotion);
+  const promotionDiscountTotal = promoItems.reduce((sum, i) => sum + Number(i.promotionDiscount || 0), 0);
+  const promotionNames = [...new Set(promoItems.map((i) => i.promotion.name))];
+  const hasPromotion = promotionDiscountTotal > 0;
+
+  // Agrupa por nombre de promoción → qué productos del pedido la usaron
+  // (Order.discountCode, en cambio, es un solo cupón por pedido, no por línea).
+  const promotionGroups = promoItems.reduce((acc, item) => {
+    const key = item.promotion.name;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(item.productName);
+    return acc;
+  }, {});
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -101,13 +120,34 @@ function OrderDetailsModal({ open, order, onClose }) {
             {/* Resumen financiero */}
             <Section title="Resumen financiero">
               <Field icon={DollarSign} label="Subtotal productos" value={fmtCOP(order.subtotal)} iconCls="bg-emerald-50 text-emerald-500" />
-              <Field icon={Truck} label="Costo de envío" value={fmtCOP(order.shippingCost ?? 11000)} iconCls="bg-sky-50 text-sky-500" />
+              {hasFreeShippingCoupon ? (
+                <Field
+                  icon={Truck}
+                  label="Costo de envío"
+                  value={
+                    <span title={`Cupón: ${order.discountCode?.code ?? ""}`}>
+                      Gratis · cupón {order.discountCode?.code ?? ""}
+                    </span>
+                  }
+                  iconCls="bg-blue-50 text-blue-500"
+                />
+              ) : (
+                <Field icon={Truck} label="Costo de envío" value={fmtCOP(order.shippingCost ?? 11000)} iconCls="bg-sky-50 text-sky-500" />
+              )}
               {hasDiscount && (
                 <Field
                   icon={TicketPercent}
-                  label="Descuento aplicado"
+                  label="Descuento por cupón"
                   value={`-${fmtCOP(order.discountAmount)} · cupón ${order.discountCode?.code ?? ""}`}
-                  iconCls="bg-rose-50 text-rose-500"
+                  iconCls="bg-blue-50 text-blue-500"
+                />
+              )}
+              {hasPromotion && (
+                <Field
+                  icon={TicketPercent}
+                  label="Descuento por promociones"
+                  value={`-${fmtCOP(promotionDiscountTotal)} · ${promotionNames.join(", ")}`}
+                  iconCls="bg-green-50 text-green-500"
                 />
               )}
               <div className="flex items-start gap-3 py-2.5">
@@ -129,6 +169,37 @@ function OrderDetailsModal({ open, order, onClose }) {
             </Section>
 
           </div>
+
+          {/* Cupón usado — Order.discountCode: un solo cupón por pedido completo.
+              Siempre se muestra igual (solo el código), sea el tipo que sea —
+              el detalle de "envío gratis" va aparte, en "Costo de envío". */}
+          {order.discountCode && (
+            <Section title="Cupón usado">
+              <div className="flex items-center gap-2 flex-wrap py-3">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">
+                  <TicketPercent size={12} /> Cupón: {order.discountCode.code}
+                </span>
+              </div>
+            </Section>
+          )}
+
+          {/* Promociones usadas — OrderItem.promotion: una por cada línea, agrupadas por nombre */}
+          {hasPromotion && (
+            <Section title="Promociones usadas">
+              <div className="flex flex-col gap-2.5 py-3">
+                {Object.entries(promotionGroups).map(([name, productNames]) => (
+                  <div key={name} className="flex flex-col gap-1">
+                    <span className="inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-600 border border-green-200">
+                      <TicketPercent size={12} /> {name}
+                    </span>
+                    <p className="text-[11px] text-slate-400 pl-1">
+                      Aplicó a: {productNames.join(", ")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
 
         </div>
 

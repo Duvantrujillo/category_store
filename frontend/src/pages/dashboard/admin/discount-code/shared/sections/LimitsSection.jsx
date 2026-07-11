@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function LimitsSection({ form, handleChange }) {
+export default function LimitsSection({ form, handleChange, errors = {} }) {
   return (
     <div className="space-y-4">
 
@@ -29,7 +29,9 @@ export default function LimitsSection({ form, handleChange }) {
             value={form.minimumPurchase ?? "0"}
             onChange={(e) => handleChange("minimumPurchase", e.target.value)}
             placeholder="0"
+            aria-invalid={!!errors.minimumPurchase}
           />
+          {errors.minimumPurchase && <p className="text-xs text-destructive">{errors.minimumPurchase}</p>}
         </div>
 
         {/* Máximo de usos */}
@@ -44,7 +46,9 @@ export default function LimitsSection({ form, handleChange }) {
             value={form.maxUses ?? ""}
             onChange={(e) => handleChange("maxUses", e.target.value)}
             placeholder="Ilimitado"
+            aria-invalid={!!errors.maxUses}
           />
+          {errors.maxUses && <p className="text-xs text-destructive">{errors.maxUses}</p>}
         </div>
 
         {/* Fecha inicio */}
@@ -55,7 +59,9 @@ export default function LimitsSection({ form, handleChange }) {
             onChange={(v) => handleChange("startsAt", v)}
             placeholder="Seleccionar fecha"
             className="w-full"
+            invalid={!!errors.startsAt}
           />
+          {errors.startsAt && <p className="text-xs text-destructive">{errors.startsAt}</p>}
         </div>
 
         {/* Fecha expiración */}
@@ -66,7 +72,9 @@ export default function LimitsSection({ form, handleChange }) {
             onChange={(v) => handleChange("expiresAt", v)}
             placeholder="Seleccionar fecha"
             className="w-full"
+            invalid={!!errors.expiresAt}
           />
+          {errors.expiresAt && <p className="text-xs text-destructive">{errors.expiresAt}</p>}
         </div>
 
       </div>

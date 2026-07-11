@@ -12,7 +12,7 @@ import {
 import { searchProduct } from "@/api/productApi";
 
 /* ── Combobox de búsqueda de productos ─────────────────────── */
-function ProductSearchCombobox({ onChange, initialProduct }) {
+function ProductSearchCombobox({ onChange, initialProduct, invalid = false }) {
     const [open, setOpen]       = useState(false);
     const [query, setQuery]     = useState("");
     const [results, setResults] = useState([]);
@@ -87,7 +87,8 @@ function ProductSearchCombobox({ onChange, initialProduct }) {
             <button
                 type="button"
                 onClick={handleOpen}
-                className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
+                aria-invalid={invalid}
+                className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background transition-colors outline-none focus:ring-1 focus:ring-ring aria-invalid:border-destructive aria-invalid:ring-1 aria-invalid:ring-destructive/30"
             >
                 {selected ? (
                     <span className="flex items-center gap-1 truncate min-w-0">
@@ -165,7 +166,7 @@ function ProductSearchCombobox({ onChange, initialProduct }) {
 }
 
 /* ── Sección de información básica ─────────────────────────── */
-export default function BasicInfoSection({ form, handleChange, initialProduct }) {
+export default function BasicInfoSection({ form, handleChange, initialProduct, errors = {} }) {
     return (
         <div className="space-y-6">
 
@@ -185,22 +186,30 @@ export default function BasicInfoSection({ form, handleChange, initialProduct })
 
                     {/* PRODUCTO */}
                     <div>
-                        <Label>Producto</Label>
+                        <Label>Producto <span className="text-red-400">*</span></Label>
                         <ProductSearchCombobox
                             onChange={(id) => handleChange("productId", id)}
                             initialProduct={initialProduct}
+                            invalid={!!errors.productId}
                         />
+                        {errors.productId && <p className="text-xs text-destructive">{errors.productId}</p>}
                     </div>
 
                     {/* BARCODE */}
                     <div>
-                        <Label>Barcode</Label>
+                        <Label>
+                            Barcode{" "}
+                            <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
+                        </Label>
                         <Input
                             type="text"
                             value={form.barcode || ""}
                             onChange={(e) => handleChange("barcode", e.target.value)}
                             placeholder="Código de barras"
+                            maxLength={20}
+                            aria-invalid={!!errors.barcode}
                         />
+                        {errors.barcode && <p className="text-xs text-destructive">{errors.barcode}</p>}
                     </div>
 
                 </div>
@@ -218,26 +227,32 @@ export default function BasicInfoSection({ form, handleChange, initialProduct })
 
                     {/* PRECIO */}
                     <div>
-                        <Label>Precio</Label>
+                        <Label>Precio <span className="text-red-400">*</span></Label>
                         <Input
                             type="number"
                             min="0"
+                            max="100000000"
                             value={form.price || ""}
                             onChange={(e) => handleChange("price", e.target.value)}
                             placeholder="0"
+                            aria-invalid={!!errors.price}
                         />
+                        {errors.price && <p className="text-xs text-destructive">{errors.price}</p>}
                     </div>
 
                     {/* STOCK */}
                     <div>
-                        <Label>Stock</Label>
+                        <Label>Stock <span className="text-red-400">*</span></Label>
                         <Input
                             type="number"
                             min="0"
+                            max="10000"
                             value={form.stock || ""}
                             onChange={(e) => handleChange("stock", e.target.value)}
                             placeholder="0"
+                            aria-invalid={!!errors.stock}
                         />
+                        {errors.stock && <p className="text-xs text-destructive">{errors.stock}</p>}
                     </div>
 
                 </div>

@@ -25,6 +25,58 @@ export default function ProductVariantSharedForm({
     const isEdit = mode === "edit";
 
     const [step, setStep] = useState(1);
+    const [attempted, setAttempted] = useState({});
+
+    // Mismas reglas que valida el backend (product_variant.controller.js).
+    const getBasicInfoErrors = () => {
+        const errors = {};
+        if (!form.productId) errors.productId = "El producto es obligatorio";
+
+        if (form.barcode) {
+            const barcode = String(form.barcode).trim();
+            if (barcode.startsWith("-")) errors.barcode = "El código de barras no puede ser negativo";
+            else if (barcode.length > 20) errors.barcode = "El código de barras no puede superar 20 caracteres";
+        }
+
+        const stock = Number(form.stock);
+        if (form.stock === undefined || form.stock === null || form.stock === "" || isNaN(stock)) {
+            errors.stock = "El stock es obligatorio";
+        } else if (stock < 0) errors.stock = "El stock no puede ser negativo";
+        else if (stock > 10000) errors.stock = "El stock no puede ser mayor a 10.000";
+
+        const price = Number(form.price);
+        if (form.price === undefined || form.price === null || form.price === "" || isNaN(price)) {
+            errors.price = "El precio es obligatorio";
+        } else if (price < 0) errors.price = "El precio no puede ser negativo";
+        else if (price > 100000000) errors.price = "El precio no puede ser mayor a 100.000.000";
+
+        return errors;
+    };
+
+    const STEP_ERROR_GETTERS = { 1: getBasicInfoErrors, 2: () => ({}), 3: () => ({}) };
+    const getStepErrors = (n) => STEP_ERROR_GETTERS[n]?.() ?? {};
+    const isStepValid = (n) => Object.keys(getStepErrors(n)).length === 0;
+    const currentStepValid = isStepValid(step);
+    const currentStepErrors = attempted[step] ? getStepErrors(step) : {};
+
+    const goToStep = (target) => {
+        if (target <= step) { setStep(target); return; }
+        for (let s = step; s < target; s++) {
+            if (!isStepValid(s)) {
+                setAttempted((prev) => ({ ...prev, [s]: true }));
+                return;
+            }
+        }
+        setStep(target);
+    };
+
+    const handleSubmit = () => {
+        if (!currentStepValid) {
+            setAttempted((prev) => ({ ...prev, [step]: true }));
+            return;
+        }
+        onSubmit();
+    };
 
     return (
         <div className="grid gap-4">
@@ -32,7 +84,7 @@ export default function ProductVariantSharedForm({
             {/* Indicador de pasos */}
             <Stepper
                 value={step}
-                onValueChange={setStep}
+                onValueChange={goToStep}
                 className="w-full mb-4"
             >
                 <StepperNav>
@@ -86,6 +138,7 @@ export default function ProductVariantSharedForm({
                     form={form}
                     handleChange={handleChange}
                     initialProduct={initialProduct}
+                    errors={currentStepErrors}
                 />
             )}
 
@@ -114,7 +167,7 @@ export default function ProductVariantSharedForm({
                     type="button"
                     variant="outline"
                     disabled={step === 1}
-                    onClick={() => setStep((prev) => prev - 1)}
+                    onClick={() => goToStep(step - 1)}
                     className="
         border-slate-300
         hover:bg-slate-100
@@ -127,7 +180,7 @@ export default function ProductVariantSharedForm({
 
                     <Button
                         type="button"
-                        onClick={() => setStep((prev) => prev + 1)}
+                        onClick={() => goToStep(step + 1)}
                         className="
         bg-blue-600
         hover:bg-blue-700
@@ -155,7 +208,7 @@ export default function ProductVariantSharedForm({
 
                         <Button
                             type="button"
-                            onClick={onSubmit}
+                            onClick={handleSubmit}
                             disabled={loading}
                             className="
         bg-green-600

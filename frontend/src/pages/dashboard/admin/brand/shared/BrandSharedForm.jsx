@@ -26,12 +26,56 @@ export default function BrandSharedForm({
 }) {
   const isEdit = mode === "edit";
   const [step, setStep] = useState(1);
+  const [attempted, setAttempted] = useState({});
+
+  // Mismas reglas que valida el backend (brand.controller.js).
+  const getInfoErrors = () => {
+    const errors = {};
+    const name = (form.name || "").trim();
+    if (!name) errors.name = "El nombre es obligatorio";
+    else if (name.length > 25) errors.name = "El nombre no puede superar 25 caracteres";
+    return errors;
+  };
+
+  const getMediaErrors = () => {
+    const errors = {};
+    if (!form.preview) errors.logo = "El logo es obligatorio";
+    if (form.description && form.description.length > 800) {
+      errors.description = "La descripción no puede superar 800 caracteres";
+    }
+    return errors;
+  };
+
+  const STEP_ERROR_GETTERS = { 1: getInfoErrors, 2: getMediaErrors };
+  const getStepErrors = (n) => STEP_ERROR_GETTERS[n]?.() ?? {};
+  const isStepValid = (n) => Object.keys(getStepErrors(n)).length === 0;
+  const currentStepValid = isStepValid(step);
+  const currentStepErrors = attempted[step] ? getStepErrors(step) : {};
+
+  const goToStep = (target) => {
+    if (target <= step) { setStep(target); return; }
+    for (let s = step; s < target; s++) {
+      if (!isStepValid(s)) {
+        setAttempted((prev) => ({ ...prev, [s]: true }));
+        return;
+      }
+    }
+    setStep(target);
+  };
+
+  const handleSubmit = () => {
+    if (!currentStepValid) {
+      setAttempted((prev) => ({ ...prev, [step]: true }));
+      return;
+    }
+    onSubmit();
+  };
 
   return (
     <div className="grid gap-4">
 
       {/* Stepper */}
-      <Stepper value={step} onValueChange={setStep} className="w-full mb-2">
+      <Stepper value={step} onValueChange={goToStep} className="w-full mb-2">
         <StepperNav>
           {STEPS.map((s) => (
             <StepperItem key={s.id} step={s.id}>
@@ -56,12 +100,12 @@ export default function BrandSharedForm({
 
       {/* Paso 1 — Información */}
       {step === 1 && (
-        <InfoSection form={form} handleChange={handleChange} />
+        <InfoSection form={form} handleChange={handleChange} errors={currentStepErrors} />
       )}
 
       {/* Paso 2 — Media */}
       {step === 2 && (
-        <MediaSection form={form} handleChange={handleChange} />
+        <MediaSection form={form} handleChange={handleChange} errors={currentStepErrors} />
       )}
 
       {/* Navegación */}
@@ -71,7 +115,7 @@ export default function BrandSharedForm({
           type="button"
           variant="outline"
           disabled={step === 1}
-          onClick={() => setStep((p) => p - 1)}
+          onClick={() => goToStep(step - 1)}
           className="border-slate-300 hover:bg-slate-100"
         >
           Anterior
@@ -80,7 +124,7 @@ export default function BrandSharedForm({
         {step < STEPS.length ? (
           <Button
             type="button"
-            onClick={() => setStep((p) => p + 1)}
+            onClick={() => goToStep(step + 1)}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             Siguiente
@@ -96,7 +140,7 @@ export default function BrandSharedForm({
             </Button>
             <Button
               type="button"
-              onClick={onSubmit}
+              onClick={handleSubmit}
               disabled={loading}
               className="bg-green-600 hover:bg-green-700 text-white"
             >

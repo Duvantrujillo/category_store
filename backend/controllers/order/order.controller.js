@@ -33,6 +33,89 @@ const ORDER_BUNDLE_ITEMS_INCLUDE = {
   }
 }
 
+// Restricciones del cupón (productos/categorías/marcas puntuales), para que
+// las vistas admin puedan marcar qué líneas calificaron para el descuento —
+// mismas reglas que resolveDiscount en discount_code.controller.js.
+const ORDER_DISCOUNT_CODE_INCLUDE = {
+  select: {
+    code: true, type: true, value: true,
+    products: { select: { productId: true } },
+    categories: { select: { categoryId: true } },
+    brands: { select: { brandId: true } },
+  }
+}
+
+// El producto asociado a la variante, solo lo necesario para chequear
+// restricciones de cupón (categoryId/brandId).
+const ORDER_ITEM_INCLUDE = {
+  include: {
+    productVariant: {
+      include: { product: { select: { id: true, categoryId: true, brandId: true } } }
+    },
+    promotion: { select: { id: true, name: true } },
+    returnItems: { select: { quantity: true } },
+  }
+}
+
+// Marca en cada item si calificó para el cupón del pedido y cuánto descontó
+// esa línea puntual. Order.discountCode es un único cupón por pedido — el
+// desglose por línea no se persiste (solo el `discountAmount` agregado), así
+// que se reconstruye acá con la MISMA fórmula que resolveDiscount usa al
+// crear la orden (discount_code.controller.js), para que nunca se muestre un
+// número que el backend no validó realmente.
+function markCouponEligibility(order) {
+  if (!order.discountCode) return order
+
+  const dc = order.discountCode
+  const items = order.items ?? []
+
+  const allowedProductIds = new Set((dc.products ?? []).map((p) => p.productId))
+  const allowedCategoryIds = new Set((dc.categories ?? []).map((c) => c.categoryId))
+  const allowedBrandIds = new Set((dc.brands ?? []).map((b) => b.brandId))
+  const hasCategoryOrBrandRestriction = allowedCategoryIds.size > 0 || allowedBrandIds.size > 0
+  const hasProductOnlyRestriction = allowedProductIds.size > 0 && !hasCategoryOrBrandRestriction
+
+  const isEligible = (item) => {
+    if (!hasProductOnlyRestriction) return true // sin restricción, o por categoría/marca: todo el carrito calificó
+    const product = item.productVariant?.product
+    return !!product && allowedProductIds.has(product.id)
+  }
+
+  const eligibleItems = items.filter(isEligible)
+  const eligibleSubtotal = eligibleItems.reduce((sum, item) => sum + Number(item.unitPrice) * item.quantity, 0)
+
+  order.items = items.map((item) => {
+    const usedCoupon = isEligible(item)
+    let couponLineDiscount = 0
+
+    if (usedCoupon) {
+      const lineTotal = Number(item.unitPrice) * item.quantity
+      if (dc.type === 'PERCENTAGE') {
+        const pct = Number(dc.value) / 100
+        couponLineDiscount = lineTotal - Math.round(lineTotal * (1 - pct))
+      } else if (dc.type === 'FIXED') {
+        // Mismo reparto proporcional que resolveDiscount: el descuento fijo
+        // ya validado (order.discountAmount) se prorratea por peso de línea.
+        const share = eligibleSubtotal > 0 ? lineTotal / eligibleSubtotal : 0
+        const finalLineAmount = Math.max(0, Math.round(lineTotal - Number(order.discountAmount) * share))
+        couponLineDiscount = lineTotal - finalLineAmount
+      }
+      // FREE_SHIPPING no cambia precios de producto, solo el envío (ya se
+      // maneja aparte en el resumen financiero) — couponLineDiscount queda en 0.
+    }
+
+    // `item.subtotal` en BD ya incluye la promoción (se guardó con finalPrice),
+    // pero NUNCA el cupón (ese solo se restaba agregado a nivel de Order) —
+    // por eso el subtotal por línea se veía "mal" cuando había cupón: no
+    // coincidía con el precio unitario final que sí mostraba el descuento.
+    const finalSubtotal = Number(item.subtotal) - couponLineDiscount
+
+    return { ...item, usedCoupon, couponLineDiscount, finalSubtotal }
+  })
+
+  return order
+}
+
 // ── createOrder ───────────────────────────────────────────────────────────────
 const createOrder = async (req, res) => {
   const idempotencyKey = req.headers['x-idempotency-key']
@@ -416,21 +499,16 @@ const allOrder = async (req, res) => {
       include: {
         user: { select: { id: true, name: true, email: true } },
         payment: true,
-        items: {
-          include: {
-            productVariant: true,
-            returnItems: {
-              select: { quantity: true }
-            }
-          }
-        },
+        items: ORDER_ITEM_INCLUDE,
         bundleItems: ORDER_BUNDLE_ITEMS_INCLUDE,
-        discountCode: { select: { code: true, type: true, value: true } }
+        discountCode: ORDER_DISCOUNT_CODE_INCLUDE
       },
       orderBy: {
         createdAt: 'desc'
       }
     });
+
+    orders.forEach(markCouponEligibility);
 
     return res.status(200).json({
       ok: true,
@@ -472,17 +550,14 @@ const searchOrder = async (req, res) => {
       include: {
         user: { select: { id: true, name: true, email: true } },
         payment: true,
-        items: {
-          include: {
-            productVariant: true,
-            returnItems: { select: { quantity: true } },
-          },
-        },
+        items: ORDER_ITEM_INCLUDE,
         bundleItems: ORDER_BUNDLE_ITEMS_INCLUDE,
-        discountCode: { select: { code: true, type: true, value: true } },
+        discountCode: ORDER_DISCOUNT_CODE_INCLUDE,
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    orders.forEach(markCouponEligibility);
 
     return res.status(200).json({ ok: true, orders });
   } catch (error) {
@@ -589,17 +664,14 @@ const filterOrderByDate = async (req, res) => {
       include: {
         user: { select: { id: true, name: true, email: true } },
         payment: true,
-        items: {
-          include: {
-            productVariant: true,
-            returnItems: { select: { quantity: true } },
-          },
-        },
+        items: ORDER_ITEM_INCLUDE,
         bundleItems: ORDER_BUNDLE_ITEMS_INCLUDE,
-        discountCode: { select: { code: true, type: true, value: true } },
+        discountCode: ORDER_DISCOUNT_CODE_INCLUDE,
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    orders.forEach(markCouponEligibility);
 
     return res.status(200).json({ ok: true, orders });
   } catch (error) {

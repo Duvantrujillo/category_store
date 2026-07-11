@@ -31,12 +31,87 @@ export default function DiscountCodeSharedForm({
 }) {
   const isEdit = mode === "edit";
   const [step, setStep] = useState(1);
+  const [attempted, setAttempted] = useState({});
+
+  // Mismas reglas que valida el backend (discount_code.controller.js),
+  // devueltas por campo para mostrar el mensaje justo debajo del input.
+  const getInfoErrors = () => {
+    const errors = {};
+    const code = (form.code || "").trim().toUpperCase();
+    if (!code) errors.code = "El código es obligatorio";
+    else if (code.length > 30) errors.code = "El código no puede superar 30 caracteres";
+    else if (!/^[A-Z0-9_-]+$/.test(code)) errors.code = "Solo letras, números, guiones y guiones bajos";
+
+    if (form.description && form.description.length > 500) {
+      errors.description = "La descripción no puede superar 500 caracteres";
+    }
+
+    if (!form.type) errors.type = "Selecciona un tipo de descuento";
+
+    if (form.type !== "FREE_SHIPPING") {
+      const numericValue = Number(form.value);
+      if (form.value === undefined || form.value === null || form.value === "" || isNaN(numericValue)) {
+        errors.value = "El valor del descuento es obligatorio";
+      } else if (form.type === "PERCENTAGE" && (numericValue <= 0 || numericValue > 100)) {
+        errors.value = "El porcentaje debe estar entre 1 y 100";
+      } else if (form.type === "FIXED" && numericValue <= 0) {
+        errors.value = "El valor fijo debe ser mayor a 0";
+      }
+    }
+    return errors;
+  };
+
+  const getLimitsErrors = () => {
+    const errors = {};
+    if (form.minimumPurchase !== undefined && form.minimumPurchase !== null && form.minimumPurchase !== "" && Number(form.minimumPurchase) < 0) {
+      errors.minimumPurchase = "La compra mínima no puede ser negativa";
+    }
+    if (form.maxUses !== undefined && form.maxUses !== null && form.maxUses !== "" && Number(form.maxUses) <= 0) {
+      errors.maxUses = "Debe ser un número mayor a 0";
+    }
+    if (!form.startsAt) errors.startsAt = "La fecha de inicio es obligatoria";
+    if (!form.expiresAt) errors.expiresAt = "La fecha de expiración es obligatoria";
+
+    if (form.startsAt && form.expiresAt) {
+      const start = new Date(form.startsAt);
+      const end = new Date(form.expiresAt);
+      if (isNaN(start.getTime())) errors.startsAt = "Fecha de inicio inválida";
+      else if (isNaN(end.getTime())) errors.expiresAt = "Fecha de expiración inválida";
+      else if (start >= end) errors.expiresAt = "Debe ser posterior a la fecha de inicio";
+    }
+    return errors;
+  };
+
+  const STEP_ERROR_GETTERS = { 1: getInfoErrors, 2: getLimitsErrors, 3: () => ({}) };
+  const getStepErrors = (n) => STEP_ERROR_GETTERS[n]?.() ?? {};
+  const isStepValid = (n) => Object.keys(getStepErrors(n)).length === 0;
+  const currentStepValid = isStepValid(step);
+  const currentStepErrors = attempted[step] ? getStepErrors(step) : {};
+
+  const goToStep = (target) => {
+    if (target <= step) { setStep(target); return; }
+    for (let s = step; s < target; s++) {
+      if (!isStepValid(s)) {
+        setAttempted((prev) => ({ ...prev, [s]: true }));
+        return;
+      }
+    }
+    setStep(target);
+  };
+
+  const handleSubmit = () => {
+    if (!currentStepValid) {
+      setAttempted((prev) => ({ ...prev, [step]: true }));
+      return;
+    }
+    onSubmit();
+  };
 
   return (
     <div className="grid gap-4">
 
       {/* Stepper */}
-      <Stepper value={step} onValueChange={setStep} className="w-full mb-2">
+      <Stepper value={step} onValueChange={goToStep} className="w-full mb-2">
         <StepperNav>
           {STEPS.map((s) => (
             <StepperItem key={s.id} step={s.id}>
@@ -61,12 +136,12 @@ export default function DiscountCodeSharedForm({
 
       {/* Paso 1 — Información */}
       {step === 1 && (
-        <InfoSection form={form} handleChange={handleChange} />
+        <InfoSection form={form} handleChange={handleChange} errors={currentStepErrors} />
       )}
 
       {/* Paso 2 — Vigencia y límites */}
       {step === 2 && (
-        <LimitsSection form={form} handleChange={handleChange} />
+        <LimitsSection form={form} handleChange={handleChange} errors={currentStepErrors} />
       )}
 
       {/* Paso 3 — Restricciones */}
@@ -87,13 +162,13 @@ export default function DiscountCodeSharedForm({
           type="button"
           variant="outline"
           disabled={step === 1}
-          onClick={() => setStep((p) => p - 1)}
+          onClick={() => goToStep(step - 1)}
         >
           Anterior
         </Button>
 
         {step < STEPS.length ? (
-          <Button type="button" onClick={() => setStep((p) => p + 1)}>
+          <Button type="button" onClick={() => goToStep(step + 1)}>
             Siguiente
           </Button>
         ) : (
@@ -101,7 +176,7 @@ export default function DiscountCodeSharedForm({
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancelar
             </Button>
-            <Button type="button" onClick={onSubmit} disabled={loading}>
+            <Button type="button" onClick={handleSubmit} disabled={loading}>
               {loading
                 ? isEdit ? "Guardando..." : "Creando..."
                 : isEdit ? "Guardar cambios" : "Crear cupón"}

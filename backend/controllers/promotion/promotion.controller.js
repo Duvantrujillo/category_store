@@ -66,7 +66,7 @@ async function validateRestrictions({ productIds, categoryIds, brandIds, variant
 // es válido, o { data } con los valores ya normalizados/parseados.
 function validateFields(body) {
   const {
-    name, description, type, value, scope, minimumPurchase, priority,
+    name, description, type, value, scope, minimumPurchase,
     allowCombination, usageLimit, usagePerCustomer, startsAt, expiresAt, status,
   } = body;
 
@@ -109,14 +109,6 @@ function validateFields(body) {
     numericMinPurchase = Number(minimumPurchase);
     if (isNaN(numericMinPurchase) || numericMinPurchase < 0) {
       return { error: "La compra mínima no puede ser negativa" };
-    }
-  }
-
-  let numericPriority = 1;
-  if (priority !== undefined && priority !== null && priority !== "") {
-    numericPriority = parseInt(priority, 10);
-    if (isNaN(numericPriority) || numericPriority < 1) {
-      return { error: "La prioridad debe ser un número mayor o igual a 1" };
     }
   }
 
@@ -168,7 +160,6 @@ function validateFields(body) {
       scope,
       status: statusValue,
       minimumPurchase: numericMinPurchase,
-      priority: numericPriority,
       allowCombination: allowCombinationValue,
       usageLimit: numericUsageLimit,
       usagePerCustomer: numericUsagePerCustomer,

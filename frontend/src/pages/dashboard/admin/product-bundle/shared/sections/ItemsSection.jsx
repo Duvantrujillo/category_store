@@ -37,7 +37,7 @@ const pillCls = (active) =>
     active ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
   }`;
 
-export default function ItemsSection({ form, handleChange, variants = [] }) {
+export default function ItemsSection({ form, handleChange, variants = [], errors = {} }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef(null);
@@ -143,9 +143,13 @@ export default function ItemsSection({ form, handleChange, variants = [] }) {
         )}
       </div>
 
+      {errors.items && <p className="text-xs text-destructive">{errors.items}</p>}
+
       {/* Lista de seleccionados */}
       {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground border border-dashed border-slate-200 rounded-lg py-6 text-center">
+        <p className={`text-xs border border-dashed rounded-lg py-6 text-center ${
+          errors.items ? "border-destructive/40 text-destructive" : "border-slate-200 text-muted-foreground"
+        }`}>
           Aún no agregas productos a este combo.
         </p>
       ) : (

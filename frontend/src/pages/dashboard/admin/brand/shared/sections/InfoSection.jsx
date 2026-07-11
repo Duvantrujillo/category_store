@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function InfoSection({ form, handleChange }) {
+export default function InfoSection({ form, handleChange, errors = {} }) {
   return (
     <div className="space-y-6">
 
@@ -21,12 +21,15 @@ export default function InfoSection({ form, handleChange }) {
 
         {/* Nombre */}
         <div className="space-y-1.5">
-          <Label>Nombre</Label>
+          <Label>Nombre <span className="text-red-400">*</span></Label>
           <Input
             value={form.name || ""}
             onChange={(e) => handleChange("name", e.target.value)}
             placeholder="Ej: Nike, Adidas..."
+            maxLength={25}
+            aria-invalid={!!errors.name}
           />
+          {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
         </div>
 
         {/* Estado */}
