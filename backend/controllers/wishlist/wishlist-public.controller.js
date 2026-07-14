@@ -68,11 +68,16 @@ const addPublicWishlistItem = async (req, res) => {
       return res.status(400).json({ message: 'productVariantId requerido' })
     }
 
+    const numericVariantId = Number(productVariantId)
+    if (!Number.isInteger(numericVariantId) || numericVariantId <= 0) {
+      return res.status(400).json({ message: 'productVariantId inválido' })
+    }
+
     const wishlist = await findOrCreateWishlist(cartUuid)
     if (!wishlist) return res.status(404).json({ message: 'Carrito no encontrado' })
 
     const variant = await prisma.productVariant.findUnique({
-      where: { id: Number(productVariantId) },
+      where: { id: numericVariantId },
       select: { id: true, isActive: true }
     })
     if (!variant || !variant.isActive) {
@@ -83,13 +88,13 @@ const addPublicWishlistItem = async (req, res) => {
       where: {
         wishlistId_productVariantId: {
           wishlistId: wishlist.id,
-          productVariantId: Number(productVariantId)
+          productVariantId: numericVariantId
         }
       },
       update: {},
       create: {
         wishlistId: wishlist.id,
-        productVariantId: Number(productVariantId)
+        productVariantId: numericVariantId
       }
     })
 
@@ -109,13 +114,18 @@ const removePublicWishlistItem = async (req, res) => {
   try {
     const { cartUuid, variantId } = req.params
 
+    const numericVariantId = Number(variantId)
+    if (!Number.isInteger(numericVariantId) || numericVariantId <= 0) {
+      return res.status(400).json({ message: 'variantId inválido' })
+    }
+
     const wishlist = await findOrCreateWishlist(cartUuid)
     if (!wishlist) return res.status(404).json({ message: 'Carrito no encontrado' })
 
     await prisma.wishlistItem.deleteMany({
       where: {
         wishlistId: wishlist.id,
-        productVariantId: Number(variantId)
+        productVariantId: numericVariantId
       }
     })
 

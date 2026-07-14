@@ -50,6 +50,32 @@ const updateRolePermissions = async (req, res) => {
     if (role.name === 'super_admin') return res.status(400).json({ message: 'Los permisos de super_admin no se pueden modificar' })
     if (role.name === 'customer')    return res.status(400).json({ message: 'No se pueden asignar permisos de panel a customer' })
 
+    // Un actor que no sea super_admin no puede otorgar permisos que él mismo
+    // no posee — evita que alguien con solo "permissions.manage" se
+    // autoasigne (o le asigne a otro rol) capacidades que ni él tiene.
+    if (req.user?.role !== 'super_admin') {
+      const currentlyActive = await prisma.rolePermission.findMany({
+        where: { roleId, isActive: true },
+        select: { permissionId: true },
+      })
+      const currentlyActiveIds = new Set(currentlyActive.map((rp) => rp.permissionId))
+      const newlyGrantedIds = permissionIds.filter((pid) => !currentlyActiveIds.has(pid))
+
+      if (newlyGrantedIds.length > 0) {
+        const newlyGrantedPermissions = await prisma.permission.findMany({
+          where: { id: { in: newlyGrantedIds } },
+          select: { name: true },
+        })
+        const actorPermissions = new Set(req.user?.permissions ?? [])
+        const notOwned = newlyGrantedPermissions.filter((p) => !actorPermissions.has(p.name))
+        if (notOwned.length > 0) {
+          return res.status(403).json({
+            message: `No puedes otorgar permisos que tú mismo no tienes: ${notOwned.map((p) => p.name).join(', ')}`,
+          })
+        }
+      }
+    }
+
     await prisma.$transaction(async (tx) => {
       // Desactivar los que no están en la lista
       await tx.rolePermission.updateMany({

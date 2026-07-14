@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import apiClient from "@/lib/apiClient";
 
-export function useHomeProducts(search = "", categoryIds = null) {
+export function useHomeProducts(search = "", categoryIds = null, filters = {}) {
   const [variants, setVariants] = useState([]);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState(null);
@@ -15,14 +15,18 @@ export function useHomeProducts(search = "", categoryIds = null) {
 
   // Serializar categoryIds para usarlo como dependencia estable
   const catKey = categoryIds ? categoryIds.join(",") : "";
+  const { minPrice, maxPrice, sortBy } = filters;
 
-  const load = useCallback(async (q, catIds) => {
+  const load = useCallback(async (q, catIds, priceMin, priceMax, sort) => {
     try {
       setLoading(true);
       setError(null);
       const params = {};
       if (q) params.q = q;
       if (catIds?.length) params.categoryIds = catIds.join(",");
+      if (priceMin !== "" && priceMin != null) params.minPrice = priceMin;
+      if (priceMax !== "" && priceMax != null) params.maxPrice = priceMax;
+      if (sort) params.sortBy = sort;
       const res  = await apiClient.get("/product-variant/public", { params });
       const data = res?.data?.data ?? res?.data ?? res;
       setVariants(Array.isArray(data) ? data : []);
@@ -34,10 +38,10 @@ export function useHomeProducts(search = "", categoryIds = null) {
   }, []);
 
   useEffect(() => {
-    load(debouncedSearch, categoryIds);
+    load(debouncedSearch, categoryIds, minPrice, maxPrice, sortBy);
     // catKey representa categoryIds de forma estable para la dependencia
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load, debouncedSearch, catKey]);
+  }, [load, debouncedSearch, catKey, minPrice, maxPrice, sortBy]);
 
   return { variants, loading, error };
 }

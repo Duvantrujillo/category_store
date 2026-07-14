@@ -1,6 +1,8 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+const ALLOWED_CURRENCIES = new Set(['COP', 'USD'])
+
 const createPayment = async (req, res) => {
     try {
         const { orderId, provider, reference, transactionId, currency, paymentMethod, cartUuid } = req.body;
@@ -36,6 +38,20 @@ const createPayment = async (req, res) => {
         // Nunca del cliente, para evitar manipulación.
         const amount = Number(order.total);
 
+        const currencyValue = currency || order.currency;
+        if (!ALLOWED_CURRENCIES.has(currencyValue)) {
+            return res.status(400).json({ message: "Moneda no soportada" });
+        }
+
+        if (paymentMethod) {
+            const methodExists = await prisma.paymentMethod.findFirst({
+                where: { name: paymentMethod, isActive: true },
+            });
+            if (!methodExists) {
+                return res.status(400).json({ message: "Método de pago no válido" });
+            }
+        }
+
         const payment = await prisma.payment.create({
             data: {
                 orderId,
@@ -43,7 +59,7 @@ const createPayment = async (req, res) => {
                 reference,
                 transactionId: transactionId || null,
                 amount,
-                currency: currency || order.currency,
+                currency: currencyValue,
                 paymentMethod: paymentMethod || null,
                 status: "PENDING",
             }

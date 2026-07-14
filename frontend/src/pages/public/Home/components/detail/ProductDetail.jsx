@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { PackageX, ArrowLeft } from "lucide-react";
+import { PackageX, ArrowLeft, AlertTriangle } from "lucide-react";
 import HomeHeader from "../header/HomeHeader";
 import HomeFooter from "../footer/HomeFooter";
 import HomeCart from "../cart/HomeCart";
@@ -9,6 +9,7 @@ import { usePublicCart } from "../../hooks/usePublicCart";
 import { usePublicWishlist } from "../../hooks/usePublicWishlist";
 import { usePublicProduct } from "../../hooks/usePublicProduct";
 import { getAvailableUnits } from "@/lib/stock";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import ProductDetailGallery from "./ProductDetailGallery";
 import ProductDetailDescription from "./ProductDetailDescription";
 import ProductDetailBrand from "./ProductDetailBrand";
@@ -42,7 +43,8 @@ export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
 
-  const { product, loading, notFound } = usePublicProduct(slug);
+  const { product, loading, notFound, error } = usePublicProduct(slug);
+  usePageTitle(product?.name);
 
   // null = el usuario aún no ha interactuado; se usa la variante isDefault directamente
   const [selectedAttrs, setSelectedAttrs] = useState(null);
@@ -128,6 +130,25 @@ export default function ProductDetail() {
           <div className="w-10 h-10 rounded-full border-4 border-rose-200 border-t-rose-500 animate-spin" />
           <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Cargando producto…</p>
         </div>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen bg-linear-to-b from-rose-100/40 via-pink-50/20 to-white">
+      <HomeHeader cartCount={0} onCartOpen={() => {}} wishlistCount={0} onWishlistOpen={() => {}} onSearch={() => {}} />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5">
+        <AlertTriangle size={52} className="text-amber-300" />
+        <div className="text-center">
+          <p className="text-lg font-bold text-gray-700 mb-1">No pudimos cargar el producto</p>
+          <p className="text-sm text-gray-400">{error}</p>
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-2 px-6 py-2.5 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition-colors"
+        >
+          Reintentar
+        </button>
       </div>
     </div>
   );

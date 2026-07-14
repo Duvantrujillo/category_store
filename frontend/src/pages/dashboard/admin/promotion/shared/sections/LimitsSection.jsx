@@ -53,21 +53,6 @@ export default function LimitsSection({ form, handleChange, errors = {} }) {
           />
         </div>
 
-        {/* Límite de usos por cliente */}
-        <div className="space-y-1.5">
-          <Label>
-            Usos por cliente{" "}
-            <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
-          </Label>
-          <Input
-            type="number"
-            min={1}
-            value={form.usagePerCustomer ?? ""}
-            onChange={(e) => handleChange("usagePerCustomer", e.target.value)}
-            placeholder="Ilimitado"
-          />
-        </div>
-
         {/* Fecha inicio */}
         <div className="space-y-1.5">
           <Label>Fecha de inicio <span className="text-red-400">*</span></Label>
@@ -94,26 +79,6 @@ export default function LimitsSection({ form, handleChange, errors = {} }) {
           {errors.expiresAt && <p className="text-xs text-destructive">{errors.expiresAt}</p>}
         </div>
 
-      </div>
-
-      {/* Combinable */}
-      <div className="flex items-center justify-between rounded-lg border bg-muted/20 px-4 py-3">
-        <div className="space-y-0.5">
-          <Label className="text-sm font-medium">Combinable</Label>
-          <p className="text-xs text-muted-foreground">Permite aplicar esta promoción junto a otras</p>
-        </div>
-        <Select
-          value={form.allowCombination ? "true" : "false"}
-          onValueChange={(val) => handleChange("allowCombination", val === "true")}
-        >
-          <SelectTrigger className="h-9 w-32 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="true">Sí</SelectItem>
-            <SelectItem value="false">No</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Estado */}

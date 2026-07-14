@@ -92,6 +92,12 @@ const ALL_PERMISSIONS = [
   { name: 'promotions.update',       description: 'Editar promociones' },
   { name: 'promotions.delete',       description: 'Eliminar promociones' },
 
+  // Métodos de pago (lista informativa mostrada en el storefront)
+  { name: 'payment-methods.view',    description: 'Ver métodos de pago' },
+  { name: 'payment-methods.create',  description: 'Crear métodos de pago' },
+  { name: 'payment-methods.update',  description: 'Editar métodos de pago' },
+  { name: 'payment-methods.delete',  description: 'Eliminar métodos de pago' },
+
   // Permisos — gestión de roles (solo super_admin puede asignarlo)
   { name: 'permissions.manage',      description: 'Gestionar permisos de roles' },
 
@@ -122,6 +128,7 @@ const ADMIN_DEFAULT_PERMISSIONS = [
   'bundles.view',
   'promotions.view',
   'admins.view',
+  'payment-methods.view',
 ];
 
 async function main() {

@@ -887,11 +887,7 @@ model Promotion {
 
   minimumPurchase Decimal @db.Decimal(12,2) @default(0)
 
-  allowCombination Boolean @default(false)
-
   usageLimit Int?
-
-  usagePerCustomer Int?
 
   startsAt DateTime
 

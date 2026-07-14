@@ -184,6 +184,136 @@ function shipmentUpdatedHtml(order, shipment, newStatus) {
   })
 }
 
+// ─── Template: orden cancelada ───────────────────────────────────────────────
+function orderCancelledHtml(order) {
+  return baseTemplate({
+    title:     `Pedido ${order.orderNumber} cancelado`,
+    preheader: `Tu pedido ${order.orderNumber} fue cancelado.`,
+    bodyHtml: `
+      <p style="margin:0 0 8px;font-size:15px;color:#64748b;">Hola, <strong style="color:#1e293b;">${order.firstName}</strong></p>
+      <h1 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#1e293b;">Tu pedido fue cancelado</h1>
+
+      <div style="display:inline-block;background:#fef2f2;color:#ef4444;border-radius:999px;padding:6px 16px;font-size:13px;font-weight:600;margin-bottom:24px;">
+        ❌ Cancelado
+      </div>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:20px;">
+        <tr>
+          <td style="padding:16px 20px;">
+            <p style="margin:0;font-size:12px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Número de orden</p>
+            <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:#6366f1;">${order.orderNumber}</p>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;">
+        Tu pedido fue cancelado y no se realizó ningún cobro. Si crees que esto es un error o quieres volver a intentar tu compra, contáctanos o visita nuevamente la tienda.
+      </p>
+    `,
+  })
+}
+
+// ─── Template: pago rechazado ────────────────────────────────────────────────
+function paymentDeclinedHtml(order) {
+  return baseTemplate({
+    title:     `Pago rechazado — pedido ${order.orderNumber}`,
+    preheader: `El pago de tu pedido ${order.orderNumber} fue rechazado.`,
+    bodyHtml: `
+      <p style="margin:0 0 8px;font-size:15px;color:#64748b;">Hola, <strong style="color:#1e293b;">${order.firstName}</strong></p>
+      <h1 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#1e293b;">Tu pago fue rechazado</h1>
+
+      <div style="display:inline-block;background:#fef2f2;color:#ef4444;border-radius:999px;padding:6px 16px;font-size:13px;font-weight:600;margin-bottom:24px;">
+        ⚠️ Pago rechazado
+      </div>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:20px;">
+        <tr>
+          <td style="padding:16px 20px;">
+            <p style="margin:0;font-size:12px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Número de orden</p>
+            <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:#6366f1;">${order.orderNumber}</p>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;">
+        La entidad de tu método de pago rechazó la transacción. Puedes intentarlo de nuevo con el mismo método u otro distinto desde la tienda.
+      </p>
+    `,
+  })
+}
+
+// ─── Template: reembolso procesado ───────────────────────────────────────────
+function refundProcessedHtml(order, refund) {
+  const amount = Number(refund.amount).toLocaleString('es-CO')
+  return baseTemplate({
+    title:     `Reembolso procesado — pedido ${order.orderNumber}`,
+    preheader: `Procesamos el reembolso de tu pedido ${order.orderNumber}.`,
+    bodyHtml: `
+      <p style="margin:0 0 8px;font-size:15px;color:#64748b;">Hola, <strong style="color:#1e293b;">${order.firstName}</strong></p>
+      <h1 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#1e293b;">Tu reembolso fue procesado</h1>
+
+      <div style="display:inline-block;background:#ecfdf5;color:#10b981;border-radius:999px;padding:6px 16px;font-size:13px;font-weight:600;margin-bottom:24px;">
+        💸 Reembolso procesado
+      </div>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;margin-bottom:20px;">
+        <tr>
+          <td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
+            <p style="margin:0;font-size:12px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Número de orden</p>
+            <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:#6366f1;">${order.orderNumber}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 20px;">
+            <p style="margin:0;font-size:12px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Monto reembolsado</p>
+            <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:#10b981;">$${amount} ${order.currency ?? 'COP'}</p>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;">
+        El dinero fue reembolsado a tu método de pago original. El tiempo en que se refleje depende de tu entidad financiera.
+      </p>
+    `,
+  })
+}
+
+// ─── Template: devolución aprobada / rechazada ──────────────────────────────
+function returnStatusHtml(order, returnRequest, newStatus) {
+  const approved = newStatus === 'APPROVED'
+  return baseTemplate({
+    title:     `Devolución ${approved ? 'aprobada' : 'rechazada'} — pedido ${order.orderNumber}`,
+    preheader: `Tu solicitud de devolución del pedido ${order.orderNumber} fue ${approved ? 'aprobada' : 'rechazada'}.`,
+    bodyHtml: `
+      <p style="margin:0 0 8px;font-size:15px;color:#64748b;">Hola, <strong style="color:#1e293b;">${order.firstName}</strong></p>
+      <h1 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#1e293b;">
+        ${approved ? 'Tu devolución fue aprobada' : 'Tu devolución fue rechazada'}
+      </h1>
+
+      <div style="display:inline-block;background:${approved ? '#ecfdf5' : '#fef2f2'};color:${approved ? '#10b981' : '#ef4444'};border-radius:999px;padding:6px 16px;font-size:13px;font-weight:600;margin-bottom:24px;">
+        ${approved ? '✅ Aprobada' : '❌ Rechazada'}
+      </div>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:20px;">
+        <tr>
+          <td style="padding:16px 20px;">
+            <p style="margin:0;font-size:12px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Número de orden</p>
+            <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:#6366f1;">${order.orderNumber}</p>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;">
+        ${approved
+          ? 'Tu solicitud de devolución fue aprobada. Te contactaremos para coordinar el reembolso o cambio.'
+          : (returnRequest.reason
+              ? `Tu solicitud de devolución no fue aprobada. Motivo: ${returnRequest.reason}`
+              : 'Tu solicitud de devolución no fue aprobada. Si tienes dudas, contáctanos.')}
+      </p>
+    `,
+  })
+}
+
 // ─── Funciones públicas ──────────────────────────────────────────────────────
 
 const sendShipmentCreatedEmail = async (order) => {
@@ -215,4 +345,57 @@ const sendShipmentUpdatedEmail = async (order, shipment, newStatus) => {
   })
 }
 
-module.exports = { sendShipmentCreatedEmail, sendShipmentUpdatedEmail }
+const sendOrderCancelledEmail = async (order) => {
+  if (!process.env.RESEND_API_KEY || !order.email) return
+
+  await resend.emails.send({
+    from:    FROM,
+    to:      order.email,
+    subject: `❌ Pedido ${order.orderNumber} cancelado`,
+    html:    orderCancelledHtml(order),
+  })
+}
+
+const sendPaymentDeclinedEmail = async (order) => {
+  if (!process.env.RESEND_API_KEY || !order.email) return
+
+  await resend.emails.send({
+    from:    FROM,
+    to:      order.email,
+    subject: `⚠️ Pago rechazado — pedido ${order.orderNumber}`,
+    html:    paymentDeclinedHtml(order),
+  })
+}
+
+const sendRefundProcessedEmail = async (order, refund) => {
+  if (!process.env.RESEND_API_KEY || !order.email) return
+
+  await resend.emails.send({
+    from:    FROM,
+    to:      order.email,
+    subject: `💸 Reembolso procesado — pedido ${order.orderNumber}`,
+    html:    refundProcessedHtml(order, refund),
+  })
+}
+
+const sendReturnStatusEmail = async (order, returnRequest, newStatus) => {
+  if (!process.env.RESEND_API_KEY || !order.email) return
+  if (newStatus !== 'APPROVED' && newStatus !== 'REJECTED') return
+
+  const approved = newStatus === 'APPROVED'
+  await resend.emails.send({
+    from:    FROM,
+    to:      order.email,
+    subject: `${approved ? '✅' : '❌'} Devolución ${approved ? 'aprobada' : 'rechazada'} — pedido ${order.orderNumber}`,
+    html:    returnStatusHtml(order, returnRequest, newStatus),
+  })
+}
+
+module.exports = {
+  sendShipmentCreatedEmail,
+  sendShipmentUpdatedEmail,
+  sendOrderCancelledEmail,
+  sendPaymentDeclinedEmail,
+  sendRefundProcessedEmail,
+  sendReturnStatusEmail,
+}

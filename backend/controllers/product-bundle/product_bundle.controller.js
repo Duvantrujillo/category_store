@@ -208,6 +208,11 @@ function validateFields(body) {
     if (price === undefined || price === null || price === '' || isNaN(numericPrice) || numericPrice <= 0) {
         return { error: 'El precio del combo debe ser un número mayor a 0' }
     }
+    // Tope real de la columna `price Decimal(10,2)` — un valor mayor revienta
+    // el insert en Prisma con un 500 en vez de un 400 controlado.
+    if (numericPrice > 99999999.99) {
+        return { error: 'El precio del combo no puede ser mayor a $99.999.999,99' }
+    }
 
     return {
         data: {

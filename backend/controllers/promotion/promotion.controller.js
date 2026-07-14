@@ -67,7 +67,7 @@ async function validateRestrictions({ productIds, categoryIds, brandIds, variant
 function validateFields(body) {
   const {
     name, description, type, value, scope, minimumPurchase,
-    allowCombination, usageLimit, usagePerCustomer, startsAt, expiresAt, status,
+    usageLimit, startsAt, expiresAt, status,
   } = body;
 
   if (!name || !name.trim()) {
@@ -112,23 +112,11 @@ function validateFields(body) {
     }
   }
 
-  let allowCombinationValue = allowCombination;
-  if (typeof allowCombinationValue === "string") allowCombinationValue = allowCombinationValue === "true";
-  if (typeof allowCombinationValue !== "boolean") allowCombinationValue = false;
-
   let numericUsageLimit = null;
   if (usageLimit !== undefined && usageLimit !== null && usageLimit !== "") {
     numericUsageLimit = parseInt(usageLimit, 10);
     if (isNaN(numericUsageLimit) || numericUsageLimit <= 0) {
       return { error: "El límite de usos debe ser un número mayor a 0" };
-    }
-  }
-
-  let numericUsagePerCustomer = null;
-  if (usagePerCustomer !== undefined && usagePerCustomer !== null && usagePerCustomer !== "") {
-    numericUsagePerCustomer = parseInt(usagePerCustomer, 10);
-    if (isNaN(numericUsagePerCustomer) || numericUsagePerCustomer <= 0) {
-      return { error: "El límite de usos por cliente debe ser un número mayor a 0" };
     }
   }
 
@@ -160,9 +148,7 @@ function validateFields(body) {
       scope,
       status: statusValue,
       minimumPurchase: numericMinPurchase,
-      allowCombination: allowCombinationValue,
       usageLimit: numericUsageLimit,
-      usagePerCustomer: numericUsagePerCustomer,
       startsAt: start,
       expiresAt: end,
     },

@@ -22,15 +22,37 @@ const createForm = async (req, res) => {
             return res.status(400).json({ message: 'Campos incompletos' });
         }
 
-        const documentNumberNumb = Number(documentNumber)
-        if (isNaN(documentNumberNumb) || documentNumber.length > 10 || documentNumber.length < 4) {
+        if (String(firstName).length > 60) {
+            return res.status(400).json({ message: "El nombre no puede superar 60 caracteres" })
+        }
+        if (String(lastName).length > 60) {
+            return res.status(400).json({ message: "El apellido no puede superar 60 caracteres" })
+        }
+        if (String(address).length > 200) {
+            return res.status(400).json({ message: "La dirección no puede superar 200 caracteres" })
+        }
+        if (String(departament).length > 100) {
+            return res.status(400).json({ message: "El departamento no puede superar 100 caracteres" })
+        }
+        if (String(municipality).length > 100) {
+            return res.status(400).json({ message: "El municipio no puede superar 100 caracteres" })
+        }
+        if (additionalDetails && String(additionalDetails).length > 500) {
+            return res.status(400).json({ message: "Los detalles adicionales no pueden superar 500 caracteres" })
+        }
+
+        // String(...) primero: si documentNumber/phoneNumber llegan como número
+        // JSON (no string), `.length` en el valor crudo da `undefined` y el
+        // chequeo de rango se salta en silencio.
+        const documentNumberStr = String(documentNumber)
+        const documentNumberNumb = Number(documentNumberStr)
+        if (isNaN(documentNumberNumb) || documentNumberStr.length > 10 || documentNumberStr.length < 4) {
             return res.status(400).json({ message: "Documento inválido (4-10 dígitos)" })
         }
 
-        const phoneNumberNumb = Number(phoneNumber)
-
-        if (isNaN(phoneNumberNumb) || phoneNumber.length > 10 || phoneNumber.length < 7) {
-            // Actualizamos el mensaje para reflejar el rango de 7 a 10 dígitos
+        const phoneNumberStr = String(phoneNumber)
+        const phoneNumberNumb = Number(phoneNumberStr)
+        if (isNaN(phoneNumberNumb) || phoneNumberStr.length > 10 || phoneNumberStr.length < 7) {
             return res.status(400).json({ message: "Teléfono inválido (7-10 dígitos)" })
         }
 
@@ -127,13 +149,34 @@ const updateForm = async (req, res) => {
             });
         }
 
-        const documentNumberNumb = Number(documentNumber)
-        if (isNaN(documentNumberNumb) || documentNumber.length > 10 || documentNumber.length < 4) {
+        if (String(firstName).length > 60) {
+            return res.status(400).json({ message: "El nombre no puede superar 60 caracteres" })
+        }
+        if (String(lastName).length > 60) {
+            return res.status(400).json({ message: "El apellido no puede superar 60 caracteres" })
+        }
+        if (String(address).length > 200) {
+            return res.status(400).json({ message: "La dirección no puede superar 200 caracteres" })
+        }
+        if (String(departament).length > 100) {
+            return res.status(400).json({ message: "El departamento no puede superar 100 caracteres" })
+        }
+        if (String(municipality).length > 100) {
+            return res.status(400).json({ message: "El municipio no puede superar 100 caracteres" })
+        }
+        if (additionalDetails && String(additionalDetails).length > 500) {
+            return res.status(400).json({ message: "Los detalles adicionales no pueden superar 500 caracteres" })
+        }
+
+        const documentNumberStr = String(documentNumber)
+        const documentNumberNumb = Number(documentNumberStr)
+        if (isNaN(documentNumberNumb) || documentNumberStr.length > 10 || documentNumberStr.length < 4) {
             return res.status(400).json({ message: "Documento inválido (4-10 dígitos)" })
         }
 
-        const phoneNumberNumb = Number(phoneNumber)
-        if (isNaN(phoneNumberNumb) || phoneNumber.length > 10 || phoneNumber.length < 7) {
+        const phoneNumberStr = String(phoneNumber)
+        const phoneNumberNumb = Number(phoneNumberStr)
+        if (isNaN(phoneNumberNumb) || phoneNumberStr.length > 10 || phoneNumberStr.length < 7) {
             return res.status(400).json({ message: "Teléfono inválido (7-10 dígitos)" })
         }
 

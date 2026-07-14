@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const { notifyRefundProcessed } = require('../../services/notification.service')
+const { sendRefundProcessedEmail } = require('../../services/email.service')
 
 const createRefund = async (req, res) => {
   try {
@@ -151,6 +152,21 @@ const processRefund = async (req, res) => {
 
     notifyRefundProcessed(refund).catch((err) => {
       console.error('Error notificando REFUND_PROCESSED', err)
+    })
+
+    // El refund solo tiene paymentId — hay que subir hasta la orden para
+    // sacar el email del cliente (no viaja en el registro de Refund).
+    prisma.payment.findUnique({
+      where: { id: refund.paymentId },
+      select: { order: { select: { orderNumber: true, email: true, firstName: true, currency: true } } },
+    }).then((payment) => {
+      if (payment?.order) {
+        sendRefundProcessedEmail(payment.order, refund).catch((err) => {
+          console.error('Error enviando email REFUND_PROCESSED', err)
+        })
+      }
+    }).catch((err) => {
+      console.error('Error obteniendo orden para email REFUND_PROCESSED', err)
     })
 
     return res.json({ message: "Reembolso procesado", refund })

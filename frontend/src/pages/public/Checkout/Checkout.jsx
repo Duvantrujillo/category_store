@@ -12,6 +12,7 @@ import HomeCart from "../Home/components/cart/HomeCart";
 import { usePublicCart, getBundleAvailableStock, selectionsToPayload } from "../Home/hooks/usePublicCart";
 import { getAvailableUnits } from "@/lib/stock";
 import { usePublicWishlist } from "../Home/hooks/usePublicWishlist";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import useCreateShippingLocations from "../../dashboard/admin/form_response/hooks/useCreateShippingLocations";
 
 const API          = import.meta.env.VITE_API_URL;
@@ -161,7 +162,7 @@ function SelectArrow() {
 function FieldLabel({ name }) {
   const optional = !REQUIRED.includes(name);
   return (
-    <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+    <label htmlFor={name} className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
       {LABELS[name]}
       {optional && <span className="ml-1 font-normal normal-case text-gray-300">· opcional</span>}
     </label>
@@ -176,11 +177,12 @@ function TextField({ name, value, onChange, error, multiline, inputMode, disable
     <div className="flex flex-col gap-1" data-field={name}>
       <FieldLabel name={name} />
       {multiline ? (
-        <textarea name={name} value={value} onChange={onChange} disabled={disabled}
+        <textarea id={name} name={name} value={value} onChange={onChange} disabled={disabled}
           placeholder={PLACEHOLDERS[name]} rows={2}
           className={`${inputCls} resize-none`} />
       ) : (
         <input
+          id={name}
           type={name === "email" ? "email" : "text"}
           inputMode={inputMode}
           name={name} value={value}
@@ -596,6 +598,7 @@ function OrderSummary({
 // ── Página principal ──────────────────────────────────────────────────────────
 
 export default function Checkout() {
+  usePageTitle("Finalizar compra");
   const navigate = useNavigate();
 
   const {
@@ -1000,6 +1003,7 @@ export default function Checkout() {
                 <FieldLabel name="departament" />
                 <div className="relative">
                   <select
+                    id="departament"
                     value={selectedDepartment || ""}
                     onChange={handleDepartmentChange}
                     disabled={(loadingLocs && departments.length === 0) || !!pendingPayment}
@@ -1026,6 +1030,7 @@ export default function Checkout() {
                 <FieldLabel name="municipality" />
                 <div className="relative">
                   <select
+                    id="municipality"
                     value={form.municipality || ""}
                     onChange={handleMunicipalityChange}
                     disabled={!selectedDepartment || loadingLocs || !!pendingPayment}

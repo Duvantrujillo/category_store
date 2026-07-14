@@ -119,7 +119,7 @@ function attachPromotionPricing(variantOrList, activePromotions, overrideContext
       ...variant,
       finalPrice: promotion ? computeDiscountedPrice(variant.price, promotion) : Number(variant.price),
       promotion: promotion
-        ? { id: promotion.id, name: promotion.name, type: promotion.type, value: Number(promotion.value) }
+        ? { id: promotion.id, name: promotion.name, type: promotion.type, value: Number(promotion.value), scope: promotion.scope }
         : null,
     };
   });

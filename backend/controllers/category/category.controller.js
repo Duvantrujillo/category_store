@@ -47,6 +47,12 @@ const createCategory = async (req, res) => {
       return res.status(400).json({ message: "Campos incompletos" });
     }
 
+    const numericSortOrder = parseInt(sortOrder, 10);
+    if (isNaN(numericSortOrder)) {
+      deleteUploadedFile(file);
+      return res.status(400).json({ message: "El orden debe ser un número válido" });
+    }
+
     if (!file) {
       return res.status(400).json({ message: "La imagen es obligatoria" });
     }
@@ -82,7 +88,7 @@ const createCategory = async (req, res) => {
         description,
         imageUrl,
         isActive: isActiveValue,
-        sortOrder: parseInt(sortOrder),
+        sortOrder: numericSortOrder,
       }
     });
 

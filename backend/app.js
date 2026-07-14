@@ -6,6 +6,7 @@ const helmet = require("helmet");
 require('dotenv').config();
 
 const { authMiddleware } = require('./middlewares/auth.middleware');
+const { logger } = require('./utils/logger');
 
 // Headers de seguridad HTTP estándar (X-Content-Type-Options, X-Frame-Options,
 // HSTS, etc). `crossOriginResourcePolicy` en 'cross-origin' porque las
@@ -22,7 +23,7 @@ app.use(helmet({
 const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction && !process.env.FRONTEND_URL) {
-  console.error('FRONTEND_URL no está configurado en producción — CORS quedará restringido (ningún origen permitido) hasta que se configure esta variable.');
+  logger.error('FRONTEND_URL no está configurado en producción — CORS quedará restringido (ningún origen permitido) hasta que se configure esta variable.');
 }
 
 app.use(cors(
@@ -51,6 +52,27 @@ app.use(
     path.join(__dirname, "uploads")
   )
 );
+
+/*
+|--------------------------------------------------------------------------
+| HEALTH CHECK
+| Público, sin token — para que un balanceador/monitoreo pueda chequear que
+| el proceso está vivo Y que la base de datos responde (no solo que Express
+| levantó, sino que puede atender requests reales).
+|--------------------------------------------------------------------------
+*/
+const { PrismaClient: HealthPrismaClient } = require('@prisma/client');
+const healthPrisma = new HealthPrismaClient();
+
+app.get('/health', async (req, res) => {
+  try {
+    await healthPrisma.$queryRaw`SELECT 1`;
+    return res.status(200).json({ status: 'ok', db: 'up', timestamp: new Date().toISOString() });
+  } catch (error) {
+    logger.error('[health] DB no responde', error);
+    return res.status(503).json({ status: 'error', db: 'down', timestamp: new Date().toISOString() });
+  }
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -195,7 +217,7 @@ app.use('/promotion',      promotionRouter)
 */
 
 app.listen(process.env.PORT, () => {
-  console.log(`Servidor corriendo`);
+  logger.info(`Servidor corriendo en el puerto ${process.env.PORT}`);
 });
 
 /*
@@ -210,5 +232,5 @@ app.listen(process.env.PORT, () => {
 const { releaseExpiredReservations } = require('./controllers/order/order.controller')
 const CLEANUP_INTERVAL_MS = 3 * 60 * 1000 // cada 3 minutos
 setInterval(() => {
-  releaseExpiredReservations().catch(err => console.error('Error en cleanup de reservas:', err))
+  releaseExpiredReservations().catch(err => logger.error('Error en cleanup de reservas', err))
 }, CLEANUP_INTERVAL_MS)

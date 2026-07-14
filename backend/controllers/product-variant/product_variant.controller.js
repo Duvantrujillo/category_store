@@ -104,9 +104,9 @@ const createProductVariant = async (req, res) => {
       deleteTempFiles(files);
       return res.status(400).json({ message: "El precio no puede ser negativo" });
     }
-    if (price > 100000000) {
+    if (price > 99999999.99) {
       deleteTempFiles(files);
-      return res.status(400).json({ message: "El precio no puede ser mayor a 100.000.000" });
+      return res.status(400).json({ message: "El precio no puede ser mayor a $99.999.999,99" });
     }
 
     const productExist = await prisma.product.findUnique({ where: { id: productId } });
@@ -300,9 +300,9 @@ const updateProductVariant = async (req, res) => {
       deleteTempFiles(files);
       return res.status(400).json({ message: "El precio no puede ser negativo" });
     }
-    if (price > 100000000) {
+    if (price > 99999999.99) {
       deleteTempFiles(files);
-      return res.status(400).json({ message: "El precio no puede ser mayor a 100.000.000" });
+      return res.status(400).json({ message: "El precio no puede ser mayor a $99.999.999,99" });
     }
 
     const keptSlotsProvided = typeof keptSlots !== "undefined" && keptSlots !== null;
@@ -598,10 +598,19 @@ function dedupeByProduct(variants, { limit = Infinity, seen = new Set() } = {}) 
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+const PUBLIC_VARIANTS_ORDER_BY = {
+  price_asc:  [{ price: "asc" }],
+  price_desc: [{ price: "desc" }],
+  newest:     [{ createdAt: "desc" }],
+};
+
 const getPublicVariants = async (req, res) => {
   try {
     const rawQ     = (req.query.q || "").trim();
     const catParam = req.query.categoryIds;
+    const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : undefined;
+    const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined;
+    const sortBy   = req.query.sortBy;
 
     // IDs de categorías (coma-separados)
     let categoryIds = null;
@@ -630,7 +639,17 @@ const getPublicVariants = async (req, res) => {
         ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
       },
       ...(stemConditions.length ? { AND: stemConditions } : {}),
+      ...((minPrice !== undefined && !isNaN(minPrice)) || (maxPrice !== undefined && !isNaN(maxPrice))
+        ? { price: {
+            ...(minPrice !== undefined && !isNaN(minPrice) && { gte: minPrice }),
+            ...(maxPrice !== undefined && !isNaN(maxPrice) && { lte: maxPrice }),
+          } }
+        : {}),
     };
+
+    // Sin sortBy explícito: se mantiene el orden original (default primero,
+    // más reciente después) — no rompe la vista curada por defecto.
+    const orderBy = PUBLIC_VARIANTS_ORDER_BY[sortBy] ?? [{ isDefault: "desc" }, { updatedAt: "desc" }];
 
     const variants = await prisma.productVariant.findMany({
       where,
@@ -650,7 +669,7 @@ const getPublicVariants = async (req, res) => {
           },
         },
       },
-      orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+      orderBy,
     });
 
     // Un único resultado por producto: la variante isDefault (o la primera activa)

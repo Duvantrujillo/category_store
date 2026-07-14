@@ -12,6 +12,7 @@ import HomeCart from "../Home/components/cart/HomeCart";
 import { usePublicCart } from "../Home/hooks/usePublicCart";
 import { usePublicWishlist } from "../Home/hooks/usePublicWishlist";
 import { formatMoneyCOP, formatDateTimeCO } from "@/lib/format";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -163,6 +164,7 @@ function Section({ icon: Icon, title, tone = "rose", right, children }) {
 }
 
 export default function TrackOrder() {
+  usePageTitle("Rastrear pedido");
   const navigate = useNavigate();
 
   const { cartItems, cartOpen, setCartOpen, updateQty, removeFromCart, cartUuid } = usePublicCart();

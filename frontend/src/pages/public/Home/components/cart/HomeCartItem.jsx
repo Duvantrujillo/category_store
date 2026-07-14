@@ -36,6 +36,10 @@ export default function HomeCartItem({ item, onRemove, onUpdateQty, onClose }) {
   return (
     <div
       onClick={goToProduct}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToProduct(); } }}
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver producto ${product?.name ?? ""}`}
       className="flex gap-3 py-4 border-b border-gray-100 last:border-0 cursor-pointer"
     >
 

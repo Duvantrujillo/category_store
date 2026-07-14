@@ -9,6 +9,7 @@ import { usePublicCart, getBundleAvailableStock } from "../../hooks/usePublicCar
 import { getAvailableUnits } from "@/lib/stock";
 import { usePublicWishlist } from "../../hooks/usePublicWishlist";
 import { usePublicBundle } from "../../hooks/usePublicBundle";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import BundleDetailGallery from "./BundleDetailGallery";
 import BundleDetailItem from "./BundleDetailItem";
 import BundleVariantSelectorModal from "./BundleVariantSelectorModal";
@@ -21,6 +22,7 @@ export default function BundleDetail() {
   const navigate = useNavigate();
 
   const { bundle, loading, notFound } = usePublicBundle(slug);
+  usePageTitle(bundle?.name);
   const [showSelector, setShowSelector] = useState(false);
   const [showAllItems, setShowAllItems] = useState(false);
 

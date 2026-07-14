@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle2, XCircle, Clock, Home, ShoppingBag, Loader2 } from "lucide-react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -83,6 +84,7 @@ const MAX_RETRIES = 5;
 const RETRY_MS    = 2000;
 
 export default function CheckoutResponse() {
+  usePageTitle("Resultado del pago");
   const [params]  = useSearchParams();
   const navigate  = useNavigate();
 

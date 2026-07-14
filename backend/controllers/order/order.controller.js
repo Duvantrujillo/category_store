@@ -357,7 +357,9 @@ const createOrder = async (req, res) => {
           variantId: item.productVariantId,
           unitPrice: variantMap[item.productVariantId].finalPrice,
           quantity: Number(item.quantity),
-          product: variantMap[item.productVariantId].product
+          product: variantMap[item.productVariantId].product,
+          hasPromotion: !!variantMap[item.productVariantId].promotion,
+          promotionScope: variantMap[item.productVariantId].promotion?.scope ?? null
         }))
         discount = await resolveDiscount(tx, discountCode, cartLines)
       }

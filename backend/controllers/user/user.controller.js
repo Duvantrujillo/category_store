@@ -165,8 +165,11 @@ const allUser = async (req, res) => {
 ───────────────────────────────────────── */
 const getRoles = async (req, res) => {
   try {
+    // super_admin nunca se lista: ni se puede asignar al crear/editar un
+    // usuario (ver adminCreateUser/updateUser), así que no tiene sentido
+    // exponer su id acá tampoco.
     const roles = await prisma.role.findMany({
-      where: { status: true },
+      where: { status: true, name: { not: 'super_admin' } },
       select: { id: true, name: true, description: true },
       orderBy: { id: 'asc' },
     });
@@ -216,6 +219,11 @@ const adminCreateUser = async (req, res) => {
     const role = await prisma.role.findFirst({ where: { id: Number(roleId), status: true } });
     if (!role) {
       return res.status(400).json({ message: 'Rol inválido o inactivo' });
+    }
+
+    // Prevenir escalada de privilegios: no se puede crear un usuario con rol super_admin
+    if (role.name === 'super_admin') {
+      return res.status(403).json({ message: 'No se puede asignar el rol de super administrador.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);

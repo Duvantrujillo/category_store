@@ -12,6 +12,7 @@ const {
   notifyPaymentDeclined,
   checkStockNotifications
 } = require("../../services/notification.service");
+const { sendOrderCancelledEmail, sendPaymentDeclinedEmail } = require("../../services/email.service");
 
 const EPAYCO_CUST_ID = process.env.EPAYCO_CUST_ID;
 const EPAYCO_P_KEY   = process.env.EPAYCO_P_KEY;
@@ -263,7 +264,7 @@ const epaycoWebhook = async (req, res) => {
 
     const order = await prisma.order.findUnique({
       where:  { id: payment.orderId },
-      select: { id: true, orderNumber: true }
+      select: { id: true, orderNumber: true, email: true, firstName: true, lastName: true, currency: true }
     });
 
     if (paymentStatus === "APPROVED" && order) {
@@ -294,11 +295,17 @@ const epaycoWebhook = async (req, res) => {
       notifyPaymentDeclined(order).catch((err) => {
         console.error("Error notificando PAYMENT_DECLINED", err);
       });
+      sendPaymentDeclinedEmail(order).catch((err) => {
+        console.error("Error enviando email PAYMENT_DECLINED", err);
+      });
     }
 
     if (paymentStatus === "ERROR" && order) {
       notifyOrderCancelled(order).catch((err) => {
         console.error("Error notificando ORDER_CANCELLED", err);
+      });
+      sendOrderCancelledEmail(order).catch((err) => {
+        console.error("Error enviando email ORDER_CANCELLED", err);
       });
     }
 

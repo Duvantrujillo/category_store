@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "react-toastify";
 import { getAvailableUnits } from "@/lib/stock";
 
 const API = import.meta.env.VITE_API_URL;
@@ -101,6 +102,9 @@ export function usePublicCart() {
         setCartBundleItems([]);
       } catch (err) {
         console.error("Error iniciando carrito:", err);
+        // Antes esto fallaba en silencio: el usuario veía un carrito vacío
+        // sin ningún aviso de que en realidad el carrito no pudo cargar.
+        toast.error("No pudimos cargar tu carrito. Verifica tu conexión y recarga la página.");
       }
     }
     init();

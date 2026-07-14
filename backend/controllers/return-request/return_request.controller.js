@@ -6,6 +6,7 @@ const {
   notifyReturnRejected,
   notifyReturnCompleted
 } = require('../../services/notification.service')
+const { sendReturnStatusEmail } = require('../../services/email.service')
 const { buildSearchStems } = require('../../utils/search-stems')
 
 const VALID_STATUSES    = ['PENDING', 'APPROVED', 'REJECTED', 'RECEIVED', 'COMPLETED']
@@ -28,6 +29,23 @@ const VALID_TRANSITIONS = {
 }
 
 const USER_SELECT = { select: { id: true, name: true, email: true } }
+
+// El ReturnRequest no trae el email del cliente — hay que subir hasta la
+// orden. Se dispara "fire and forget" (no bloquea la respuesta al admin).
+function sendReturnEmail(returnRequest, newStatus) {
+  prisma.order.findUnique({
+    where: { id: returnRequest.orderId },
+    select: { orderNumber: true, email: true, firstName: true },
+  }).then((order) => {
+    if (order) {
+      sendReturnStatusEmail(order, returnRequest, newStatus).catch((err) => {
+        console.error(`Error enviando email RETURN_${newStatus}`, err)
+      })
+    }
+  }).catch((err) => {
+    console.error(`Error obteniendo orden para email RETURN_${newStatus}`, err)
+  })
+}
 
 function computeWillIncludeShipping(rr) {
   if (rr.resolution !== 'REFUND' || (rr.refunds?.length ?? 0) > 0) return false
@@ -224,10 +242,12 @@ const updateReturnRequest = async (req, res) => {
             notifyReturnApproved(updated).catch((err) => {
                 console.error('Error notificando RETURN_APPROVED', err)
             })
+            sendReturnEmail(updated, 'APPROVED')
         } else if (status === 'REJECTED') {
             notifyReturnRejected(updated).catch((err) => {
                 console.error('Error notificando RETURN_REJECTED', err)
             })
+            sendReturnEmail(updated, 'REJECTED')
         } else if (status === 'COMPLETED') {
             notifyReturnCompleted(updated).catch((err) => {
                 console.error('Error notificando RETURN_COMPLETED', err)

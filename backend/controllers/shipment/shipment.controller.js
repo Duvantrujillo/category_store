@@ -53,6 +53,42 @@ const updateShipment = async (req, res) => {
       return res.status(404).json({ message: "Envío no encontrado." });
     }
 
+    // Fechas manuales de envío/entrega: no pueden ser futuras ni anteriores
+    // a la creación del envío — si no, se podría burlar el bloqueo de "no
+    // editable después de 7 días hábiles" (que se calcula desde deliveredAt)
+    // poniendo una fecha muy futura, o congelar el envío de inmediato
+    // poniendo una fecha muy pasada.
+    const now = new Date();
+    let parsedShippedAt = null;
+    let parsedDeliveredAt = null;
+
+    if (shippedAt !== undefined && shippedAt !== null && shippedAt !== "") {
+      parsedShippedAt = new Date(shippedAt);
+      if (isNaN(parsedShippedAt.getTime())) {
+        return res.status(400).json({ message: "Formato de fecha de envío inválido." });
+      }
+      if (parsedShippedAt > now) {
+        return res.status(400).json({ message: "La fecha de envío no puede ser futura." });
+      }
+      if (parsedShippedAt < shipment.createdAt) {
+        return res.status(400).json({ message: "La fecha de envío no puede ser anterior a la creación del envío." });
+      }
+    }
+
+    if (deliveredAt !== undefined && deliveredAt !== null && deliveredAt !== "") {
+      parsedDeliveredAt = new Date(deliveredAt);
+      if (isNaN(parsedDeliveredAt.getTime())) {
+        return res.status(400).json({ message: "Formato de fecha de entrega inválido." });
+      }
+      if (parsedDeliveredAt > now) {
+        return res.status(400).json({ message: "La fecha de entrega no puede ser futura." });
+      }
+      const shippedReference = parsedShippedAt || shipment.shippedAt;
+      if (shippedReference && parsedDeliveredAt < shippedReference) {
+        return res.status(400).json({ message: "La fecha de entrega no puede ser anterior a la fecha de envío." });
+      }
+    }
+
     if (LOCKED_STATUSES.has(shipment.status)) {
       let statusSetAt = shipment.deliveredAt || null;
 
@@ -93,14 +129,14 @@ const updateShipment = async (req, res) => {
 
     const updateData = { status, carrier, trackingNumber };
 
-    if (shippedAt) {
-      updateData.shippedAt = new Date(shippedAt);
+    if (parsedShippedAt) {
+      updateData.shippedAt = parsedShippedAt;
     } else if (status === "SHIPPED" && !shipment.shippedAt) {
       updateData.shippedAt = new Date();
     }
 
-    if (deliveredAt) {
-      updateData.deliveredAt = new Date(deliveredAt);
+    if (parsedDeliveredAt) {
+      updateData.deliveredAt = parsedDeliveredAt;
     } else if (status === "DELIVERED" && !shipment.deliveredAt) {
       updateData.deliveredAt = new Date();
     }

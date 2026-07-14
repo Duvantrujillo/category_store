@@ -11,6 +11,10 @@ const createproductVarianAtribute = async (req, res) => {
         const variantIdNum = Number(productVariantId)
         const attributeIdNum = Number(attributeValueId)
 
+        if (!Number.isInteger(variantIdNum) || variantIdNum <= 0 || !Number.isInteger(attributeIdNum) || attributeIdNum <= 0) {
+            return res.status(400).json({ message: "IDs inválidos" })
+        }
+
         const productVariantIdExist = await prisma.productVariant.findUnique({
             where: { id: variantIdNum }
         })

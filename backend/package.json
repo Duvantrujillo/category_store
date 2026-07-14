@@ -8,7 +8,11 @@
   "main": "app.js",
   "scripts": {
     "dev": "nodemon app.js",
+    "seed": "node prisma/seeds/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "prisma": {
+    "seed": "node prisma/seeds/index.js"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",

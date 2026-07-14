@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const SS_PARENT   = "home_sel_parent";
 const SS_CATEGORY = "home_sel_category";
@@ -16,6 +17,7 @@ function writeSession(key, value) {
 import HomeHeader from "./components/header/HomeHeader";
 import HomeCategorySection from "./components/categories/HomeCategorySection";
 import HomeProductGrid from "./components/products/HomeProductGrid";
+import HomeProductFilters from "./components/products/HomeProductFilters";
 import HomeProductRow from "./components/products/HomeProductRow";
 import HomeBundleRow from "./components/bundles/HomeBundleRow";
 import HomeCart from "./components/cart/HomeCart";
@@ -34,6 +36,7 @@ import { usePublicWishlist } from "./hooks/usePublicWishlist";
 import { useTopSellers } from "./hooks/useTopSellers";
 
 export default function Home() {
+  usePageTitle("Inicio");
   const navigate = useNavigate();
   const [search, setSearch]               = useState("");
   const [selectedParent,   setSelectedParent]   = useState(() => readSession(SS_PARENT));
@@ -55,11 +58,21 @@ export default function Home() {
       ? [selectedCategory]   // padre sin hijos seleccionado
       : null;                // sin filtro
 
-  const { variants, loading: loadingVariants } = useHomeProducts(search, filterCategoryIds);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [sortBy,   setSortBy]   = useState("");
+  function handleProductFiltersChange(patch) {
+    if ("minPrice" in patch) setMinPrice(patch.minPrice);
+    if ("maxPrice" in patch) setMaxPrice(patch.maxPrice);
+    if ("sortBy"   in patch) setSortBy(patch.sortBy);
+  }
+
+  const { variants, loading: loadingVariants } = useHomeProducts(search, filterCategoryIds, { minPrice, maxPrice, sortBy });
 
   // Las filas curadas por marca/categoría solo tienen sentido en la vista
-  // por defecto — si el usuario está buscando o filtrando, no aplican.
-  const showShowcase = !search && !selectedParent && !selectedCategory;
+  // por defecto — si el usuario está buscando o filtrando (categoría, precio
+  // u orden), no aplican, porque esas filas no respetan esos filtros.
+  const showShowcase = !search && !selectedParent && !selectedCategory && !minPrice && !maxPrice && !sortBy;
   const { groups: showcaseGroups } = useHomeShowcase(showShowcase);
 
   // Lo que muestra el carrusel: padres o hijos del padre seleccionado
@@ -176,6 +189,13 @@ export default function Home() {
               topSellerIds={topSellerIds}
             />
           ))}
+
+          <HomeProductFilters
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            sortBy={sortBy}
+            onChange={handleProductFiltersChange}
+          />
 
           <HomeProductGrid
             variants={variants}

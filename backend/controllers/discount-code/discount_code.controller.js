@@ -17,7 +17,7 @@ const RESTRICTIONS_INCLUDE = {
 // `db` puede ser el cliente prisma normal (preview de solo lectura) o el
 // `tx` de una transacción (al crear la orden, para que el chequeo de
 // maxUses quede dentro de la misma transacción atómica).
-// `cartLines`: [{ unitPrice, quantity, product: { id, categoryId, brandId } }]
+// `cartLines`: [{ unitPrice, quantity, product: { id, categoryId, brandId }, hasPromotion }]
 async function resolveDiscount(db, rawCode, cartLines) {
   const code = String(rawCode || "").trim().toUpperCase();
   if (!code) return null;
@@ -55,6 +55,25 @@ async function resolveDiscount(db, rawCode, cartLines) {
   //    (y descuenta) solo esas líneas específicas, no el resto del pedido.
   const hasCategoryOrBrandRestriction = allowedCategoryIds.size > 0 || allowedBrandIds.size > 0;
   const hasProductOnlyRestriction = allowedProductIds.size > 0 && !hasCategoryOrBrandRestriction;
+
+  // Combinación con promociones automáticas: un cupón de envío gratis siempre
+  // puede combinarse (no toca precio de producto). Un cupón de % o monto fijo
+  // solo se permite si TODAS las promociones presentes en el carrito son de
+  // producto/variante puntual (scope PRODUCTS) Y el cupón también está
+  // restringido a productos puntuales — dos descuentos igual de específicos.
+  // Cualquier otra combinación (promoción de categoría/marca/catálogo, o
+  // cupón sin esa misma restricción de producto) queda bloqueada para no
+  // apilar descuentos amplios sobre precios ya rebajados.
+  const linesWithPromotion = cartLines.filter((line) => line.hasPromotion);
+  if (discount.type !== "FREE_SHIPPING" && linesWithPromotion.length > 0) {
+    const allPromotionsAreProductSpecific = linesWithPromotion.every((line) => line.promotionScope === "PRODUCTS");
+    if (!allPromotionsAreProductSpecific) {
+      throw new Error("INVALID_COUPON:Con productos en promoción solo se pueden usar cupones de envío gratis");
+    }
+    if (!hasProductOnlyRestriction) {
+      throw new Error("INVALID_COUPON:Esos productos tienen una promoción puntual — solo se pueden combinar con cupones de envío gratis o restringidos a productos específicos");
+    }
+  }
 
   let eligibleLines = cartLines;
 
@@ -198,7 +217,14 @@ const validateDiscountCode = async (req, res) => {
         const variant = variantMap[parseInt(i.productVariantId, 10)];
         const quantity = parseInt(i.quantity, 10);
         if (!variant || !Number.isInteger(quantity) || quantity <= 0) return null;
-        return { variantId: variant.id, unitPrice: variant.finalPrice, quantity, product: variant.product };
+        return {
+          variantId: variant.id,
+          unitPrice: variant.finalPrice,
+          quantity,
+          product: variant.product,
+          hasPromotion: !!variant.promotion,
+          promotionScope: variant.promotion?.scope ?? null,
+        };
       })
       .filter(Boolean);
 
