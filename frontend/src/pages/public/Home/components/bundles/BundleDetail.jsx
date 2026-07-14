@@ -14,6 +14,7 @@ import BundleDetailGallery from "./BundleDetailGallery";
 import BundleDetailItem from "./BundleDetailItem";
 import BundleVariantSelectorModal from "./BundleVariantSelectorModal";
 import RelatedBundlesSection from "./RelatedBundlesSection";
+import BundleDetailSkeleton from "./BundleDetailSkeleton";
 
 const VISIBLE_ITEMS = 3;
 
@@ -30,6 +31,8 @@ export default function BundleDetail() {
     cartItems, cartBundleItems, cartUuid, cartOpen, setCartOpen,
     addToCart, updateQty, removeFromCart,
     addBundleToCart, updateBundleQty, removeBundleFromCart,
+    gift,
+    initializing: cartInitializing,
   } = usePublicCart();
 
   const {
@@ -45,12 +48,9 @@ export default function BundleDetail() {
   if (loading) return (
     <div className="min-h-screen bg-linear-to-b from-rose-100/40 via-pink-50/20 to-white">
       <HomeHeader cartCount={0} onCartOpen={() => {}} wishlistCount={0} onWishlistOpen={() => {}} onSearch={() => {}} />
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-full border-4 border-rose-200 border-t-rose-500 animate-spin" />
-          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Cargando combo…</p>
-        </div>
-      </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <BundleDetailSkeleton />
+      </main>
     </div>
   );
 
@@ -218,6 +218,8 @@ export default function BundleDetail() {
         onRemoveBundle={removeBundleFromCart}
         onUpdateBundleQty={updateBundleQty}
         onCheckout={() => { setCartOpen(false); navigate("/checkout"); }}
+        gift={gift}
+        initializing={cartInitializing}
       />
 
       <HomeWishlist

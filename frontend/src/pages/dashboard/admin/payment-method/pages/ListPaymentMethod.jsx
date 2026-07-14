@@ -7,7 +7,7 @@ import { useHasPermission } from "@/lib/permissions";
 function ListPaymentMethod() {
   const canView   = useHasPermission("payment-methods.view");
   const canCreate = useHasPermission("payment-methods.create");
-  const { methods = [], refetch } = useAllPaymentMethod({ skip: !canView });
+  const { methods = [], loading, refetch } = useAllPaymentMethod({ skip: !canView });
 
   if (!canView) {
     return (
@@ -24,7 +24,7 @@ function ListPaymentMethod() {
         <PaymentMethodCreateDialog onRefresh={refetch} disabled={!canCreate} />
       </div>
 
-      <PaymentMethodTable methods={methods} onRefresh={refetch} />
+      <PaymentMethodTable methods={methods} loading={loading} onRefresh={refetch} />
     </div>
   );
 }

@@ -9,11 +9,13 @@ import {
 import HomeHeader from "../Home/components/header/HomeHeader";
 import HomeFooter from "../Home/components/footer/HomeFooter";
 import HomeCart from "../Home/components/cart/HomeCart";
+import CartGiftBanner from "../Home/components/cart/CartGiftBanner";
 import { usePublicCart, getBundleAvailableStock, selectionsToPayload } from "../Home/hooks/usePublicCart";
 import { getAvailableUnits } from "@/lib/stock";
 import { usePublicWishlist } from "../Home/hooks/usePublicWishlist";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import useCreateShippingLocations from "../../dashboard/admin/form_response/hooks/useCreateShippingLocations";
+import CheckoutSkeleton from "./CheckoutSkeleton";
 
 const API          = import.meta.env.VITE_API_URL;
 const API_URL      = import.meta.env.VITE_API_URL;
@@ -241,6 +243,7 @@ function OrderSummary({
   items, bundleItems, pendingPayment, onPay, onRetryPayment, retrying, loading, onUpdateQty, onRemove,
   onUpdateBundleQty, onRemoveBundle, orderError,
   couponInput, setCouponInput, coupon, couponLoading, couponError, onApplyCoupon, onRemoveCoupon,
+  gift,
 }) {
   const itemsSubtotal   = items.reduce((s, i) => s + Number(i.variant.finalPrice ?? i.variant.price) * i.quantity, 0);
   const bundlesSubtotal = bundleItems.reduce((s, i) => s + Number(i.bundle.price) * i.quantity, 0);
@@ -559,6 +562,11 @@ function OrderSummary({
         </div>
       </div>
 
+      {/* Regalo por monto de compra — mismo aviso y barra de progreso que en
+          el carrito, para que siga visible mientras el cliente completa el
+          checkout. */}
+      {!pendingPayment && <CartGiftBanner gift={gift} />}
+
       {/* Pedido creado — checkout ePayco se abre automáticamente */}
       {pendingPayment ? (
         <div className="flex flex-col gap-3">
@@ -605,6 +613,7 @@ export default function Checkout() {
     cartItems, cartBundleItems, cartOpen, setCartOpen,
     updateQty, removeFromCart, cartUuid,
     updateBundleQty, removeBundleFromCart,
+    gift, initializing: cartInitializing,
   } = usePublicCart();
 
   const { wishlistItems, setWishlistOpen } = usePublicWishlist(cartUuid);
@@ -652,8 +661,10 @@ export default function Checkout() {
 
   // Si ya hay un pago en curso, la orden ya se creó con lo que había en el
   // carrito — no hay que mostrar el estado vacío aunque el carrito local
-  // ahora esté en 0 (el resumen de esa orden sigue siendo válido).
-  const cartIsEmpty = cartItems.length === 0 && cartBundleItems.length === 0 && !pendingPayment;
+  // ahora esté en 0 (el resumen de esa orden sigue siendo válido). Tampoco
+  // mientras el carrito sigue inicializando: cartItems/cartBundleItems
+  // arrancan en [] antes de saber si el carrito tiene contenido real.
+  const cartIsEmpty = !cartInitializing && cartItems.length === 0 && cartBundleItems.length === 0 && !pendingPayment;
 
   // Restaurar el departamento seleccionado cuando los datos de localidad cargan
   useEffect(() => {
@@ -944,7 +955,9 @@ export default function Checkout() {
           </h1>
         </div>
 
-        {cartIsEmpty ? (
+        {cartInitializing ? (
+          <CheckoutSkeleton />
+        ) : cartIsEmpty ? (
           <div className="flex flex-col items-center justify-center text-center py-20 gap-4">
             <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-rose-50 border border-rose-100 text-rose-300">
               <ShoppingBag size={28} />
@@ -1083,6 +1096,7 @@ export default function Checkout() {
               couponError={couponError}
               onApplyCoupon={applyCoupon}
               onRemoveCoupon={removeCoupon}
+              gift={gift}
             />
           </div>
         </div>
@@ -1101,6 +1115,8 @@ export default function Checkout() {
         onRemoveBundle={removeBundleFromCart}
         onUpdateBundleQty={updateBundleQty}
         onCheckout={() => setCartOpen(false)}
+        gift={gift}
+        initializing={cartInitializing}
       />
     </div>
   );

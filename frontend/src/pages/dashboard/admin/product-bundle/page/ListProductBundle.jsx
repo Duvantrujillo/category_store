@@ -19,7 +19,7 @@ function applyFilter(list, statusFilter) {
 function ListProductBundle() {
   const canView   = useHasPermission("bundles.view");
   const canCreate = useHasPermission("bundles.create");
-  const { bundles = [], refetch } = useAllProductBundle({ skip: !canView });
+  const { bundles = [], loading: listLoading, refetch } = useAllProductBundle({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchProductBundle();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -55,6 +55,7 @@ function ListProductBundle() {
 
       <ProductBundleTable
         bundles={dataToShow}
+        loading={listLoading}
         totalItems={displayTotal}
         page={page}
         pageSize={PAGE_SIZE}

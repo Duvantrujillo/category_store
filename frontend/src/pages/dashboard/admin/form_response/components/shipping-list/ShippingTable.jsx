@@ -4,6 +4,7 @@ import { Inbox } from "lucide-react";
 import DeleteShippingDialog from "../shipping-delete/DeleteShippingDialog";
 import ShippingRow from "./ShippingRow";
 import TablePagination from "@/components/ui/TablePagination";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 
 import {
   Table, TableBody, TableCell,
@@ -11,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function ShippingTable({ shipping, totalItems, page, pageSize, onPageChange, onRefresh }) {
+function ShippingTable({ shipping, loading, totalItems, page, pageSize, onPageChange, onRefresh }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
@@ -49,7 +50,9 @@ function ShippingTable({ shipping, totalItems, page, pageSize, onPageChange, onR
               </TableHeader>
 
               <TableBody>
-                {Array.isArray(shipping) && shipping.length > 0 ? (
+                {loading ? (
+                  <TableSkeleton columns={5} />
+                ) : Array.isArray(shipping) && shipping.length > 0 ? (
                   shipping.map((item) => (
                     <ShippingRow
                       key={item.id}

@@ -1,18 +1,78 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const { getActivePromotions, attachPromotionPricing } = require('../../utils/promotion-pricing')
+const { getActiveGiftRules, resolveGiftForSubtotal } = require('../../utils/purchase-gift')
+
+// Arma la vista previa de "regalo por monto de compra" para el subtotal
+// actual del carrito — solo informativa, no reserva stock ni crea nada
+// (eso solo ocurre de verdad en order.controller.js: createOrder). Incluye
+// `progressPercent` ya calculado en el backend para que el front solo tenga
+// que pintar una barra, sin recalcular ni confiar en ningún número propio.
+function buildGiftPreview(subtotal, activeGifts) {
+  const { qualified, next } = resolveGiftForSubtotal(subtotal, activeGifts)
+
+  const describeGift = (gift) => ({
+    id: gift.id,
+    name: gift.name,
+    quantity: gift.quantity,
+    minimumPurchase: Number(gift.minimumPurchase),
+    productVariant: gift.productVariant,
+  })
+
+  let progressPercent = null
+  if (qualified && !next) {
+    progressPercent = 100
+  } else if (next) {
+    // Si ya calificó para un escalón, el tramo de la barra va desde ese
+    // umbral hasta el siguiente (no desde 0) — así el progreso siempre se
+    // ve avanzar hacia la próxima meta, no retroceder al pasar de escalón.
+    const base = qualified ? Number(qualified.minimumPurchase) : 0
+    const range = Number(next.minimumPurchase) - base
+    progressPercent = range > 0
+      ? Math.max(0, Math.min(100, ((subtotal - base) / range) * 100))
+      : 0
+  }
+
+  return {
+    qualifies: !!qualified,
+    subtotal,
+    progressPercent,
+    current: qualified ? describeGift(qualified) : null,
+    next: next
+      ? { ...describeGift(next), remaining: Number(next.minimumPurchase) - subtotal }
+      : null,
+  }
+}
 
 // Adjunta finalPrice/promotion a cada productVariant de items[] — no toca
-// bundleItems (Promotion no soporta scope BUNDLES).
+// bundleItems (Promotion no soporta scope BUNDLES). También calcula el
+// subtotal actual del carrito y adjunta la vista previa del regalo por
+// monto de compra vigente (si hay alguno).
 async function enrichCart(cart) {
   if (!cart) return cart
-  const activePromotions = await getActivePromotions()
+  const [activePromotions, activeGifts] = await Promise.all([
+    getActivePromotions(),
+    getActiveGiftRules(),
+  ])
+
+  const items = cart.items.map((item) => ({
+    ...item,
+    productVariant: attachPromotionPricing(item.productVariant, activePromotions),
+  }))
+
+  const itemsSubtotal = items.reduce(
+    (acc, item) => acc + Number(item.productVariant.finalPrice) * Number(item.quantity),
+    0
+  )
+  const bundlesSubtotal = cart.bundleItems.reduce(
+    (acc, bundleItem) => acc + Number(bundleItem.bundle.price) * Number(bundleItem.quantity),
+    0
+  )
+
   return {
     ...cart,
-    items: cart.items.map((item) => ({
-      ...item,
-      productVariant: attachPromotionPricing(item.productVariant, activePromotions),
-    })),
+    items,
+    gift: buildGiftPreview(itemsSubtotal + bundlesSubtotal, activeGifts),
   }
 }
 

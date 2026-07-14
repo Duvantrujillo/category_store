@@ -1,6 +1,7 @@
 import { Inbox } from "lucide-react";
 import PromotionRow from "./PromotionRow";
 import TablePagination from "@/components/ui/TablePagination";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -10,7 +11,7 @@ import {
 
 const HEADERS = ["Nombre", "Tipo", "Valor", "Alcance", "Estado", "Acciones"];
 
-function PromotionTable({ promotions, totalItems, page, pageSize, onPageChange, onRefresh, onDelete, onViewDetails }) {
+function PromotionTable({ promotions, loading, totalItems, page, pageSize, onPageChange, onRefresh, onDelete, onViewDetails }) {
   return (
     <Card className="rounded-2xl border border-slate-200 shadow-md shadow-slate-200/50 overflow-hidden">
       <CardHeader className="px-6 py-4 border-b border-slate-100">
@@ -41,7 +42,9 @@ function PromotionTable({ promotions, totalItems, page, pageSize, onPageChange, 
             </TableHeader>
 
             <TableBody>
-              {Array.isArray(promotions) && promotions.length > 0 ? (
+              {loading ? (
+                <TableSkeleton columns={HEADERS.length} />
+              ) : Array.isArray(promotions) && promotions.length > 0 ? (
                 promotions.map((item) => (
                   <PromotionRow
                     key={item.id}

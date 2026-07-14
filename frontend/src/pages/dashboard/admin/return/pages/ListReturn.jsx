@@ -27,7 +27,7 @@ function filterByDate(list, dateFrom, dateTo) {
 const ListReturn = () => {
   const canView   = useHasPermission("returns.view");
   const canCreate = useHasPermission("returns.approve");
-  const { returns = [], refetch } = useAllReturn({ skip: !canView });
+  const { returns = [], loading: listLoading, refetch } = useAllReturn({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchReturn();
 
   const [dateFrom, setDateFrom] = useState("");
@@ -96,6 +96,7 @@ const ListReturn = () => {
 
       <ReturnTable
         returns={dataToShow}
+        loading={listLoading}
         totalItems={totalItems}
         page={page}
         pageSize={PAGE_SIZE}

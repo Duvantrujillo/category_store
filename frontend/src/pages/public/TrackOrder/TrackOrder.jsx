@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import {
   ArrowLeft, Loader2, AlertCircle, MapPin, Truck,
   CheckCircle2, Clock, XCircle, RotateCcw, Copy, Package, ClipboardList,
-  CreditCard, History, ChevronDown, Receipt,
+  CreditCard, History, ChevronDown, Receipt, Gift,
 } from "lucide-react";
 import HomeHeader from "../Home/components/header/HomeHeader";
 import HomeFooter from "../Home/components/footer/HomeFooter";
@@ -13,6 +13,7 @@ import { usePublicCart } from "../Home/hooks/usePublicCart";
 import { usePublicWishlist } from "../Home/hooks/usePublicWishlist";
 import { formatMoneyCOP, formatDateTimeCO } from "@/lib/format";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import TrackOrderResultSkeleton from "./TrackOrderResultSkeleton";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -310,6 +311,9 @@ export default function TrackOrder() {
           </button>
         </form>
 
+        {/* Resultado en curso */}
+        {loading && <TrackOrderResultSkeleton />}
+
         {/* No encontrado */}
         {notFound && (
           <div className="mt-6 rounded-2xl bg-white border border-rose-100 shadow-sm px-5 py-8 flex flex-col items-center text-center gap-3">
@@ -488,10 +492,21 @@ export default function TrackOrder() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[12px] font-semibold text-gray-800 leading-snug line-clamp-2">{item.productName}</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">Cantidad: {item.quantity} · {formatMoney(item.unitPrice)} c/u</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-[12px] font-semibold text-gray-800 leading-snug line-clamp-2">{item.productName}</p>
+                        {item.gift && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border border-red-200 text-red-600 bg-red-50 shrink-0">
+                            <Gift size={10} /> Regalo
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Cantidad: {item.quantity} · {item.gift ? "Gratis" : `${formatMoney(item.unitPrice)} c/u`}
+                      </p>
                     </div>
-                    <span className="text-[13px] font-bold text-gray-800 shrink-0">{formatMoney(item.subtotal)}</span>
+                    <span className={`text-[13px] font-bold shrink-0 ${item.gift ? "text-red-600" : "text-gray-800"}`}>
+                      {item.gift ? "Gratis" : formatMoney(item.subtotal)}
+                    </span>
                   </div>
                   );
                 })}

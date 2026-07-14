@@ -98,6 +98,12 @@ const ALL_PERMISSIONS = [
   { name: 'payment-methods.update',  description: 'Editar métodos de pago' },
   { name: 'payment-methods.delete',  description: 'Eliminar métodos de pago' },
 
+  // Regalos por monto de compra
+  { name: 'purchase-gifts.view',     description: 'Ver regalos por monto de compra' },
+  { name: 'purchase-gifts.create',   description: 'Crear regalos por monto de compra' },
+  { name: 'purchase-gifts.update',   description: 'Editar regalos por monto de compra' },
+  { name: 'purchase-gifts.delete',   description: 'Eliminar regalos por monto de compra' },
+
   // Permisos — gestión de roles (solo super_admin puede asignarlo)
   { name: 'permissions.manage',      description: 'Gestionar permisos de roles' },
 
@@ -129,6 +135,7 @@ const ADMIN_DEFAULT_PERMISSIONS = [
   'promotions.view',
   'admins.view',
   'payment-methods.view',
+  'purchase-gifts.view',
 ];
 
 async function main() {

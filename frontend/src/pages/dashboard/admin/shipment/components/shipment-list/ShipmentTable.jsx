@@ -1,6 +1,7 @@
 import { Inbox } from "lucide-react";
 import ShipmentRow from "./ShipmentRow";
 import TablePagination from "@/components/ui/TablePagination";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -8,7 +9,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 
-function ShipmentTable({ shipments, totalItems, page, pageSize, onPageChange, onEdit, onHistory }) {
+function ShipmentTable({ shipments, loading, totalItems, page, pageSize, onPageChange, onEdit, onHistory }) {
   return (
     <Card className="rounded-2xl border border-slate-200 shadow-md shadow-slate-200/50 overflow-hidden">
       <CardHeader className="px-6 py-4 border-b border-slate-100">
@@ -39,7 +40,9 @@ function ShipmentTable({ shipments, totalItems, page, pageSize, onPageChange, on
             </TableHeader>
 
             <TableBody>
-              {shipments.length > 0 ? (
+              {loading ? (
+                <TableSkeleton columns={6} />
+              ) : shipments.length > 0 ? (
                 shipments.map((shipment) => (
                   <ShipmentRow
                     key={shipment.id}

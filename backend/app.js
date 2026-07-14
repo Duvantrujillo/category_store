@@ -107,6 +107,7 @@ const bannerRouter           = require('./routes/banner.routes.js')
 const discountCodeRouter     = require('./routes/discount-code.routes.js')
 const productBundleRouter    = require('./routes/product-bundle.routes.js')
 const promotionRouter        = require('./routes/promotion.routes.js')
+const purchaseGiftRouter     = require('./routes/purchase-gift.routes.js')
 
 /*
 |--------------------------------------------------------------------------
@@ -209,6 +210,7 @@ app.use('/banner',         bannerRouter)
 app.use('/discount-code',  discountCodeRouter)
 app.use('/bundle',         productBundleRouter)
 app.use('/promotion',      promotionRouter)
+app.use('/purchase-gift',  purchaseGiftRouter)
 
 /*
 |--------------------------------------------------------------------------

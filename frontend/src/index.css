@@ -8,6 +8,13 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Rebote muy sutil (1% del alto del propio botón) para el ícono flotante de
+   WhatsApp — llama la atención sin ser un rebote exagerado. */
+@keyframes gentleBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1%); }
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;

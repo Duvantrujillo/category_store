@@ -21,7 +21,7 @@ function ProductVariantList() {
   const canView           = useHasPermission("product-variants.view");
   const canCreate         = useHasPermission("product-variants.create");
   const canViewAttrValues = useHasPermission("attribute-values.view");
-  const { variants = [], refetch } = useAllProductVariant({ skip: !canView });
+  const { variants = [], loading, refetch } = useAllProductVariant({ skip: !canView });
   const { query, setQuery, results }  = useSearchProductVariant();
   const { attributeValues = [] } = useAllAttributeValue({ skip: !canView || !canViewAttrValues });
   const [statusFilter, setStatusFilter] = useState("all");
@@ -70,6 +70,7 @@ function ProductVariantList() {
 
       <ProductVariantTable
         variants={dataToShow}
+        loading={loading}
         totalItems={displayTotal}
         page={page}
         pageSize={PAGE_SIZE}

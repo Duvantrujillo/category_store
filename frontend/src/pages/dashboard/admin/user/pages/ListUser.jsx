@@ -12,7 +12,7 @@ const PAGE_SIZE = 15;
 function ListUser() {
   const canView   = useHasPermission("admins.view");
   const canCreate = useHasPermission("admins.create");
-  const { users = [], refetch } = useAllUsers({ skip: !canView });
+  const { users = [], loading, refetch } = useAllUsers({ skip: !canView });
 
   const [page, setPage]               = useState(1);
   const [activeRole, setActiveRole]   = useState("all");
@@ -60,6 +60,7 @@ function ListUser() {
       <UserTable
         users={paginated}
         allUsers={users}
+        loading={loading}
         totalItems={filtered.length}
         page={page}
         pageSize={PAGE_SIZE}

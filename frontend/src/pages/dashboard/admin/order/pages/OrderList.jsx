@@ -17,7 +17,7 @@ const PAGE_SIZE = 15;
 const OrderList = () => {
   const canView = useHasPermission("orders.view");
   const canDeleteCancelled = useHasPermission("orders.delete");
-  const { orders = [], refetch } = useAllOrder({ skip: !canView });
+  const { orders = [], loading, refetch } = useAllOrder({ skip: !canView });
   const { query, setQuery, results: queryResults, loading: queryLoading } = useSearchOrder();
   const { dateFrom, setDateFrom, dateTo, setDateTo, results: dateResults, loading: dateLoading } = useFilterOrderByDate();
 
@@ -105,6 +105,7 @@ const OrderList = () => {
 
       <OrderTable
         orders={dataToShow}
+        loading={loading}
         totalItems={totalToShow}
         page={page}
         pageSize={PAGE_SIZE}

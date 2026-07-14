@@ -30,7 +30,7 @@ function ListDiscountCode() {
   const canView = useHasPermission("discount-codes.view");
   const canCreate = useHasPermission("discount-codes.create");
 
-  const { discountCodes = [], refetch } = useAllDiscountCode({ skip: !canView });
+  const { discountCodes = [], loading: listLoading, refetch } = useAllDiscountCode({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchDiscountCode();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -76,6 +76,7 @@ function ListDiscountCode() {
 
       <DiscountCodeTable
         discountCodes={dataToShow}
+        loading={listLoading}
         totalItems={displayTotal}
         page={page}
         pageSize={PAGE_SIZE}

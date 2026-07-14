@@ -17,6 +17,7 @@ import ProductDetailAttributes from "./ProductDetailAttributes";
 import ProductDetailPrice from "./ProductDetailPrice";
 import ProductDetailActions from "./ProductDetailActions";
 import RelatedProductsSection from "./related/RelatedProductsSection";
+import ProductDetailSkeleton from "./ProductDetailSkeleton";
 
 // Extrae los atributos de una variante como { "Color": "Negro", "Talla": "38" }
 function getVariantAttrs(variant) {
@@ -89,7 +90,8 @@ export default function ProductDetail() {
 
   const {
     cartItems, cartUuid, cartOpen, setCartOpen,
-    addToCart, updateQty, removeFromCart,
+    addToCart, updateQty, removeFromCart, gift,
+    initializing: cartInitializing,
   } = usePublicCart();
 
   const {
@@ -125,12 +127,9 @@ export default function ProductDetail() {
   if (loading) return (
     <div className="min-h-screen bg-linear-to-b from-rose-100/40 via-pink-50/20 to-white">
       <HomeHeader cartCount={0} onCartOpen={() => {}} wishlistCount={0} onWishlistOpen={() => {}} onSearch={() => {}} />
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-full border-4 border-rose-200 border-t-rose-500 animate-spin" />
-          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Cargando producto…</p>
-        </div>
-      </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <ProductDetailSkeleton />
+      </main>
     </div>
   );
 
@@ -267,6 +266,8 @@ export default function ProductDetail() {
         onRemove={removeFromCart}
         onUpdateQty={updateQty}
         onCheckout={() => { setCartOpen(false); navigate("/checkout"); }}
+        gift={gift}
+        initializing={cartInitializing}
       />
 
       <HomeWishlist

@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import noPhotos from "@/assets/icons/no-fotos.png";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function BrandItem({ brand }) {
   const logoSrc = brand.logoUrl
@@ -28,7 +29,7 @@ function BrandItem({ brand }) {
   );
 }
 
-export default function HomeBrandMarquee({ brands }) {
+export default function HomeBrandMarquee({ brands, loading = false }) {
   const singleRef  = useRef(null);
   const trackRef   = useRef(null);
   const rafRef     = useRef(null);
@@ -71,6 +72,20 @@ export default function HomeBrandMarquee({ brands }) {
     rafRef.current = requestAnimationFrame(step);
     return () => cancelAnimationFrame(rafRef.current);
   }, [brands]);
+
+  if (loading) {
+    return (
+      <section className="mb-0 mt-0">
+        <div className="relative overflow-hidden bg-purple-50/70 border-y border-purple-100 py-4">
+          <div className="flex gap-6 px-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-28 rounded-lg shrink-0" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (!brands.length) return null;
 

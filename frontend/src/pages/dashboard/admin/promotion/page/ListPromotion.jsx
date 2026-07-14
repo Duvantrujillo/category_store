@@ -21,7 +21,7 @@ function ListPromotion() {
   const canView = useHasPermission("promotions.view");
   const canCreate = useHasPermission("promotions.create");
 
-  const { promotions = [], refetch } = useAllPromotion({ skip: !canView });
+  const { promotions = [], loading: listLoading, refetch } = useAllPromotion({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchPromotion();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -67,6 +67,7 @@ function ListPromotion() {
 
       <PromotionTable
         promotions={dataToShow}
+        loading={listLoading}
         totalItems={displayTotal}
         page={page}
         pageSize={PAGE_SIZE}

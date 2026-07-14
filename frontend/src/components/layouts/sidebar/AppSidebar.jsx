@@ -21,6 +21,7 @@ import {
   PackagePlus,
   BadgePercent,
   Wallet,
+  Gift,
 } from "lucide-react";
 
 const ALL_SECTIONS = [
@@ -62,6 +63,7 @@ const ALL_SECTIONS = [
       { title: "Banners", url: "/dashboard/admin/list/banner", icon: Paintbrush },
       { title: "Cupones", url: "/dashboard/admin/list/discount-codes", icon: TicketPercent },
       { title: "Promociones", url: "/dashboard/admin/list/promotions", icon: BadgePercent },
+      { title: "Regalos por compra", url: "/dashboard/admin/list/purchase-gifts", icon: Gift },
       { title: "Métodos de pago", url: "/dashboard/admin/list/payment-methods", icon: Wallet },
     ],
   },

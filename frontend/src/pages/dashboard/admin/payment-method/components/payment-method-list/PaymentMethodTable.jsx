@@ -3,8 +3,9 @@ import { Inbox } from "lucide-react";
 import PaymentMethodCard from "./PaymentMethodCard";
 import PaymentMethodDeleteDialog from "../payment-method-delete/PaymentMethodDeleteDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CardGridSkeleton from "@/components/ui/CardGridSkeleton";
 
-function PaymentMethodTable({ methods, onRefresh }) {
+function PaymentMethodTable({ methods, loading, onRefresh }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
@@ -29,7 +30,9 @@ function PaymentMethodTable({ methods, onRefresh }) {
         </CardHeader>
 
         <CardContent className="p-6">
-          {Array.isArray(methods) && methods.length > 0 ? (
+          {loading ? (
+            <CardGridSkeleton hasImage={false} gridClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" />
+          ) : Array.isArray(methods) && methods.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {methods.map((item) => (
                 <PaymentMethodCard key={item.id} item={item} onDelete={openConfirmModal} onRefresh={onRefresh} />

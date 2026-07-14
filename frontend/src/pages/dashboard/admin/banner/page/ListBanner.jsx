@@ -33,7 +33,7 @@ export default function ListBanner() {
   const canView   = useHasPermission("banners.view");
   const canCreate = useHasPermission("banners.create");
 
-  const { banners = [], refetch } = useAllBanners({ skip: !canView });
+  const { banners = [], loading: listLoading, refetch } = useAllBanners({ skip: !canView });
 
   const [query,        setQuery]        = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -82,6 +82,7 @@ export default function ListBanner() {
       {/* Tabla */}
       <BannerTable
         banners={paginated}
+        loading={listLoading}
         totalItems={filtered.length}
         page={page}
         pageSize={PAGE_SIZE}

@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { Package, PackagePlus, ChevronRight, TicketPercent } from "lucide-react";
+import { Package, PackagePlus, ChevronRight, TicketPercent, Gift } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -291,6 +291,15 @@ function OrderItemsModal({ open, order, onClose }) {
                                 >
                                   <TicketPercent className="h-2.5 w-2.5" />
                                   {item.promotion.name}
+                                </Badge>
+                              )}
+                              {item.gift && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] px-1.5 py-0 border-red-200 text-red-600 bg-red-50 gap-1"
+                                >
+                                  <Gift className="h-2.5 w-2.5" />
+                                  Regalo: {item.gift.name}
                                 </Badge>
                               )}
                               {item.usedCoupon && order.discountCode && order.discountCode.type !== "FREE_SHIPPING" && (

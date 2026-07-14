@@ -1,6 +1,7 @@
 import { Inbox } from "lucide-react";
 import BannerRow from "./BannerRow";
 import TablePagination from "@/components/ui/TablePagination";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell,
@@ -9,7 +10,7 @@ import {
 
 const HEADERS = ["Imagen", "Título", "Estado", "Inicio", "Fin", "Pos.", "Acciones"];
 
-export default function BannerTable({ banners, totalItems, page, pageSize, onPageChange, onDelete, onRefresh }) {
+export default function BannerTable({ banners, loading, totalItems, page, pageSize, onPageChange, onDelete, onRefresh }) {
   return (
     <Card className="rounded-2xl border border-slate-200 shadow-md shadow-slate-200/50 overflow-hidden">
       <CardHeader className="px-6 py-4 border-b border-slate-100">
@@ -45,7 +46,9 @@ export default function BannerTable({ banners, totalItems, page, pageSize, onPag
             </TableHeader>
 
             <TableBody>
-              {banners?.length > 0 ? (
+              {loading ? (
+                <TableSkeleton columns={HEADERS.length} hasThumbnail />
+              ) : banners?.length > 0 ? (
                 banners.map((banner) => (
                   <BannerRow
                     key={banner.id}

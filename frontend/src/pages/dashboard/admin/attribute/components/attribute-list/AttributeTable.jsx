@@ -4,10 +4,11 @@ import { Inbox } from "lucide-react";
 import AttributeCard from "./AttributeCard";
 import DeleteAttributeDialog from "../attribute-delete/AttributeDeleteDialog";
 import TablePagination from "@/components/ui/TablePagination";
+import CardGridSkeleton from "@/components/ui/CardGridSkeleton";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function AttributeTable({ attributes, totalItems, page, pageSize, onPageChange, onRefresh }) {
+function AttributeTable({ attributes, loading, totalItems, page, pageSize, onPageChange, onRefresh }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
@@ -32,7 +33,12 @@ function AttributeTable({ attributes, totalItems, page, pageSize, onPageChange, 
         </CardHeader>
 
         <CardContent className="p-6">
-          {Array.isArray(attributes) && attributes.length > 0 ? (
+          {loading ? (
+            <CardGridSkeleton
+              hasImage={false}
+              gridClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+            />
+          ) : Array.isArray(attributes) && attributes.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {attributes.map((item) => (
                 <AttributeCard

@@ -4,10 +4,11 @@ import { Inbox } from "lucide-react";
 import BrandCard from "./BrandCard";
 import DeleteBrandDialog from "../brand-delete/BrandDeleteDialog";
 import TablePagination from "@/components/ui/TablePagination";
+import CardGridSkeleton from "@/components/ui/CardGridSkeleton";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-function BrandTable({ brands, totalItems, page, pageSize, onPageChange, onRefresh }) {
+function BrandTable({ brands, loading, totalItems, page, pageSize, onPageChange, onRefresh }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
@@ -35,7 +36,9 @@ function BrandTable({ brands, totalItems, page, pageSize, onPageChange, onRefres
 
         {/* Grid de cards */}
         <CardContent className="p-0">
-          {Array.isArray(brands) && brands.length > 0 ? (
+          {loading ? (
+            <CardGridSkeleton hasImage />
+          ) : Array.isArray(brands) && brands.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-5">
               {brands.map((item) => (
                 <BrandCard

@@ -23,7 +23,7 @@ function filterByDate(list, dateFrom, dateTo) {
 
 const ShipmentList = () => {
   const canView = useHasPermission("orders.view");
-  const { shipments = [], refetch } = useAllShipment({ skip: !canView });
+  const { shipments = [], loading: listLoading, refetch } = useAllShipment({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchShipment();
 
   const [dateFrom, setDateFrom] = useState("");
@@ -90,6 +90,7 @@ const ShipmentList = () => {
 
       <ShipmentTable
         shipments={dataToShow}
+        loading={listLoading}
         totalItems={totalItems}
         page={page}
         pageSize={PAGE_SIZE}

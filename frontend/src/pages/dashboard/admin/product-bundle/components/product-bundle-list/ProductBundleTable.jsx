@@ -4,10 +4,11 @@ import { Inbox } from "lucide-react";
 import ProductBundleCard from "./ProductBundleCard";
 import DeleteProductBundleDialog from "../product-bundle-delete/ProductBundleDeleteDialog";
 import TablePagination from "@/components/ui/TablePagination";
+import CardGridSkeleton from "@/components/ui/CardGridSkeleton";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-function ProductBundleTable({ bundles, totalItems, page, pageSize, onPageChange, onRefresh }) {
+function ProductBundleTable({ bundles, loading, totalItems, page, pageSize, onPageChange, onRefresh }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
@@ -35,7 +36,12 @@ function ProductBundleTable({ bundles, totalItems, page, pageSize, onPageChange,
 
         {/* Grid de cards */}
         <CardContent className="p-0">
-          {Array.isArray(bundles) && bundles.length > 0 ? (
+          {loading ? (
+            <CardGridSkeleton
+              hasImage
+              gridClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-5"
+            />
+          ) : Array.isArray(bundles) && bundles.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-5">
               {bundles.map((item) => (
                 <ProductBundleCard

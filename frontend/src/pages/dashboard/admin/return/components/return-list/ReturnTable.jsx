@@ -1,6 +1,7 @@
 import { Inbox } from "lucide-react";
 import ReturnRow from "./ReturnRow";
 import TablePagination from "@/components/ui/TablePagination";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -8,7 +9,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 
-function ReturnTable({ returns, totalItems, page, pageSize, onPageChange, onDetail, onEdit, onRefund }) {
+function ReturnTable({ returns, loading, totalItems, page, pageSize, onPageChange, onDetail, onEdit, onRefund }) {
   return (
     <Card className="rounded-2xl border border-slate-200 shadow-md shadow-slate-200/50 overflow-hidden">
       <CardHeader className="px-6 py-4 border-b border-slate-100">
@@ -39,7 +40,9 @@ function ReturnTable({ returns, totalItems, page, pageSize, onPageChange, onDeta
             </TableHeader>
 
             <TableBody>
-              {returns.length > 0 ? (
+              {loading ? (
+                <TableSkeleton columns={7} />
+              ) : returns.length > 0 ? (
                 returns.map((item) => (
                   <ReturnRow
                     key={item.id}

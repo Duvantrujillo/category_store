@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { ShieldOff } from "lucide-react";
 import { useShipping, useSearchShipping } from "../hooks/useShipping";
-import ShippingLoading from "../components/shipping-list/ShippingLoading";
 import ShippingError from "../components/shipping-list/ShippingError";
 import ShippingEmpty from "../components/shipping-list/ShippingEmpty";
 import ShippingTable from "../components/shipping-list/ShippingTable";
@@ -65,9 +64,8 @@ function ShippingList() {
     );
   }
 
-  if (loading) return <ShippingLoading />;
   if (error)   return <ShippingError />;
-  if (!shipping.length && !query.trim() && !isDateActive) return <ShippingEmpty />;
+  if (!loading && !shipping.length && !query.trim() && !isDateActive) return <ShippingEmpty />;
 
   return (
     <div className="px-6 pt-2 pb-6 space-y-3">
@@ -84,6 +82,7 @@ function ShippingList() {
 
       <ShippingTable
         shipping={dataToShow}
+        loading={loading}
         totalItems={totalItems}
         page={page}
         pageSize={PAGE_SIZE}

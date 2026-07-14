@@ -19,7 +19,7 @@ function applyFilter(list, statusFilter) {
 function BrandList() {
   const canView   = useHasPermission("brands.view");
   const canCreate = useHasPermission("brands.create");
-  const { brands = [], refetch } = useAllBrand({ skip: !canView });
+  const { brands = [], loading: listLoading, refetch } = useAllBrand({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchBrand();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -55,6 +55,7 @@ function BrandList() {
 
       <BrandTable
         brands={dataToShow}
+        loading={listLoading}
         totalItems={displayTotal}
         page={page}
         pageSize={PAGE_SIZE}

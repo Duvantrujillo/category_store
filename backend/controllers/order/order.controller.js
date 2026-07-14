@@ -5,6 +5,7 @@ const { notifyOrderCreated } = require('../../services/notification.service')
 const { resolveDiscount } = require('../discount-code/discount_code.controller')
 const { resolveBundleComponents } = require('../cart/cart-public.controller')
 const { getActivePromotions, attachPromotionPricing } = require('../../utils/promotion-pricing')
+const { getActiveGiftRules, resolveGiftForSubtotal } = require('../../utils/purchase-gift')
 const { buildSearchStems } = require('../../utils/search-stems')
 
 // ── Constantes de negocio ──────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ const ORDER_ITEM_INCLUDE = {
       include: { product: { select: { id: true, categoryId: true, brandId: true } } }
     },
     promotion: { select: { id: true, name: true } },
+    gift: { select: { id: true, name: true } },
     returnItems: { select: { quantity: true } },
   }
 }
@@ -76,6 +78,9 @@ function markCouponEligibility(order) {
   const hasProductOnlyRestriction = allowedProductIds.size > 0 && !hasCategoryOrBrandRestriction
 
   const isEligible = (item) => {
+    // Una línea de regalo ya tiene precio $0 fijo por diseño (purchase-gift),
+    // nunca por el cupón — jamás debe mostrarse como "cupón aplicado".
+    if (item.gift) return false
     if (!hasProductOnlyRestriction) return true // sin restricción, o por categoría/marca: todo el carrito calificó
     const product = item.productVariant?.product
     return !!product && allowedProductIds.has(product.id)
@@ -348,6 +353,34 @@ const createOrder = async (req, res) => {
       }, 0)
       const subtotal = itemsSubtotal + bundlesSubtotal
 
+      // Regalo por monto de compra — se resuelve con el subtotal ya validado
+      // en BD (nunca con uno enviado por el cliente). Si califica, se intenta
+      // la misma reserva atómica de stock que los ítems normales; si no hay
+      // stock disponible, el regalo se omite en silencio (nunca se le puede
+      // fallar la compra al cliente por un regalo agotado).
+      const activeGifts = await getActiveGiftRules(tx)
+      const { qualified: giftRule } = resolveGiftForSubtotal(subtotal, activeGifts)
+
+      let giftItemData = null
+      if (giftRule) {
+        const giftAffected = await tx.$executeRaw`
+          UPDATE ProductVariant
+          SET reservedStock = reservedStock + ${giftRule.quantity}
+          WHERE id = ${giftRule.productVariantId}
+            AND (stock - reservedStock) >= ${giftRule.quantity}
+        `
+        if (Number(giftAffected) > 0) {
+          giftItemData = {
+            productVariantId: giftRule.productVariantId,
+            productName: `${giftRule.productVariant.product.name} (Regalo)`,
+            quantity: giftRule.quantity,
+            unitPrice: 0,
+            subtotal: 0,
+            giftId: giftRule.id,
+          }
+        }
+      }
+
       // Cupón de descuento — validado y recalculado aquí (nunca confiar en un
       // monto de descuento enviado por el cliente). Los combos no participan
       // en la elegibilidad del cupón: ya tienen su propio precio fijo.
@@ -394,21 +427,24 @@ const createOrder = async (req, res) => {
           discountCodeId: discount?.discountCode.id ?? null,
           discountAmount,
           items: {
-            create: rawItems.map(item => {
-              const variant = variantMap[item.productVariantId]
-              const quantity = Number(item.quantity)
-              return {
-                productVariantId: item.productVariantId,
-                productName: variant.product.name,
-                quantity,
-                unitPrice: variant.finalPrice,
-                subtotal: Number(variant.finalPrice) * quantity,
-                promotionId: variant.promotion?.id ?? null,
-                promotionDiscount: variant.promotion
-                  ? (Number(variant.price) - Number(variant.finalPrice)) * quantity
-                  : 0,
-              }
-            })
+            create: [
+              ...rawItems.map(item => {
+                const variant = variantMap[item.productVariantId]
+                const quantity = Number(item.quantity)
+                return {
+                  productVariantId: item.productVariantId,
+                  productName: variant.product.name,
+                  quantity,
+                  unitPrice: variant.finalPrice,
+                  subtotal: Number(variant.finalPrice) * quantity,
+                  promotionId: variant.promotion?.id ?? null,
+                  promotionDiscount: variant.promotion
+                    ? (Number(variant.price) - Number(variant.finalPrice)) * quantity
+                    : 0,
+                }
+              }),
+              ...(giftItemData ? [giftItemData] : []),
+            ]
           },
           bundleItems: {
             create: rawBundleItems.map(bundleItem => {
@@ -599,7 +635,8 @@ const trackOrder = async (req, res) => {
             productName: true, quantity: true, unitPrice: true, subtotal: true,
             productVariant: {
               select: { images: { select: { imageUrl: true }, orderBy: { slot: 'asc' }, take: 1 } }
-            }
+            },
+            gift: { select: { name: true } },
           }
         },
         payment: { select: { status: true, paymentMethod: true, amount: true, currency: true } },

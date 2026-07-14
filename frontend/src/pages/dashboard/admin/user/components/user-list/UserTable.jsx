@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import TablePagination from "@/components/ui/TablePagination";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useUpdateUserStatus } from "../../hooks/useUser";
 import UserEditDialog from "../user-edit/UserEditDialog";
 import UserResetPasswordDialog from "../user-reset-password/UserResetPasswordDialog";
@@ -115,7 +116,7 @@ function StatusDropdown({ userId, current, onRefresh, canUpdate }) {
   );
 }
 
-function UserTable({ users, allUsers = [], totalItems, page, pageSize, onPageChange, onRefresh, activeRole, onRoleChange }) {
+function UserTable({ users, allUsers = [], loading, totalItems, page, pageSize, onPageChange, onRefresh, activeRole, onRoleChange }) {
   const canUpdate = useHasPermission("admins.update");
   // Los contadores se calculan sobre el total, no sobre la página actual
   const counts = useMemo(() => ({
@@ -159,7 +160,25 @@ function UserTable({ users, allUsers = [], totalItems, page, pageSize, onPageCha
       </CardHeader>
 
       <CardContent className="p-0">
-        {users.length > 0 ? (
+        {loading ? (
+          <div className="overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50 hover:bg-slate-50">
+                  {["Usuario", "Correo electrónico", "Rol", "Estado", "Acciones"].map((h) => (
+                    <TableHead key={h}
+                      className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 whitespace-nowrap">
+                      {h}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableSkeleton columns={5} hasThumbnail />
+              </TableBody>
+            </Table>
+          </div>
+        ) : users.length > 0 ? (
           <>
             <div className="overflow-auto">
               <Table>

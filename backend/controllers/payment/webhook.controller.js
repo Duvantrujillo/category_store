@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 const { createShipment } = require("../../services/shipment.service");
 const { confirmDiscountUsage } = require("../discount-code/discount_code.controller");
 const { confirmPromotionUsage } = require("../promotion/promotion.controller");
+const { confirmGiftUsage } = require("../purchase-gift/purchase-gift.controller");
 const {
   notifyOrderPaid,
   notifyOrderCancelled,
@@ -219,6 +220,7 @@ const epaycoWebhook = async (req, res) => {
           // de usos ahora que el pago quedó confirmado — no al crear la orden.
           await confirmDiscountUsage(tx, updatedOrder)
           await confirmPromotionUsage(tx, updatedOrder)
+          await confirmGiftUsage(tx, updatedOrder)
         } else if (!isPending) {
           // Pago rechazado o con error (nunca para "Pendiente" — ese sigue en
           // curso, p.ej. efectivo/PSE puede tardar horas en confirmarse, y la

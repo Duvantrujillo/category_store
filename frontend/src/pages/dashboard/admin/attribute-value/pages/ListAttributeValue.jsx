@@ -12,7 +12,7 @@ const PAGE_SIZE = 15;
 function AttributeValueList() {
   const canView   = useHasPermission("attribute-values.view");
   const canCreate = useHasPermission("attribute-values.create");
-  const { attributeValues = [], refetch } = useAllAttributeValue({ skip: !canView });
+  const { attributeValues = [], loading: listLoading, refetch } = useAllAttributeValue({ skip: !canView });
   const { attributes = [] } = useAllAttribute({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchAttributeValue();
   const [page, setPage] = useState(1);
@@ -43,6 +43,7 @@ function AttributeValueList() {
       <AttributeValueTable
         attributeValues={dataToShow}
         attributes={attributes}
+        loading={listLoading}
         totalItems={query.trim() ? 0 : attributeValues.length}
         page={page}
         pageSize={PAGE_SIZE}

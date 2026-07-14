@@ -5,10 +5,11 @@ import ProductVariantCard from "./ProductVariantCard";
 import ProductVariantDetailsModal from "./ProductVariantDetailsModal";
 import DeleteProductVariantDialog from "../product-variant-delete/ProductVariantDeleteDialog";
 import TablePagination from "@/components/ui/TablePagination";
+import CardGridSkeleton from "@/components/ui/CardGridSkeleton";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function ProductVariantTable({ variants, totalItems, page, pageSize, onPageChange, onRefresh, attributes = [] }) {
+function ProductVariantTable({ variants, loading, totalItems, page, pageSize, onPageChange, onRefresh, attributes = [] }) {
   const [deleteId, setDeleteId]           = useState(null);
   const [detailVariant, setDetailVariant] = useState(null);
 
@@ -32,7 +33,12 @@ function ProductVariantTable({ variants, totalItems, page, pageSize, onPageChang
         </CardHeader>
 
         <CardContent className="p-0">
-          {!isEmpty ? (
+          {loading ? (
+            <CardGridSkeleton
+              hasImage
+              gridClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-5"
+            />
+          ) : !isEmpty ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-5">
               {variants.map((item) => (
                 <ProductVariantCard

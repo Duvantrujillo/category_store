@@ -47,7 +47,7 @@ export default function Home() {
   useEffect(() => { writeSession(SS_CATEGORY, selectedCategory); }, [selectedCategory]);
 
   const { categories, loading: loadingCats } = useHomeCategories();
-  const { brands }                           = useHomeBrands();
+  const { brands, loading: loadingBrands }    = useHomeBrands();
 
   // IDs para filtrar productos
   const filterCategoryIds = selectedParent
@@ -125,6 +125,8 @@ export default function Home() {
     updateBundleQty,
     removeBundleFromCart,
     cartUuid,
+    gift,
+    initializing: cartInitializing,
   } = usePublicCart();
 
   const {
@@ -157,7 +159,7 @@ export default function Home() {
 
       {/* Desde marcas hacia abajo: fondo desvanecido */}
       <div className="bg-linear-to-b from-rose-100/50 via-pink-50/25 to-white">
-        <HomeBrandMarquee brands={brands} />
+        <HomeBrandMarquee brands={brands} loading={loadingBrands} />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <HomeCategorySection
@@ -234,6 +236,8 @@ export default function Home() {
         onRemoveBundle={removeBundleFromCart}
         onUpdateBundleQty={updateBundleQty}
         onCheckout={() => { setCartOpen(false); navigate("/checkout"); }}
+        gift={gift}
+        initializing={cartInitializing}
       />
     </div>
   );

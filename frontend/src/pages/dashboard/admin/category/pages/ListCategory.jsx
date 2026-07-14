@@ -19,7 +19,7 @@ function applyFilter(list, statusFilter) {
 function CategoryList() {
   const canView   = useHasPermission("categories.view");
   const canCreate = useHasPermission("categories.create");
-  const { categories = [], refetch } = useAllCategory({ skip: !canView });
+  const { categories = [], loading: listLoading, refetch } = useAllCategory({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchCategory();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -56,6 +56,7 @@ function CategoryList() {
       <CategoryTable
         categories={dataToShow}
         allCategories={categories}
+        loading={listLoading}
         totalItems={displayTotal}
         page={page}
         pageSize={PAGE_SIZE}

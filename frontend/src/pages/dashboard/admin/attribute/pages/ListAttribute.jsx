@@ -19,7 +19,7 @@ function applyFilter(list, statusFilter) {
 function AttributeList() {
   const canView   = useHasPermission("attributes.view");
   const canCreate = useHasPermission("attributes.create");
-  const { attributes = [], refetch } = useAllAttribute({ skip: !canView });
+  const { attributes = [], loading: listLoading, refetch } = useAllAttribute({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchAttribute();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -55,6 +55,7 @@ function AttributeList() {
 
       <AttributeTable
         attributes={dataToShow}
+        loading={listLoading}
         totalItems={displayTotal}
         page={page}
         pageSize={PAGE_SIZE}

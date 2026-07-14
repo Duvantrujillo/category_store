@@ -5,10 +5,11 @@ import ProductCard from "./ProductCard";
 import ProductDetailsModal from "./ProductDetailsModal";
 import DeleteProductDialog from "../product-delete/ProductDeleteDialog";
 import TablePagination from "@/components/ui/TablePagination";
+import CardGridSkeleton from "@/components/ui/CardGridSkeleton";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function ProductTable({ products, totalItems, page, pageSize, onPageChange, onRefresh }) {
+function ProductTable({ products, loading, totalItems, page, pageSize, onPageChange, onRefresh }) {
   const [deleteId, setDeleteId]           = useState(null);
   const [detailProduct, setDetailProduct] = useState(null);
 
@@ -30,7 +31,12 @@ function ProductTable({ products, totalItems, page, pageSize, onPageChange, onRe
         </CardHeader>
 
         <CardContent className="p-0">
-          {Array.isArray(products) && products.length > 0 ? (
+          {loading ? (
+            <CardGridSkeleton
+              hasImage
+              gridClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-5"
+            />
+          ) : Array.isArray(products) && products.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-5">
               {products.map((item) => (
                 <ProductCard

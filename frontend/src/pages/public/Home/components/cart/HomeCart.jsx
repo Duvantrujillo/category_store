@@ -7,8 +7,10 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import HomeCartItem from "./HomeCartItem";
+import HomeCartItemSkeleton from "./HomeCartItemSkeleton";
 import HomeCartBundleItem from "./HomeCartBundleItem";
 import HomeCartEmpty from "./HomeCartEmpty";
+import CartGiftBanner from "./CartGiftBanner";
 
 const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER ?? "";
 
@@ -51,7 +53,7 @@ function buildWhatsAppUrl(items, bundleItems) {
 export default function HomeCart({
   open, onClose, items, onRemove, onUpdateQty,
   bundleItems = [], onRemoveBundle, onUpdateBundleQty,
-  onCheckout,
+  onCheckout, gift = null, initializing = false,
 }) {
   const total = items.reduce((s, i) => s + Number(i.variant.finalPrice ?? i.variant.price) * i.quantity, 0)
     + bundleItems.reduce((s, i) => s + Number(i.bundle.price) * i.quantity, 0);
@@ -96,7 +98,12 @@ export default function HomeCart({
 
         {/* ── Lista de productos ── */}
         <div className="flex-1 overflow-y-auto px-5">
-          {items.length === 0 && bundleItems.length === 0 ? (
+          {initializing ? (
+            <>
+              <HomeCartItemSkeleton />
+              <HomeCartItemSkeleton />
+            </>
+          ) : items.length === 0 && bundleItems.length === 0 ? (
             <HomeCartEmpty />
           ) : (
             <>
@@ -118,6 +125,7 @@ export default function HomeCart({
                   onClose={onClose}
                 />
               ))}
+              <CartGiftBanner gift={gift} className="mt-4" />
             </>
           )}
         </div>

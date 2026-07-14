@@ -1,6 +1,6 @@
 import {
   User, Hash, Mail, Phone, MapPin, FileText,
-  DollarSign, Receipt, Calendar, ClipboardList, Truck, TicketPercent,
+  DollarSign, Receipt, Calendar, ClipboardList, Truck, TicketPercent, Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,6 +66,18 @@ function OrderDetailsModal({ open, order, onClose }) {
     const key = item.promotion.name;
     if (!acc[key]) acc[key] = [];
     acc[key].push(item.productName);
+    return acc;
+  }, {});
+
+  // Regalos por monto de compra: viven en OrderItem.gift (una fila real de
+  // la orden, precio $0 — ver purchase-gift.controller.js / createOrder).
+  // Se agrupan por nombre del regalo igual que las promociones.
+  const giftItems = (order.items ?? []).filter((i) => i.gift);
+  const hasGift = giftItems.length > 0;
+  const giftGroups = giftItems.reduce((acc, item) => {
+    const key = item.gift.name;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push({ productName: item.productName, quantity: item.quantity });
     return acc;
   }, {});
 
@@ -194,6 +206,25 @@ function OrderDetailsModal({ open, order, onClose }) {
                     </span>
                     <p className="text-[11px] text-slate-400 pl-1">
                       Aplicó a: {productNames.join(", ")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* Obsequios entregados — OrderItem.gift: fila real de la orden con
+              precio $0, agrupadas por nombre del regalo (purchase-gift). */}
+          {hasGift && (
+            <Section title="Obsequios entregados">
+              <div className="flex flex-col gap-2.5 py-3">
+                {Object.entries(giftGroups).map(([name, lines]) => (
+                  <div key={name} className="flex flex-col gap-1">
+                    <span className="inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-200">
+                      <Gift size={12} /> {name}
+                    </span>
+                    <p className="text-[11px] text-slate-400 pl-1">
+                      Producto: {lines.map((l) => `${l.productName} × ${l.quantity}`).join(", ")}
                     </p>
                   </div>
                 ))}

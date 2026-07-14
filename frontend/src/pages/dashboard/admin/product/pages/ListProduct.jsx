@@ -12,7 +12,7 @@ const PAGE_SIZE = 15;
 function ProductList() {
   const canView   = useHasPermission("products.view");
   const canCreate = useHasPermission("products.create");
-  const { products = [], refetch } = useAllProduct({ skip: !canView });
+  const { products = [], loading: listLoading, refetch } = useAllProduct({ skip: !canView });
   const { query, setQuery, results, loading } = useSearchProduct();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -60,6 +60,7 @@ function ProductList() {
 
       <ProductTable
         products={dataToShow}
+        loading={listLoading}
         totalItems={displayTotal}
         page={page}
         pageSize={PAGE_SIZE}

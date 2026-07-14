@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
+import FloatingWhatsAppButton from '../../pages/public/Home/components/shared/FloatingWhatsAppButton';
 
 export default function PublicLayout() {
   useEffect(() => {
@@ -7,5 +8,10 @@ export default function PublicLayout() {
     return () => document.documentElement.classList.remove('public');
   }, []);
 
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <FloatingWhatsAppButton />
+    </>
+  );
 }

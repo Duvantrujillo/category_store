@@ -75,6 +75,15 @@ export function usePublicCart() {
   const [cartBundleItems, setCartBundleItems] = useState([]);
   const [cartUuid, setCartUuid]               = useState(() => localStorage.getItem("cart_uuid") ?? null);
   const [cartOpen, setCartOpen]               = useState(false);
+  // Vista previa del regalo por monto de compra (cart-public.controller.js:
+  // enrichCart) — solo informativa, se recalcula con cada respuesta del
+  // carrito que trae el subtotal actualizado.
+  const [gift, setGift]                       = useState(null);
+  // true hasta que el primer fetch/creación de carrito resuelve — mientras
+  // tanto, cartItems/cartBundleItems están en [] pero eso NO significa que
+  // el carrito esté realmente vacío, solo que todavía no se sabe (evita que
+  // HomeCart/Checkout muestren "carrito vacío" antes de tiempo).
+  const [initializing, setInitializing]       = useState(true);
   const initRef                               = useRef(false);
 
   useEffect(() => {
@@ -90,6 +99,7 @@ export function usePublicCart() {
           if (cart) {
             setCartItems(mapCart(cart));
             setCartBundleItems(mapBundleCart(cart));
+            setGift(cart.gift ?? null);
             return;
           }
           localStorage.removeItem("cart_uuid");
@@ -100,11 +110,14 @@ export function usePublicCart() {
         setCartUuid(newCart.uuid);
         setCartItems([]);
         setCartBundleItems([]);
+        setGift(newCart.gift ?? null);
       } catch (err) {
         console.error("Error iniciando carrito:", err);
         // Antes esto fallaba en silencio: el usuario veía un carrito vacío
         // sin ningún aviso de que en realidad el carrito no pudo cargar.
         toast.error("No pudimos cargar tu carrito. Verifica tu conexión y recarga la página.");
+      } finally {
+        setInitializing(false);
       }
     }
     init();
@@ -139,6 +152,7 @@ export function usePublicCart() {
       if (res.ok) {
         const cart = await res.json();
         setCartItems(mapCart(cart));
+        setGift(cart.gift ?? null);
       } else {
         // Revertir si el servidor rechazó (p.ej. stock insuficiente)
         setCartItems((prev) => {
@@ -176,6 +190,7 @@ export function usePublicCart() {
       if (res.ok) {
         const cart = await res.json();
         setCartItems(mapCart(cart));
+        setGift(cart.gift ?? null);
       }
     } catch {
       // silencio
@@ -195,6 +210,7 @@ export function usePublicCart() {
       if (res.ok) {
         const cart = await res.json();
         setCartItems(mapCart(cart));
+        setGift(cart.gift ?? null);
       }
     } catch {
       // silencio
@@ -224,6 +240,7 @@ export function usePublicCart() {
       if (res.ok) {
         const cart = await res.json();
         setCartBundleItems(mapBundleCart(cart));
+        setGift(cart.gift ?? null);
         return { ok: true };
       }
       const data = await res.json().catch(() => ({}));
@@ -256,6 +273,7 @@ export function usePublicCart() {
       if (res.ok) {
         const cart = await res.json();
         setCartBundleItems(mapBundleCart(cart));
+        setGift(cart.gift ?? null);
       }
     } catch {
       // silencio
@@ -275,6 +293,7 @@ export function usePublicCart() {
       if (res.ok) {
         const cart = await res.json();
         setCartBundleItems(mapBundleCart(cart));
+        setGift(cart.gift ?? null);
       }
     } catch {
       // silencio
@@ -287,6 +306,8 @@ export function usePublicCart() {
     cartUuid,
     cartOpen,
     setCartOpen,
+    gift,
+    initializing,
     addToCart,
     updateQty,
     removeFromCart,

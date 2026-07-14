@@ -3,6 +3,7 @@ import apiClient from "@/lib/apiClient";
 
 export function useHomeBrands() {
   const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     apiClient
@@ -11,8 +12,9 @@ export function useHomeBrands() {
         const data = res?.data?.data || res?.data || [];
         setBrands(Array.isArray(data) ? data : []);
       })
-      .catch(() => setBrands([]));
+      .catch(() => setBrands([]))
+      .finally(() => setLoading(false));
   }, []);
 
-  return { brands };
+  return { brands, loading };
 }

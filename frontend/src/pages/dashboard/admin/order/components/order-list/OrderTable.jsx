@@ -1,6 +1,7 @@
 import { Inbox } from "lucide-react";
 import OrderRow from "./OrderRow";
 import TablePagination from "@/components/ui/TablePagination";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -8,7 +9,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 
-function OrderTable({ orders, totalItems, page, pageSize, onPageChange, onOpenDetails, onOpenItems, onOpenPayment, onOpenShippingGuide }) {
+function OrderTable({ orders, loading, totalItems, page, pageSize, onPageChange, onOpenDetails, onOpenItems, onOpenPayment, onOpenShippingGuide }) {
   return (
     <Card className="rounded-2xl border border-slate-200 shadow-md shadow-slate-200/50 overflow-hidden">
       <CardHeader className="px-6 py-4 border-b border-slate-100">
@@ -39,7 +40,9 @@ function OrderTable({ orders, totalItems, page, pageSize, onPageChange, onOpenDe
             </TableHeader>
 
             <TableBody>
-              {orders?.length > 0 ? (
+              {loading ? (
+                <TableSkeleton columns={6} />
+              ) : orders?.length > 0 ? (
                 orders.map((order) => (
                   <OrderRow
                     key={order.id}
