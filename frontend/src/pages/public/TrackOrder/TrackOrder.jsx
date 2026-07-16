@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import {
   ArrowLeft, Loader2, AlertCircle, MapPin, Truck,
   CheckCircle2, Clock, XCircle, RotateCcw, Copy, Package, ClipboardList,
-  CreditCard, History, ChevronDown, Receipt, Gift,
+  CreditCard, History, ChevronDown, Receipt, Gift, TicketPercent,
 } from "lucide-react";
 import HomeHeader from "../Home/components/header/HomeHeader";
 import HomeFooter from "../Home/components/footer/HomeFooter";
@@ -12,12 +12,14 @@ import HomeCart from "../Home/components/cart/HomeCart";
 import { usePublicCart } from "../Home/hooks/usePublicCart";
 import { usePublicWishlist } from "../Home/hooks/usePublicWishlist";
 import { formatMoneyCOP, formatDateTimeCO } from "@/lib/format";
+import { getVariantImage } from "@/lib/media";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import TrackOrderResultSkeleton from "./TrackOrderResultSkeleton";
 
 const API = import.meta.env.VITE_API_URL;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DOCUMENT_RE = /^\d{5,15}$/;
 
 const ORDER_STATUS = {
   PENDING:   { label: "Pendiente de pago", color: "bg-amber-50 text-amber-600 border-amber-100",   icon: Clock },
@@ -172,7 +174,8 @@ export default function TrackOrder() {
   const { wishlistItems, setWishlistOpen } = usePublicWishlist(cartUuid);
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
 
-  const [form, setForm]           = useState({ orderNumber: "", email: "" });
+  const [identifierType, setIdentifierType] = useState("email"); // "email" | "document"
+  const [form, setForm]           = useState({ orderNumber: "", email: "", documentNumber: "" });
   const [errors, setErrors]       = useState({});
   const [loading, setLoading]     = useState(false);
   const [order, setOrder]         = useState(null);
@@ -187,9 +190,15 @@ export default function TrackOrder() {
 
   function validate() {
     const errs = {};
-    if (!form.orderNumber.trim())               errs.orderNumber = "Ingresa el número de pedido";
-    if (!form.email.trim())                     errs.email = "Ingresa el correo electrónico";
-    else if (!EMAIL_RE.test(form.email.trim())) errs.email = "Formato de correo inválido";
+    if (!form.orderNumber.trim()) errs.orderNumber = "Ingresa el número de pedido";
+
+    if (identifierType === "email") {
+      if (!form.email.trim())                     errs.email = "Ingresa el correo electrónico";
+      else if (!EMAIL_RE.test(form.email.trim())) errs.email = "Formato de correo inválido";
+    } else {
+      if (!form.documentNumber.trim())                        errs.documentNumber = "Ingresa el número de documento";
+      else if (!DOCUMENT_RE.test(form.documentNumber.trim())) errs.documentNumber = "Entre 5 y 15 dígitos numéricos";
+    }
     return errs;
   }
 
@@ -206,7 +215,9 @@ export default function TrackOrder() {
     try {
       const params = new URLSearchParams({
         orderNumber: form.orderNumber.trim(),
-        email: form.email.trim(),
+        ...(identifierType === "email"
+          ? { email: form.email.trim() }
+          : { documentNumber: form.documentNumber.trim() }),
       });
       const res = await fetch(`${API}/order/track?${params.toString()}`);
       const data = await res.json().catch(() => ({}));
@@ -226,6 +237,14 @@ export default function TrackOrder() {
   const statusNote = order ? ORDER_STATUS_NOTE[order.status] : null;
   const history = order?.shipment?.history ?? [];
   const historyDesc = [...history].reverse();
+
+  // Promociones automáticas de producto (OrderItem.promotion) — se agrupan
+  // para mostrar el ahorro total, igual que ya se ve en el admin.
+  const promoItems = order?.items?.filter((i) => i.promotion) ?? [];
+  const promotionDiscountTotal = promoItems.reduce((sum, i) => sum + Number(i.promotionDiscount || 0), 0);
+  const hasPromotion = promotionDiscountTotal > 0;
+  const hasCouponDiscount = order && Number(order.discountAmount) > 0;
+  const hasFreeShippingCoupon = order?.discountCode?.type === "FREE_SHIPPING";
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -253,7 +272,7 @@ export default function TrackOrder() {
             Consulta tu pedido
           </h1>
           <p className="text-[13px] text-gray-500 max-w-md leading-relaxed">
-            Ingresa el número de pedido y el correo electrónico que usaste al comprar para ver el estado en tiempo real.
+            Ingresa el número de pedido y el correo electrónico o el número de documento que usaste al comprar para ver el estado en tiempo real.
           </p>
         </div>
       </div>
@@ -283,20 +302,63 @@ export default function TrackOrder() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Correo electrónico</label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="tu@correo.com"
-                className={`w-full h-11 rounded-xl border px-3.5 text-[13px] text-gray-800 bg-gray-50 outline-none transition-colors focus:bg-white ${
-                  errors.email ? "border-rose-300 focus:border-rose-400 ring-1 ring-rose-200" : "border-gray-200 focus:border-rose-300"
-                }`}
-              />
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                  {identifierType === "email" ? "Correo electrónico" : "Número de documento"}
+                </label>
+                <div className="flex items-center gap-0.5 bg-gray-100 rounded-full p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => { setIdentifierType("email"); setErrors((prev) => ({ ...prev, email: "", documentNumber: "" })); }}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
+                      identifierType === "email" ? "bg-white text-emerald-500 shadow-sm" : "text-gray-400"
+                    }`}
+                  >
+                    Correo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setIdentifierType("document"); setErrors((prev) => ({ ...prev, email: "", documentNumber: "" })); }}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
+                      identifierType === "document" ? "bg-white text-emerald-500 shadow-sm" : "text-gray-400"
+                    }`}
+                  >
+                    Cédula
+                  </button>
+                </div>
+              </div>
+              {identifierType === "email" ? (
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="tu@correo.com"
+                  className={`w-full h-11 rounded-xl border px-3.5 text-[13px] text-gray-800 bg-gray-50 outline-none transition-colors focus:bg-white ${
+                    errors.email ? "border-rose-300 focus:border-rose-400 ring-1 ring-rose-200" : "border-gray-200 focus:border-rose-300"
+                  }`}
+                />
+              ) : (
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  name="documentNumber"
+                  value={form.documentNumber}
+                  onChange={handleChange}
+                  placeholder="Ej: 1023456789"
+                  className={`w-full h-11 rounded-xl border px-3.5 text-[13px] text-gray-800 bg-gray-50 outline-none transition-colors focus:bg-white ${
+                    errors.documentNumber ? "border-rose-300 focus:border-rose-400 ring-1 ring-rose-200" : "border-gray-200 focus:border-rose-300"
+                  }`}
+                />
+              )}
               {errors.email && (
                 <p className="text-[11px] text-rose-400 flex items-center gap-1">
                   <AlertCircle size={11} className="shrink-0" />{errors.email}
+                </p>
+              )}
+              {errors.documentNumber && (
+                <p className="text-[11px] text-rose-400 flex items-center gap-1">
+                  <AlertCircle size={11} className="shrink-0" />{errors.documentNumber}
                 </p>
               )}
             </div>
@@ -322,7 +384,7 @@ export default function TrackOrder() {
             </div>
             <p className="text-sm font-semibold text-gray-700">No encontramos tu pedido</p>
             <p className="text-[12px] text-gray-400 max-w-sm leading-relaxed">
-              Verifica que el número de pedido y el correo electrónico sean exactamente los que usaste al momento de la compra.
+              Verifica que el número de pedido y el correo electrónico o número de documento sean exactamente los que usaste al momento de la compra.
             </p>
           </div>
         )}
@@ -481,7 +543,7 @@ export default function TrackOrder() {
               </div>
               <div className="flex flex-col divide-y divide-gray-50">
                 {order.items.map((item, idx) => {
-                  const imageUrl = item.productVariant?.images?.[0]?.imageUrl;
+                  const imageUrl = getVariantImage(item.productVariant);
                   return (
                   <div key={idx} className="flex items-center gap-3 px-5 sm:px-6 py-3.5">
                     <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 shrink-0 text-gray-300 overflow-hidden">
@@ -494,6 +556,11 @@ export default function TrackOrder() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="text-[12px] font-semibold text-gray-800 leading-snug line-clamp-2">{item.productName}</p>
+                        {item.promotion && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border border-green-200 text-green-600 bg-green-50 shrink-0">
+                            <TicketPercent size={10} /> {item.promotion.name}
+                          </span>
+                        )}
                         {item.gift && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border border-red-200 text-red-600 bg-red-50 shrink-0">
                             <Gift size={10} /> Regalo
@@ -518,12 +585,24 @@ export default function TrackOrder() {
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>Envío</span>
-                  <span className="font-medium">{order.shippingCost === 0 ? "Gratis" : formatMoney(order.shippingCost)}</span>
+                  <span className="font-medium">
+                    {order.shippingCost === 0
+                      ? hasFreeShippingCoupon
+                        ? `Gratis · cupón ${order.discountCode.code}`
+                        : "Gratis"
+                      : formatMoney(order.shippingCost)}
+                  </span>
                 </div>
-                {Number(order.discountAmount) > 0 && (
-                  <div className="flex items-center justify-between text-xs text-rose-500 font-semibold">
-                    <span>Descuento ({order.discountCode?.code})</span>
+                {hasCouponDiscount && (
+                  <div className="flex items-center justify-between text-xs text-blue-600 font-semibold">
+                    <span>Cupón ({order.discountCode?.code})</span>
                     <span>-{formatMoney(order.discountAmount)}</span>
+                  </div>
+                )}
+                {hasPromotion && (
+                  <div className="flex items-center justify-between text-xs text-green-600 font-semibold">
+                    <span>Descuento por promoción</span>
+                    <span>-{formatMoney(promotionDiscountTotal)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between pt-2 border-t border-gray-100">

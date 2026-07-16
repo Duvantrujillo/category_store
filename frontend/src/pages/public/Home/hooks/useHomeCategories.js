@@ -3,10 +3,12 @@ import apiClient from "@/lib/apiClient";
 
 export function useHomeCategories() {
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // true desde el arranque: si empezara en false, el primer render (antes de
+  // que corra el efecto de abajo) mostraría "sin categorías" por una
+  // fracción de segundo en vez del skeleton.
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
     apiClient
       .get("/category/public")
       .then((res) => {

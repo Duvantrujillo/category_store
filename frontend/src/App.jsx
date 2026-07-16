@@ -9,6 +9,7 @@ import BundleDetail from "./pages/public/Home/components/bundles/BundleDetail"
 import Checkout from "./pages/public/Checkout/Checkout"
 import CheckoutResponse from "./pages/public/Checkout/CheckoutResponse"
 import TrackOrder from "./pages/public/TrackOrder/TrackOrder"
+import Returns from "./pages/public/Returns/Returns"
 import Admin from "./pages/dashboard/admin/Admin"
 import Customer from "./pages/dashboard/customer/Customer"
 import CreateShipping from './pages/dashboard/admin/form_response/pages/CreateShipping'
@@ -49,6 +50,7 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/checkout/respuesta" element={<CheckoutResponse />} />
         <Route path="/pedido" element={<TrackOrder />} />
+        <Route path="/devoluciones" element={<Returns />} />
       </Route>
       {/* Registro deshabilitado a propósito — se redirige a /login. No se
           elimina la ruta ni el componente por si se reactiva más adelante:

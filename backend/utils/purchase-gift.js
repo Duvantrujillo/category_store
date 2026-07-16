@@ -33,7 +33,11 @@ async function getActiveGiftRules(db = prisma) {
         },
       },
     },
-    orderBy: [{ minimumPurchase: "asc" }],
+    // `id asc` como desempate estable: si dos regalos comparten exactamente
+    // el mismo minimumPurchase, sin esto MySQL no garantiza un orden
+    // consistente entre consultas, y el regalo mostrado en el preview del
+    // carrito podría no coincidir con el que realmente se entrega al pagar.
+    orderBy: [{ minimumPurchase: "asc" }, { id: "asc" }],
   });
 
   return gifts
@@ -58,10 +62,19 @@ function resolveGiftForSubtotal(subtotal, activeGifts) {
 
   for (const gift of activeGifts) {
     if (Number(gift.minimumPurchase) <= subtotal) {
-      if (!qualified || Number(gift.minimumPurchase) > Number(qualified.minimumPurchase)) {
-        qualified = gift;
-      }
-    } else if (!next || Number(gift.minimumPurchase) < Number(next.minimumPurchase)) {
+      // Empate en minimumPurchase: gana el id más bajo (el regalo creado
+      // primero), para que el resultado sea siempre el mismo sin importar
+      // el orden en que haya llegado la fila desde la base de datos.
+      const better =
+        !qualified
+        || Number(gift.minimumPurchase) > Number(qualified.minimumPurchase)
+        || (Number(gift.minimumPurchase) === Number(qualified.minimumPurchase) && gift.id < qualified.id);
+      if (better) qualified = gift;
+    } else if (
+      !next
+      || Number(gift.minimumPurchase) < Number(next.minimumPurchase)
+      || (Number(gift.minimumPurchase) === Number(next.minimumPurchase) && gift.id < next.id)
+    ) {
       next = gift;
     }
   }

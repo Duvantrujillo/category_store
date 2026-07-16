@@ -606,26 +606,31 @@ const searchOrder = async (req, res) => {
 
 // ── trackOrder ────────────────────────────────────────────────────────────────
 // Endpoint público: el cliente consulta su pedido con el número de orden + el
-// correo con el que lo registró. Sin autenticación, así que:
-//   · Nunca revelamos si el orderNumber existe cuando el email no coincide
-//     (mismo mensaje genérico) para evitar enumeración de pedidos.
+// correo O el número de documento con el que lo registró (algunos pedidos no
+// tienen correo, ya que es un campo opcional al crear la orden — el documento
+// siempre está). Sin autenticación, así que:
+//   · Nunca revelamos si el orderNumber existe cuando el identificador no
+//     coincide (mismo mensaje genérico) para evitar enumeración de pedidos.
 //   · Solo devolvemos los campos necesarios para el seguimiento, nunca
-//     documentNumber/phoneNumber/userId.
-const NOT_FOUND_MSG = 'Pedido no encontrado. Verifica el número de pedido y el correo electrónico.'
+//     phoneNumber/userId (documentNumber tampoco, ya lo usamos para matchear
+//     pero no hace falta reenviarlo).
+const NOT_FOUND_MSG = 'Pedido no encontrado. Verifica el número de pedido y el correo electrónico o documento.'
 
 const trackOrder = async (req, res) => {
   try {
-    const { orderNumber, email } = req.query
+    const { orderNumber, email, documentNumber } = req.query
 
     if (!orderNumber || typeof orderNumber !== 'string' || !orderNumber.trim()) {
       return res.status(400).json({ ok: false, message: 'El número de pedido es requerido' })
     }
-    if (!email || typeof email !== 'string' || !email.trim()) {
-      return res.status(400).json({ ok: false, message: 'El correo electrónico es requerido' })
+
+    const trimmedEmail = typeof email === 'string' ? email.trim() : ''
+    const trimmedDoc = typeof documentNumber === 'string' ? documentNumber.trim() : ''
+    if (!trimmedEmail && !trimmedDoc) {
+      return res.status(400).json({ ok: false, message: 'Ingresa el correo electrónico o el número de documento' })
     }
 
     const normalizedOrderNumber = orderNumber.trim().toUpperCase()
-    const normalizedEmail = email.trim().toLowerCase()
 
     const order = await prisma.order.findUnique({
       where: { orderNumber: normalizedOrderNumber },
@@ -634,9 +639,14 @@ const trackOrder = async (req, res) => {
           select: {
             productName: true, quantity: true, unitPrice: true, subtotal: true,
             productVariant: {
-              select: { images: { select: { imageUrl: true }, orderBy: { slot: 'asc' }, take: 1 } }
+              select: {
+                images: { select: { imageUrl: true }, orderBy: { slot: 'asc' }, take: 1 },
+                product: { select: { mainImage: true } },
+              }
             },
             gift: { select: { name: true } },
+            promotion: { select: { name: true } },
+            promotionDiscount: true,
           }
         },
         payment: { select: { status: true, paymentMethod: true, amount: true, currency: true } },
@@ -653,7 +663,10 @@ const trackOrder = async (req, res) => {
       }
     })
 
-    if (!order || !order.email || order.email.trim().toLowerCase() !== normalizedEmail) {
+    const matchesEmail = trimmedEmail && order?.email && order.email.trim().toLowerCase() === trimmedEmail.toLowerCase()
+    const matchesDoc = trimmedDoc && order?.documentNumber && order.documentNumber.trim() === trimmedDoc
+
+    if (!order || !(matchesEmail || matchesDoc)) {
       return res.status(404).json({ ok: false, message: NOT_FOUND_MSG })
     }
 

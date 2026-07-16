@@ -3,7 +3,10 @@ import apiClient from "@/lib/apiClient";
 
 export function useHomeProducts(search = "", categoryIds = null, filters = {}) {
   const [variants, setVariants] = useState([]);
-  const [loading, setLoading]   = useState(false);
+  // true desde el arranque: si empezara en false, el primer render (antes de
+  // que corra el efecto de carga) mostraría "sin productos" por una fracción
+  // de segundo en vez del skeleton.
+  const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
 
   // Debounce: espera 350 ms tras el último tecleo antes de llamar al backend

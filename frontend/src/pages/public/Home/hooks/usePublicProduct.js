@@ -12,7 +12,7 @@ export function usePublicProduct(slug) {
   const [error,    setError]    = useState(null);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug) { setLoading(false); return; }
     setLoading(true);
     setNotFound(false);
     setError(null);

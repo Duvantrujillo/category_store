@@ -3,6 +3,7 @@ import apiClient from "@/lib/apiClient";
 
 export function useHomeBundles() {
   const [bundles, setBundles] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     apiClient
@@ -11,8 +12,9 @@ export function useHomeBundles() {
         const data = res?.data?.data || res?.data || [];
         setBundles(Array.isArray(data) ? data : []);
       })
-      .catch(() => setBundles([]));
+      .catch(() => setBundles([]))
+      .finally(() => setLoading(false));
   }, []);
 
-  return { bundles };
+  return { bundles, loading };
 }

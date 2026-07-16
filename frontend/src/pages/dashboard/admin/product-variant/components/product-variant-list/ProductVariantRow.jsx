@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import ProductVariantEditDialog from "@/pages/dashboard/admin/product-variant/components/product-variant-update/ProductVariantEditDialog";
 import { useHasPermission } from "@/lib/permissions";
+import { getVariantImage } from "@/lib/media";
 
 function ProductVariantRow({ item, onDelete, onRefresh, products = [], attributes = [] }) {
   const canUpdate = useHasPermission("product-variants.update");
   const canDelete = useHasPermission("product-variants.delete");
+  const rawImg = getVariantImage(item);
   return (
     <TableRow className="hover:bg-slate-50/80 transition-colors">
 
@@ -15,10 +17,7 @@ function ProductVariantRow({ item, onDelete, onRefresh, products = [], attribute
       <TableCell className="px-4 py-3">
         <div className="flex justify-center">
           <img
-            src={item.images?.[0]?.imageUrl
-              ? `${import.meta.env.VITE_API_URL}${item.images[0].imageUrl}`
-              : noPhotos
-            }
+            src={rawImg ? `${import.meta.env.VITE_API_URL}${rawImg}` : noPhotos}
             alt={item.sku || "Sin imagen"}
             className="h-10 w-10 rounded-lg object-cover border border-slate-200 shadow-sm"
           />

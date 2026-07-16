@@ -206,7 +206,7 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 xl:gap-16 items-start">
 
           <div className="h-[380px] sm:h-[460px] md:h-[520px] lg:h-[620px] md:sticky md:top-8">
-            <ProductDetailGallery images={allImages} selectedVariantId={selectedVariant?.id} outOfStock={outOfStock} discountPercent={discountPercent} />
+            <ProductDetailGallery images={allImages} selectedVariantId={selectedVariant?.id} productMainImage={product.mainImage} outOfStock={outOfStock} discountPercent={discountPercent} />
           </div>
 
           <div className="flex flex-col gap-7">

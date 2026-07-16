@@ -30,11 +30,15 @@ export default function HomeProductGrid({
   // "huérfano" (menos productos que PAGE_SIZE), se rellena repitiendo
   // productos ya existentes del catálogo para que la fila no quede en blanco.
   // A medida que se agreguen productos reales, ocuparán esos cupos y los
-  // repetidos van desapareciendo solos.
+  // repetidos van desapareciendo solos. Pero si el catálogo activo tiene muy
+  // pocos productos en total, rellenar se ve como si el mismo producto se
+  // hubiera duplicado varias veces — mejor mostrar el bloque corto tal cual
+  // que forzar una repetición evidente.
+  const MIN_TO_PAD = Math.ceil(PAGE_SIZE / 2);
   const isDefaultView = !search && !selectedCategory && !selectedParent;
   const displayGroups = isDefaultView
     ? groups.map((group) => {
-        if (group.length === 0 || group.length >= PAGE_SIZE) return group;
+        if (group.length === 0 || group.length >= PAGE_SIZE || variants.length < MIN_TO_PAD) return group;
         const padded = [...group];
         let i = 0;
         while (padded.length < PAGE_SIZE) {

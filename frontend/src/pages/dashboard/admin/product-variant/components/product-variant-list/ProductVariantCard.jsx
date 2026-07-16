@@ -5,13 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardFooter } from "@/components/ui/card";
 import ProductVariantEditDialog from "@/pages/dashboard/admin/product-variant/components/product-variant-update/ProductVariantEditDialog";
 import { useHasPermission } from "@/lib/permissions";
+import { getVariantImage } from "@/lib/media";
 
 function ProductVariantCard({ item, onDelete, onDetails, onRefresh, attributes = [] }) {
   const canUpdate = useHasPermission("product-variants.update");
   const canDelete = useHasPermission("product-variants.delete");
-  const firstImage = item.images?.[0]?.imageUrl
-    ? `${import.meta.env.VITE_API_URL}${item.images[0].imageUrl}`
-    : noPhotos;
+  const rawImg = getVariantImage(item);
+  const firstImage = rawImg ? `${import.meta.env.VITE_API_URL}${rawImg}` : noPhotos;
 
   return (
     <Card className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">

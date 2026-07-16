@@ -39,7 +39,7 @@ export default function HomeBundleCard({ bundle, onAddToCart, cartQty = 0 }) {
             outOfStock ? "opacity-60 grayscale-30" : "group-hover:scale-105"
           }`}
         />
-        <span className="absolute top-2.5 left-2.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-600 shadow-sm tracking-wide uppercase">
+        <span className="absolute top-2.5 left-2.5 text-[11px] sm:text-xs font-black px-3 py-1.5 rounded-lg bg-linear-to-br from-rose-500 to-pink-600 text-white shadow-md ring-2 ring-white/70 tracking-wide uppercase">
           Combo · {itemsCount} prod.
         </span>
       </div>

@@ -2,23 +2,18 @@ import { useNavigate } from "react-router-dom";
 import { Trash2, ShoppingBag, Plus } from "lucide-react";
 import noPhotos from "@/assets/icons/no-fotos.png";
 import { getAvailableUnits } from "@/lib/stock";
-
-function getMainImage(images) {
-  if (!images?.length) return null;
-  const main = images.find((img) => Number(img.slot) === 1);
-  return main?.imageUrl ?? images[0]?.imageUrl ?? null;
-}
+import { getVariantImage } from "@/lib/media";
 
 export default function HomeWishlistItem({ variant, onRemove, onAddToCart, onClose }) {
   const navigate = useNavigate();
-  const { product, price, attributes, images, finalPrice, promotion } = variant;
+  const { product, price, attributes, finalPrice, promotion } = variant;
   const hasPromotion = !!promotion;
   const outOfStock = getAvailableUnits(variant) === 0;
   const discountPercent = hasPromotion && Number(price) > 0
     ? Math.round((1 - Number(finalPrice) / Number(price)) * 100)
     : 0;
 
-  const rawImg = getMainImage(images);
+  const rawImg = getVariantImage(variant);
   const imgSrc = rawImg
     ? `${import.meta.env.VITE_API_URL}${rawImg}`
     : noPhotos;

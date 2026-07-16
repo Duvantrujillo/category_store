@@ -20,6 +20,7 @@ import HomeProductGrid from "./components/products/HomeProductGrid";
 import HomeProductFilters from "./components/products/HomeProductFilters";
 import HomeProductRow from "./components/products/HomeProductRow";
 import HomeBundleRow from "./components/bundles/HomeBundleRow";
+import HomeCarouselRowSkeleton from "./components/products/HomeCarouselRowSkeleton";
 import HomeCart from "./components/cart/HomeCart";
 import HomeWishlist from "./components/wishlist/HomeWishlist";
 import HomeFooter from "./components/footer/HomeFooter";
@@ -73,7 +74,7 @@ export default function Home() {
   // por defecto — si el usuario está buscando o filtrando (categoría, precio
   // u orden), no aplican, porque esas filas no respetan esos filtros.
   const showShowcase = !search && !selectedParent && !selectedCategory && !minPrice && !maxPrice && !sortBy;
-  const { groups: showcaseGroups } = useHomeShowcase(showShowcase);
+  const { groups: showcaseGroups, loading: loadingShowcase } = useHomeShowcase(showShowcase);
 
   // Lo que muestra el carrusel: padres o hijos del padre seleccionado
   const displayCategories = selectedParent ? (selectedParent.children || []) : categories;
@@ -111,7 +112,7 @@ export default function Home() {
     setSearch("");
   }
   const { topSellerIds }                       = useTopSellers();
-  const { bundles }                            = useHomeBundles();
+  const { bundles, loading: loadingBundles }   = useHomeBundles();
 
   const {
     cartItems,
@@ -171,26 +172,37 @@ export default function Home() {
             onBack={handleBack}
           />
 
-          {showShowcase && bundles.length > 0 && (
-            <HomeBundleRow
-              bundles={bundles}
-              onAddToCart={addBundleToCart}
-              cartQtyById={cartBundleQtyById}
-            />
+          {showShowcase && (
+            loadingBundles ? (
+              <HomeCarouselRowSkeleton />
+            ) : bundles.length > 0 && (
+              <HomeBundleRow
+                bundles={bundles}
+                onAddToCart={addBundleToCart}
+                cartQtyById={cartBundleQtyById}
+              />
+            )
           )}
 
-          {showShowcase && showcaseGroups.map((group) => (
-            <HomeProductRow
-              key={`${group.type}-${group.id}`}
-              title={group.title}
-              variants={group.variants}
-              onAddToCart={addToCart}
-              onToggleFavorite={toggleFavorite}
-              favoritedIds={favoritedIds}
-              cartQtyById={cartQtyById}
-              topSellerIds={topSellerIds}
-            />
-          ))}
+          {showShowcase && (
+            loadingShowcase ? (
+              <>
+                <HomeCarouselRowSkeleton />
+                <HomeCarouselRowSkeleton />
+              </>
+            ) : showcaseGroups.map((group) => (
+              <HomeProductRow
+                key={`${group.type}-${group.id}`}
+                title={group.title}
+                variants={group.variants}
+                onAddToCart={addToCart}
+                onToggleFavorite={toggleFavorite}
+                favoritedIds={favoritedIds}
+                cartQtyById={cartQtyById}
+                topSellerIds={topSellerIds}
+              />
+            ))
+          )}
 
           <HomeProductFilters
             minPrice={minPrice}

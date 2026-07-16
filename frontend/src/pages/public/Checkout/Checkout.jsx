@@ -12,6 +12,7 @@ import HomeCart from "../Home/components/cart/HomeCart";
 import CartGiftBanner from "../Home/components/cart/CartGiftBanner";
 import { usePublicCart, getBundleAvailableStock, selectionsToPayload } from "../Home/hooks/usePublicCart";
 import { getAvailableUnits } from "@/lib/stock";
+import { getVariantImage } from "@/lib/media";
 import { usePublicWishlist } from "../Home/hooks/usePublicWishlist";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import useCreateShippingLocations from "../../dashboard/admin/form_response/hooks/useCreateShippingLocations";
@@ -366,8 +367,7 @@ function OrderSummary({
             const brand    = variant.product?.brand?.name ?? "";
             const attrs    = (variant.attributes ?? [])
               .map((a) => a.attributeValue?.value).filter(Boolean).join(", ");
-            const rawImg   = variant.images?.find((i) => Number(i.slot) === 1)?.imageUrl
-                          ?? variant.images?.[0]?.imageUrl ?? null;
+            const rawImg   = getVariantImage(variant);
             const maxStock = getAvailableUnits(variant);
             const atMax    = quantity >= maxStock;
             const overStock = quantity > maxStock;

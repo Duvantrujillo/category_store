@@ -506,7 +506,7 @@ const allProductVariant = async (req, res) => {
         }
       },
       product: {
-        select: { id: true, name: true, brand: { select: { name: true } } }
+        select: { id: true, name: true, mainImage: true, brand: { select: { name: true } } }
       },
     },
     orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }]
@@ -782,6 +782,7 @@ const getPublicSuggestions = async (req, res) => {
             slug: true,
             brandId: true,
             categoryId: true,
+            mainImage: true,
             brand: { select: { name: true } },
           },
         },

@@ -3,21 +3,16 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSearchSuggestions } from "../../hooks/useSearchSuggestions";
 import noPhotos from "@/assets/icons/no-fotos.png";
+import { getVariantImage } from "@/lib/media";
 
 const API = import.meta.env.VITE_API_URL;
-
-function getThumb(images) {
-  if (!images?.length) return null;
-  const main = images.find((img) => Number(img.slot) === 1);
-  return main?.imageUrl ?? images[0]?.imageUrl ?? null;
-}
 
 function SuggestionsList({ suggestions, onSelect }) {
   if (!suggestions.length) return null;
   return (
     <ul className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-rose-100 rounded-2xl shadow-xl overflow-hidden z-50">
       {suggestions.map((v) => {
-        const raw  = getThumb(v.images);
+        const raw  = getVariantImage(v);
         const src  = raw ? `${API}${raw}` : noPhotos;
         return (
           <li key={v.id}>

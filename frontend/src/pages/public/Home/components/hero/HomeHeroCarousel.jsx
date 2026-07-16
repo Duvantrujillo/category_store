@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import apiClient from "@/lib/apiClient";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const FALLBACK_SLIDES = [
   {
@@ -57,6 +58,10 @@ export default function HomeHeroCarousel() {
   const [current, setCurrent]     = useState(0);
   const [paused, setPaused]       = useState(false);
   const [animating, setAnimating] = useState(false);
+  // true hasta que se sepa si hay banners reales — evita el "salto" de
+  // mostrar primero el banner genérico y luego reemplazarlo de golpe por
+  // uno real (se ve como si por un instante no hubiera nada configurado).
+  const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
     apiClient.get("/banner/public")
@@ -67,7 +72,8 @@ export default function HomeHeroCarousel() {
           setCurrent(0);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const count = slides.length;
@@ -89,6 +95,14 @@ export default function HomeHeroCarousel() {
   }, [paused, next]);
 
   const slide = slides[current];
+
+  if (loading) {
+    return (
+      <section className="relative overflow-hidden">
+        <Skeleton className="w-full min-h-60 sm:min-h-80 md:min-h-[380px] lg:min-h-[440px] rounded-none" />
+      </section>
+    );
+  }
 
   return (
     <section

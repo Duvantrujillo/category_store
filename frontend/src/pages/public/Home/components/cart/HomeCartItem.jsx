@@ -2,22 +2,17 @@ import { useNavigate } from "react-router-dom";
 import { Trash2, Plus, Minus } from "lucide-react";
 import noPhotos from "@/assets/icons/no-fotos.png";
 import { getAvailableUnits } from "@/lib/stock";
-
-function getMainImage(images) {
-  if (!images?.length) return null;
-  const main = images.find((img) => Number(img.slot) === 1);
-  return main?.imageUrl ?? images[0]?.imageUrl ?? null;
-}
+import { getVariantImage } from "@/lib/media";
 
 export default function HomeCartItem({ item, onRemove, onUpdateQty, onClose }) {
   const navigate = useNavigate();
   const { variant, quantity } = item;
-  const { product, price, attributes, images, finalPrice, promotion } = variant;
+  const { product, price, attributes, finalPrice, promotion } = variant;
   const hasPromotion = !!promotion;
   const available = getAvailableUnits(variant);
   const atLimit = quantity >= available;
 
-  const rawImg = getMainImage(images);
+  const rawImg = getVariantImage(variant);
   const imgSrc = rawImg
     ? `${import.meta.env.VITE_API_URL}${rawImg}`
     : noPhotos;

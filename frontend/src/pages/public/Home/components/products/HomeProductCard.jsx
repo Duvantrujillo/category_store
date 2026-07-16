@@ -2,19 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import noPhotos from "@/assets/icons/no-fotos.png";
 import { getAvailableUnits } from "@/lib/stock";
-
-function getMainImage(images) {
-  if (!images?.length) return null;
-  const main = images.find((img) => Number(img.slot) === 1);
-  return main?.imageUrl ?? images[0]?.imageUrl ?? null;
-}
+import { getVariantImage } from "@/lib/media";
 
 export default function HomeProductCard({ variant, onAddToCart, onToggleFavorite, isFavorited = false, cartQty = 0, topSellerIds }) {
   const navigate = useNavigate();
-  const { product, price, attributes, images, finalPrice, promotion } = variant;
+  const { product, price, attributes, finalPrice, promotion } = variant;
   const hasPromotion = !!promotion;
 
-  const rawImg     = getMainImage(images);
+  const rawImg     = getVariantImage(variant);
   const imgSrc     = rawImg ? `${import.meta.env.VITE_API_URL}${rawImg}` : noPhotos;
   const available   = getAvailableUnits(variant);
   const outOfStock  = available === 0;

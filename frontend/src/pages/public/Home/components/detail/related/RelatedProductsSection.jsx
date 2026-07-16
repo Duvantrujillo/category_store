@@ -52,8 +52,8 @@ function RelatedRow({ variants, cols, onAddToCart, onToggleFavorite, favoritedId
         className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <div className="flex" style={{ gap: `${GAP}px` }}>
-          {variants.map((v) => (
-            <div key={v.id} style={{ width: `${colW}px`, flexShrink: 0 }}>
+          {variants.map((v, i) => (
+            <div key={`${v.id}-${i}`} style={{ width: `${colW}px`, flexShrink: 0 }}>
               <HomeProductCard
                 variant={v}
                 onAddToCart={onAddToCart}
@@ -99,9 +99,28 @@ export default function RelatedProductsSection({
     : categoryName ? `También de ${categoryName}` : "También te puede gustar";
 
   // Split products into rows of PER_ROW, max ROWS rows
-  const rows = Array.from({ length: ROWS }, (_, i) =>
+  const rawRows = Array.from({ length: ROWS }, (_, i) =>
     variants.slice(i * PER_ROW, (i + 1) * PER_ROW)
   ).filter((r) => r.length > 0);
+
+  // Si una fila queda "huérfana" (menos productos que PER_ROW), se rellena
+  // repitiendo productos ya existentes del mismo pool relacionado — mismo
+  // criterio que HomeProductGrid usa en el catálogo principal. Pero acá el
+  // pool de relacionados suele ser chico (misma marca/categoría), así que
+  // si hay muy pocos productos distintos, rellenar se ve como si el mismo
+  // producto se hubiera duplicado varias veces — mejor mostrar la fila corta
+  // tal cual que forzar una repetición evidente.
+  const MIN_TO_PAD = Math.ceil(PER_ROW / 2);
+  const rows = rawRows.map((row) => {
+    if (row.length === 0 || row.length >= PER_ROW || variants.length < MIN_TO_PAD) return row;
+    const padded = [...row];
+    let i = 0;
+    while (padded.length < PER_ROW) {
+      padded.push(variants[i % variants.length]);
+      i++;
+    }
+    return padded;
+  });
 
   const rowProps = { cols, onAddToCart, onToggleFavorite, favoritedIds, cartQtyById };
 

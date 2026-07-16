@@ -10,7 +10,7 @@ export function useHomeShowcase(enabled = true) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) { setLoading(false); return; }
 
     let cancelled = false;
     apiClient.get("/product-variant/public/showcase")

@@ -14,7 +14,7 @@ const LINKS = {
     { label: "Cómo comprar",         to: "/" },
     { label: "Envíos y entregas",    to: "/" },
     { label: "Consultar mi pedido",  to: "/pedido" },
-    { label: "Devoluciones",         to: "/" },
+    { label: "Devoluciones",         to: "/devoluciones" },
     { label: "Preguntas frecuentes", to: "/" },
   ],
 };

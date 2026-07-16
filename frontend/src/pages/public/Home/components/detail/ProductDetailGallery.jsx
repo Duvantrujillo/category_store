@@ -6,14 +6,22 @@ function url(path) { return path ? `${API}${path}` : null; }
 
 // images: todas las imágenes de todas las variantes, cada una con variantId
 // selectedVariantId: la variante actualmente seleccionada
-export default function ProductDetailGallery({ images = [], selectedVariantId, outOfStock = false, discountPercent = 0 }) {
+// productMainImage: imagen principal del producto — se usa cuando la
+// variante seleccionada no tiene imágenes propias, antes de caer a
+// cualquier otra imagen del pool o al ícono de "sin foto".
+export default function ProductDetailGallery({ images = [], selectedVariantId, productMainImage = null, outOfStock = false, discountPercent = 0 }) {
   const [active, setActive] = useState(null);
 
-  // Cuando cambia la variante seleccionada, saltar a su primera imagen
+  // Cuando cambia la variante seleccionada: su propia imagen primero, si no
+  // tiene ninguna cae a la imagen del producto, y si tampoco hay, se
+  // mantiene el comportamiento anterior (primera imagen del pool).
   useEffect(() => {
-    const first = images.find((img) => img.productVariantId === selectedVariantId) ?? images[0] ?? null;
+    const variantImg = images.find((img) => img.productVariantId === selectedVariantId);
+    if (variantImg) { setActive(variantImg.imageUrl); return; }
+    if (productMainImage) { setActive(productMainImage); return; }
+    const first = images[0] ?? null;
     if (first) setActive(first.imageUrl);
-  }, [selectedVariantId, images]);
+  }, [selectedVariantId, images, productMainImage]);
 
   const activeSrc = (active ? url(active) : null) ?? noPhotos;
 

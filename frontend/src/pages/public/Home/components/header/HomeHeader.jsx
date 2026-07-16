@@ -9,7 +9,7 @@ export default function HomeHeader({ cartCount = 0, onCartOpen, wishlistCount = 
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 h-16 bg-rose-300/75 backdrop-blur-sm border-b border-rose-400/20 shadow-sm">
+    <header className="sticky top-0 z-40 h-16 bg-rose-400/75 backdrop-blur-sm border-b border-rose-400/20 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center h-full gap-4">
 
         <HomeNavLogo onClick={onLogoClick} />
