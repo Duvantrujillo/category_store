@@ -68,7 +68,10 @@ export default function Home() {
     if ("sortBy"   in patch) setSortBy(patch.sortBy);
   }
 
-  const { variants, loading: loadingVariants } = useHomeProducts(search, filterCategoryIds, { minPrice, maxPrice, sortBy });
+  const {
+    variants, loading: loadingVariants,
+    hasMore: hasMoreVariants, loadingMore: loadingMoreVariants, loadMore: loadMoreVariants,
+  } = useHomeProducts(search, filterCategoryIds, { minPrice, maxPrice, sortBy });
 
   // Las filas curadas por marca/categoría solo tienen sentido en la vista
   // por defecto — si el usuario está buscando o filtrando (categoría, precio
@@ -214,6 +217,9 @@ export default function Home() {
           <HomeProductGrid
             variants={variants}
             loading={loadingVariants}
+            hasMore={hasMoreVariants}
+            loadingMore={loadingMoreVariants}
+            onLoadMore={loadMoreVariants}
             search={search}
             selectedCategory={selectedCategory}
             selectedParent={selectedParent}
@@ -250,6 +256,7 @@ export default function Home() {
         onCheckout={() => { setCartOpen(false); navigate("/checkout"); }}
         gift={gift}
         initializing={cartInitializing}
+        cartUuid={cartUuid}
       />
     </div>
   );

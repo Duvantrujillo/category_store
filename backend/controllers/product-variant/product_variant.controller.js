@@ -604,6 +604,10 @@ const PUBLIC_VARIANTS_ORDER_BY = {
   newest:     [{ createdAt: "desc" }],
 };
 
+// 12 filas de 8 tarjetas — el tamaño de página lo decide el backend, nunca
+// el cliente, para no permitir pedir el catálogo completo en una sola vez.
+const PUBLIC_VARIANTS_PAGE_SIZE = 96;
+
 const getPublicVariants = async (req, res) => {
   try {
     const rawQ     = (req.query.q || "").trim();
@@ -611,6 +615,9 @@ const getPublicVariants = async (req, res) => {
     const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : undefined;
     const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined;
     const sortBy   = req.query.sortBy;
+
+    const rawPage = parseInt(req.query.page, 10);
+    const page    = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
 
     // IDs de categorías (coma-separados)
     let categoryIds = null;
@@ -673,12 +680,27 @@ const getPublicVariants = async (req, res) => {
     });
 
     // Un único resultado por producto: la variante isDefault (o la primera activa)
-    const deduped = dedupeByProduct(variants);
+    const deduped = dedupeByProduct(variants)
+
+    // Paginación: se corta DESPUÉS de deduplicar (así el conteo de página
+    // siempre es en productos únicos, no en filas de variante) — el resto de
+    // la lógica de arriba (where/orderBy/dedup) queda intacta.
+    const total  = deduped.length
+    const offset = (page - 1) * PUBLIC_VARIANTS_PAGE_SIZE
+    const pageItems = deduped.slice(offset, offset + PUBLIC_VARIANTS_PAGE_SIZE)
 
     const activePromotions = await getActivePromotions();
-    const withPricing = attachPromotionPricing(deduped, activePromotions);
+    const withPricing = attachPromotionPricing(pageItems, activePromotions);
 
-    return res.status(200).json({ data: withPricing });
+    return res.status(200).json({
+      data: withPricing,
+      pagination: {
+        page,
+        pageSize: PUBLIC_VARIANTS_PAGE_SIZE,
+        total,
+        hasMore: offset + withPricing.length < total,
+      },
+    });
   } catch (error) {
     console.error("Error en getPublicVariants:", error);
     return res.status(500).json({ message: "Error interno" });

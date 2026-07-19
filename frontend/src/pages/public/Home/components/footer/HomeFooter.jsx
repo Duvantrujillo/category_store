@@ -5,17 +5,17 @@ import { Link } from "react-router-dom";
 const LINKS = {
   tienda: [
     { label: "Todos los productos", to: "/" },
-    { label: "Categorías",          to: "/" },
-    { label: "Marcas",              to: "/" },
-    { label: "Novedades",           to: "/" },
-    { label: "Ofertas",             to: "/" },
+    { label: "Categorías", to: "/" },
+    { label: "Marcas", to: "/" },
+    { label: "Novedades", to: "/" },
+    { label: "Ofertas", to: "/" },
   ],
   ayuda: [
-    { label: "Cómo comprar",         to: "/" },
-    { label: "Envíos y entregas",    to: "/" },
-    { label: "Consultar mi pedido",  to: "/pedido" },
-    { label: "Devoluciones",         to: "/devoluciones" },
-    { label: "Preguntas frecuentes", to: "/" },
+    { label: "Cómo comprar", to: "/" },
+    { label: "Envíos y entregas", to: "/" },
+    { label: "Consultar mi pedido", to: "/pedido" },
+    { label: "Devoluciones", to: "/devoluciones" },
+    { label: "Preguntas frecuentes", to: "/preguntas-frecuentes" },
   ],
 };
 

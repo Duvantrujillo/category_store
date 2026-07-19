@@ -8,28 +8,66 @@ import { getVariantImage } from "@/lib/media";
 // contenido — debe coincidir con la duration-500 de la clase de abajo.
 const OPEN_ANIM_MS = 500;
 
+// Se guarda en localStorage (junto al mismo "cart_uuid" que ya identifica el
+// carrito anónimo, ver usePublicCart.js) que este carrito ya destapó este
+// regalo puntual — así la próxima vez no hay que volver a abrirlo. Se
+// incluye el id del regalo porque si el carrito sube de escalón y ahora
+// califica para un regalo distinto, ese sí es "nuevo" y debe destaparse.
+//
+// El cartUuid SIEMPRE llega por prop (viene del estado de usePublicCart.js
+// de esta misma pestaña), nunca se relee de localStorage acá — si se leyera
+// aparte, dos pestañas con carritos distintos (o un cart_uuid que cambió de
+// valor entre que se cargó el `gift` y que se abrió el modal) podrían
+// consultar/guardar el reveal bajo el carrito equivocado.
+function revealKey(cartUuid, giftId) {
+  return `gift_revealed:${cartUuid}:${giftId}`;
+}
+
+function wasAlreadyRevealed(cartUuid, giftId) {
+  if (!cartUuid) return false;
+  try {
+    return localStorage.getItem(revealKey(cartUuid, giftId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markAsRevealed(cartUuid, giftId) {
+  if (!cartUuid) return;
+  try {
+    localStorage.setItem(revealKey(cartUuid, giftId), "1");
+  } catch {
+    // localStorage lleno o bloqueado — no es crítico, solo implica que la
+    // próxima vez pedirá destaparlo de nuevo.
+  }
+}
+
 // Interacción tipo "abrir el regalo": el ícono de regalo rebota hasta que lo
 // tocan; TODO el ícono es un único <button>, así el área de clic nunca queda
 // ambigua. Al tocarlo, el ícono se encoge y se desvanece, y solo entonces se
 // revela qué producto/variante le tocó — nombre + imagen principal de la
 // variante (con fallback a la del producto vía getVariantImage). Responsive:
 // mismo Dialog centrado en desktop y móvil, el contenido se adapta con sm:.
-export default function GiftRevealModal({ open, onClose, gift }) {
+export default function GiftRevealModal({ open, onClose, gift, cartUuid = null }) {
   const [opening, setOpening]   = useState(false);
   const [revealed, setRevealed] = useState(false);
   const openTimeoutRef = useRef(null);
 
-  // Reinicia todo cada vez que el diálogo se cierra, para que la próxima vez
-  // que se abra vuelva a mostrar la cajita cerrada rebotando — y cancela el
+  // Al abrir el diálogo: si este carrito ya destapó este regalo antes, salta
+  // directo al contenido revelado (no hace falta volver a tocarlo). Al
+  // cerrar, resetea el estado transitorio de la animación — y cancela el
   // timeout de apertura si seguía pendiente (si no, revelaba el contenido
   // igual más tarde aunque el modal ya estuviera cerrado).
   useEffect(() => {
-    if (!open) {
-      clearTimeout(openTimeoutRef.current);
+    clearTimeout(openTimeoutRef.current);
+    if (open && gift) {
+      setOpening(false);
+      setRevealed(wasAlreadyRevealed(cartUuid, gift.id));
+    } else {
       setOpening(false);
       setRevealed(false);
     }
-  }, [open]);
+  }, [open, gift, cartUuid]);
 
   // Por si el componente se desmonta con el timeout todavía pendiente.
   useEffect(() => () => clearTimeout(openTimeoutRef.current), []);
@@ -44,7 +82,10 @@ export default function GiftRevealModal({ open, onClose, gift }) {
   function handleOpen() {
     if (opening) return;
     setOpening(true);
-    openTimeoutRef.current = setTimeout(() => setRevealed(true), OPEN_ANIM_MS);
+    openTimeoutRef.current = setTimeout(() => {
+      setRevealed(true);
+      markAsRevealed(cartUuid, gift.id);
+    }, OPEN_ANIM_MS);
   }
 
   return (

@@ -70,6 +70,26 @@ async function createCart() {
   return res.json();
 }
 
+// Cada vez que se crea un carrito nuevo (ver GiftRevealModal.jsx), el uuid
+// anterior queda huérfano — su(s) llave(s) "gift_revealed:<uuid>:<giftId>"
+// ya nunca se vuelven a leer ni a borrar por sí solas. Sin esto, cada visita
+// que pierde su carrito (localStorage borrado a medias, uuid vencido en el
+// backend, etc.) deja basura acumulándose para siempre en localStorage.
+function pruneStaleGiftRevealedKeys(currentUuid) {
+  try {
+    const prefix = "gift_revealed:";
+    const keep = `${prefix}${currentUuid}:`;
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(prefix) && !key.startsWith(keep)) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // localStorage bloqueado — no es crítico
+  }
+}
+
 export function usePublicCart() {
   const [cartItems, setCartItems]             = useState([]);
   const [cartBundleItems, setCartBundleItems] = useState([]);
@@ -107,6 +127,7 @@ export function usePublicCart() {
 
         const newCart = await createCart();
         localStorage.setItem("cart_uuid", newCart.uuid);
+        pruneStaleGiftRevealedKeys(newCart.uuid);
         setCartUuid(newCart.uuid);
         setCartItems([]);
         setCartBundleItems([]);
@@ -127,7 +148,13 @@ export function usePublicCart() {
 
   const addToCart = useCallback(async (variant) => {
     const uuid = getUuid();
-    if (!uuid) return;
+    if (!uuid) {
+      // El carrito todavía se está creando (visitante nuevo, primer clic
+      // casi al instante de cargar la página) — antes esto no hacía nada
+      // sin avisar, se sentía como un botón roto.
+      toast.info("Danos un segundo, tu carrito se está preparando. Intenta de nuevo.");
+      return;
+    }
 
     // Actualización optimista
     setCartItems((prev) => {
@@ -223,7 +250,10 @@ export function usePublicCart() {
   // más simple y seguro esperar la respuesta real del servidor.
   const addBundleToCart = useCallback(async (bundle, selections = {}) => {
     const uuid = getUuid();
-    if (!uuid) return;
+    if (!uuid) {
+      toast.info("Danos un segundo, tu carrito se está preparando. Intenta de nuevo.");
+      return { ok: false, message: "Carrito no listo todavía" };
+    }
 
     setCartOpen(true);
 

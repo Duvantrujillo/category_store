@@ -10,6 +10,7 @@ import Checkout from "./pages/public/Checkout/Checkout"
 import CheckoutResponse from "./pages/public/Checkout/CheckoutResponse"
 import TrackOrder from "./pages/public/TrackOrder/TrackOrder"
 import Returns from "./pages/public/Returns/Returns"
+import FAQ from "./pages/public/FAQ/FAQ"
 import Admin from "./pages/dashboard/admin/Admin"
 import Customer from "./pages/dashboard/customer/Customer"
 import CreateShipping from './pages/dashboard/admin/form_response/pages/CreateShipping'
@@ -40,59 +41,60 @@ import ScrollToTop from './components/ScrollToTop'
 function App() {
   return (
     <PermissionProvider>
-    <ScrollToTop />
-    <Routes>
-      {/* Rutas públicas — scrollbar rosa */}
-      <Route element={<PublicLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/producto/:slug" element={<ProductDetail />} />
-        <Route path="/combo/:slug" element={<BundleDetail />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/checkout/respuesta" element={<CheckoutResponse />} />
-        <Route path="/pedido" element={<TrackOrder />} />
-        <Route path="/devoluciones" element={<Returns />} />
-      </Route>
-      {/* Registro deshabilitado a propósito — se redirige a /login. No se
+      <ScrollToTop />
+      <Routes>
+        {/* Rutas públicas — scrollbar rosa */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/producto/:slug" element={<ProductDetail />} />
+          <Route path="/combo/:slug" element={<BundleDetail />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout/respuesta" element={<CheckoutResponse />} />
+          <Route path="/pedido" element={<TrackOrder />} />
+          <Route path="/devoluciones" element={<Returns />} />
+          <Route path="/preguntas-frecuentes" element={<FAQ />} />
+        </Route>
+        {/* Registro deshabilitado a propósito — se redirige a /login. No se
           elimina la ruta ni el componente por si se reactiva más adelante:
           <Route path="/register" element={<RegisterForm />} /> */}
-      <Route path="/register" element={<Navigate to="/login" replace />} />
-      <Route path="/login" element={<LoginForm />} />
-      <Route path="/create/shipping" element={<CreateShipping />} />
+        <Route path="/register" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/create/shipping" element={<CreateShipping />} />
 
-      {/* Panel de administración — requiere sesión con rol admin */}
-      <Route
-        path="/dashboard/admin"
-        element={
-          <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-            <Admin />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<AdminHome />} />
-        <Route path="list/category" element={<CategoryList />} />
-        <Route path="list/shipping" element={<ShippingList />} />
-        <Route path="list/attibute" element={<AttributeList />} />
-        <Route path="list/attibute-value" element={<AttributeValueList />} />
-        <Route path="list/brand" element={<BrandList />} />
-        <Route path="list/product" element={<ProductList />} />
-        <Route path="list/product-variant" element={<ProductVariantList />} />
-        <Route path="list/order" element={<OrderList />} />
-        <Route path="list/shipment" element={<ShipmentList />} />
-        <Route path="list/return" element={<ReturnList />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="list/users"       element={<ListUser />} />
-        <Route path="list/permissions" element={<ListPermission />} />
-        <Route path="list/banner"      element={<ListBanner />} />
-        <Route path="list/discount-codes" element={<ListDiscountCode />} />
-        <Route path="list/product-bundle" element={<ListProductBundle />} />
-        <Route path="list/promotions" element={<ListPromotion />} />
-        <Route path="list/purchase-gifts" element={<ListPurchaseGift />} />
-        <Route path="list/payment-methods" element={<ListPaymentMethod />} />
-      </Route>
+        {/* Panel de administración — requiere sesión con rol admin */}
+        <Route
+          path="/dashboard/admin"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <Admin />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminHome />} />
+          <Route path="list/category" element={<CategoryList />} />
+          <Route path="list/shipping" element={<ShippingList />} />
+          <Route path="list/attibute" element={<AttributeList />} />
+          <Route path="list/attibute-value" element={<AttributeValueList />} />
+          <Route path="list/brand" element={<BrandList />} />
+          <Route path="list/product" element={<ProductList />} />
+          <Route path="list/product-variant" element={<ProductVariantList />} />
+          <Route path="list/order" element={<OrderList />} />
+          <Route path="list/shipment" element={<ShipmentList />} />
+          <Route path="list/return" element={<ReturnList />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="list/users" element={<ListUser />} />
+          <Route path="list/permissions" element={<ListPermission />} />
+          <Route path="list/banner" element={<ListBanner />} />
+          <Route path="list/discount-codes" element={<ListDiscountCode />} />
+          <Route path="list/product-bundle" element={<ListProductBundle />} />
+          <Route path="list/promotions" element={<ListPromotion />} />
+          <Route path="list/purchase-gifts" element={<ListPurchaseGift />} />
+          <Route path="list/payment-methods" element={<ListPaymentMethod />} />
+        </Route>
 
-      {/* Panel de cliente */}
-      <Route path="/dashboard/customer" element={<Customer />} />
-    </Routes>
+        {/* Panel de cliente */}
+        <Route path="/dashboard/customer" element={<Customer />} />
+      </Routes>
     </PermissionProvider>
   )
 }

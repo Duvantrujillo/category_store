@@ -268,6 +268,7 @@ export default function ProductDetail() {
         onCheckout={() => { setCartOpen(false); navigate("/checkout"); }}
         gift={gift}
         initializing={cartInitializing}
+        cartUuid={cartUuid}
       />
 
       <HomeWishlist

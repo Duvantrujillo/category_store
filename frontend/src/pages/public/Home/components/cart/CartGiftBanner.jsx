@@ -9,7 +9,7 @@ import GiftRevealModal from "./GiftRevealModal";
 // acá solo se pinta como ancho de barra, nunca se recalcula en el cliente.
 // Se usa tanto en el drawer del carrito (HomeCart) como en el resumen del
 // checkout, para que el progreso sea visible en todo el flujo antes de pagar.
-export default function CartGiftBanner({ gift, className = "" }) {
+export default function CartGiftBanner({ gift, cartUuid = null, className = "" }) {
   const [revealOpen, setRevealOpen] = useState(false);
 
   if (!gift || gift.progressPercent == null) return null;
@@ -63,6 +63,7 @@ export default function CartGiftBanner({ gift, className = "" }) {
         open={revealOpen}
         onClose={() => setRevealOpen(false)}
         gift={gift.current}
+        cartUuid={cartUuid}
       />
     )}
     </>

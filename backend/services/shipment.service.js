@@ -36,6 +36,8 @@ const createShipment = async (orderId) => {
       if (order) sendShipmentCreatedEmail(order).catch((err) => {
         console.error("Error enviando email SHIPMENT_CREATED", err);
       });
+    }).catch((err) => {
+      console.error("Error consultando la orden para email SHIPMENT_CREATED", err);
     });
 
     return shipment;

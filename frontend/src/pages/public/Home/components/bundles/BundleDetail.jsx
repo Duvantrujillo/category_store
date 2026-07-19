@@ -220,6 +220,7 @@ export default function BundleDetail() {
         onCheckout={() => { setCartOpen(false); navigate("/checkout"); }}
         gift={gift}
         initializing={cartInitializing}
+        cartUuid={cartUuid}
       />
 
       <HomeWishlist

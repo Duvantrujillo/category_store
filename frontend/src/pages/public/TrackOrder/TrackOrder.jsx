@@ -174,7 +174,11 @@ export default function TrackOrder() {
   const { wishlistItems, setWishlistOpen } = usePublicWishlist(cartUuid);
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
 
-  const [identifierType, setIdentifierType] = useState("email"); // "email" | "document"
+  // "document" por defecto: el número de documento es obligatorio en TODO
+  // pedido, mientras que el correo es opcional en el checkout — si alguien
+  // no lo dejó, buscar por correo siempre daría "no encontrado" sin ninguna
+  // pista de por qué. Documento es la opción que nunca falla por eso.
+  const [identifierType, setIdentifierType] = useState("document"); // "email" | "document"
   const [form, setForm]           = useState({ orderNumber: "", email: "", documentNumber: "" });
   const [errors, setErrors]       = useState({});
   const [loading, setLoading]     = useState(false);
@@ -627,6 +631,7 @@ export default function TrackOrder() {
         onRemove={removeFromCart}
         onUpdateQty={updateQty}
         onCheckout={() => setCartOpen(false)}
+        cartUuid={cartUuid}
       />
     </div>
   );

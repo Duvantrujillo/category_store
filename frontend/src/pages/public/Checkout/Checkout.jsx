@@ -244,7 +244,7 @@ function OrderSummary({
   items, bundleItems, pendingPayment, onPay, onRetryPayment, retrying, loading, onUpdateQty, onRemove,
   onUpdateBundleQty, onRemoveBundle, orderError,
   couponInput, setCouponInput, coupon, couponLoading, couponError, onApplyCoupon, onRemoveCoupon,
-  gift,
+  gift, cartUuid,
 }) {
   const itemsSubtotal   = items.reduce((s, i) => s + Number(i.variant.finalPrice ?? i.variant.price) * i.quantity, 0);
   const bundlesSubtotal = bundleItems.reduce((s, i) => s + Number(i.bundle.price) * i.quantity, 0);
@@ -565,7 +565,7 @@ function OrderSummary({
       {/* Regalo por monto de compra — mismo aviso y barra de progreso que en
           el carrito, para que siga visible mientras el cliente completa el
           checkout. */}
-      {!pendingPayment && <CartGiftBanner gift={gift} />}
+      {!pendingPayment && <CartGiftBanner gift={gift} cartUuid={cartUuid} />}
 
       {/* Pedido creado — checkout ePayco se abre automáticamente */}
       {pendingPayment ? (
@@ -1096,6 +1096,7 @@ export default function Checkout() {
               couponError={couponError}
               onApplyCoupon={applyCoupon}
               onRemoveCoupon={removeCoupon}
+              cartUuid={cartUuid}
               gift={gift}
             />
           </div>
@@ -1117,6 +1118,7 @@ export default function Checkout() {
         onCheckout={() => setCartOpen(false)}
         gift={gift}
         initializing={cartInitializing}
+        cartUuid={cartUuid}
       />
     </div>
   );

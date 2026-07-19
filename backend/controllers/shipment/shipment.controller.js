@@ -146,17 +146,24 @@ const updateShipment = async (req, res) => {
       data: updateData,
     });
 
-    await prisma.shipmentHistory.create({
-      data: {
-        shipmentId:  updatedShipment.id,
-        status,
-        note:        note || null,
-        updatedById: req.user.id,
-      },
-    });
-
-    // Email al cliente solo cuando cambia el estado
+    // El historial es de transiciones de ESTADO — status es un campo
+    // obligatorio en ShipmentHistory (nunca nulo en el schema), así que solo
+    // se registra una fila cuando de verdad se está cambiando el estado.
+    // Actualizar solo carrier/trackingNumber/note (sin status) no genera
+    // historial — antes esto igual intentaba crear la fila con status
+    // undefined y fallaba después de que el envío ya había quedado
+    // actualizado, dejando al cliente con un 500 pese al cambio ya guardado.
     if (status) {
+      await prisma.shipmentHistory.create({
+        data: {
+          shipmentId:  updatedShipment.id,
+          status,
+          note:        note || null,
+          updatedById: req.user.id,
+        },
+      });
+
+      // Email al cliente solo cuando cambia el estado
       prisma.order.findUnique({
         where: { id: updatedShipment.orderId },
         select: { orderNumber: true, firstName: true, lastName: true, email: true, address: true, municipality: true, departament: true },
@@ -164,6 +171,8 @@ const updateShipment = async (req, res) => {
         if (order) sendShipmentUpdatedEmail(order, updatedShipment, status).catch((err) => {
           console.error("Error enviando email SHIPMENT_UPDATED", err);
         });
+      }).catch((err) => {
+        console.error("Error consultando la orden para email SHIPMENT_UPDATED", err);
       });
     }
 

@@ -53,7 +53,7 @@ function buildWhatsAppUrl(items, bundleItems) {
 export default function HomeCart({
   open, onClose, items, onRemove, onUpdateQty,
   bundleItems = [], onRemoveBundle, onUpdateBundleQty,
-  onCheckout, gift = null, initializing = false,
+  onCheckout, gift = null, initializing = false, cartUuid = null,
 }) {
   const total = items.reduce((s, i) => s + Number(i.variant.finalPrice ?? i.variant.price) * i.quantity, 0)
     + bundleItems.reduce((s, i) => s + Number(i.bundle.price) * i.quantity, 0);
@@ -125,7 +125,7 @@ export default function HomeCart({
                   onClose={onClose}
                 />
               ))}
-              <CartGiftBanner gift={gift} className="mt-4" />
+              <CartGiftBanner gift={gift} cartUuid={cartUuid} className="mt-4" />
             </>
           )}
         </div>

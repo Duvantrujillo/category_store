@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import HomeProductRow from "./HomeProductRow";
 import HomeProductSkeleton from "./HomeProductSkeleton";
 import HomeProductEmpty from "./HomeProductEmpty";
@@ -10,6 +11,9 @@ const SKELETON_CARD_CLS = "shrink-0 w-[calc((100%-0.75rem)/2)] sm:w-[calc((100%-
 export default function HomeProductGrid({
   variants,
   loading,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
   search,
   selectedCategory,
   selectedParent,
@@ -33,12 +37,17 @@ export default function HomeProductGrid({
   // repetidos van desapareciendo solos. Pero si el catálogo activo tiene muy
   // pocos productos en total, rellenar se ve como si el mismo producto se
   // hubiera duplicado varias veces — mejor mostrar el bloque corto tal cual
-  // que forzar una repetición evidente.
+  // que forzar una repetición evidente. Tampoco se rellena el último bloque
+  // mientras todavía hay más páginas por cargar (hasMore): ese bloque corto
+  // no es realmente el final del catálogo, solo el borde de lo ya traído —
+  // se completa solo cuando el usuario pide "Ver más".
   const MIN_TO_PAD = Math.ceil(PAGE_SIZE / 2);
   const isDefaultView = !search && !selectedCategory && !selectedParent;
+  const lastGroupIdx = groups.length - 1;
   const displayGroups = isDefaultView
-    ? groups.map((group) => {
-        if (group.length === 0 || group.length >= PAGE_SIZE || variants.length < MIN_TO_PAD) return group;
+    ? groups.map((group, idx) => {
+        const isTrailingIncompletePage = idx === lastGroupIdx && hasMore;
+        if (group.length === 0 || group.length >= PAGE_SIZE || variants.length < MIN_TO_PAD || isTrailingIncompletePage) return group;
         const padded = [...group];
         let i = 0;
         while (padded.length < PAGE_SIZE) {
@@ -104,6 +113,21 @@ export default function HomeProductGrid({
           topSellerIds={topSellerIds}
         />
       ))}
+
+      {/* ── Ver más — pide la siguiente página al backend (12 filas ya
+          cargadas, 96 productos), nunca se calcula del lado del cliente ── */}
+      {!loading && hasMore && (
+        <div className="flex justify-center mt-6">
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="flex items-center gap-2 h-11 px-8 rounded-full border border-rose-200 text-rose-500 text-xs font-bold uppercase tracking-widest hover:bg-rose-50 active:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loadingMore ? <><Loader2 size={15} className="animate-spin" /> Cargando…</> : "Ver más"}
+          </button>
+        </div>
+      )}
 
     </section>
   );

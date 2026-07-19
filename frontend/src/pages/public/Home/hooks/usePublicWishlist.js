@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "react-toastify";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -26,7 +27,12 @@ export function usePublicWishlist(cartUuid) {
 
   const toggleFavorite = useCallback(async (variant) => {
     const uuid = cartUuid ?? localStorage.getItem("cart_uuid");
-    if (!uuid) return;
+    if (!uuid) {
+      // Mismo caso que addToCart: visitante nuevo, el carrito (y con él el
+      // identificador que usa la wishlist) todavía se está creando.
+      toast.info("Danos un segundo, tu carrito se está preparando. Intenta de nuevo.");
+      return;
+    }
 
     const isIn = wishlistItems.some((v) => v.id === variant.id);
 
